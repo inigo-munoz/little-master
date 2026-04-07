@@ -199,6 +199,33 @@ describe("parseNpcFromResponse", () => {
     expect(result?.role).toBe("");
   });
 
+  // ── Rechazo de localizaciones y facciones ────────────────────────────────
+
+  it("localización con heading de santuario → null", () => {
+    const content =
+      "## Santuario de los Portales\n\nTipo: Lugar sagrado\n\n" +
+      "Un antiguo santuario donde se pueden encontrar pistas sobre la historia del portal y sus secretos. " +
+      "Sus columnas de mármol blanco están cubiertas de runas que brillan tenuemente en la oscuridad.";
+    expect(parseNpcFromResponse(content)).toBeNull();
+  });
+
+  it("facción con campo 'Tipo:' → null aunque el heading no contenga palabras de localización", () => {
+    const content =
+      "## Los Custodios\n\nTipo: Organización secreta de guardianes del portal\n\n" +
+      "Un grupo de élite que protege los portales dimensionales desde hace generaciones. " +
+      "Sus miembros son reclutados en secreto y nunca revelan su identidad al público general.";
+    expect(parseNpcFromResponse(content)).toBeNull();
+  });
+
+  it("NPC con nombre que contiene 'Torres' como apellido no se rechaza", () => {
+    const content = `## Marta Torres\n\n**Rol:** Comerciante\n\n${DESCRIPCION_SIMPLE}`;
+    const result = parseNpcFromResponse(content);
+    // "Torres" no está en la lista de palabras de localización (está "Torre" sin 's' al final)
+    // Este test verifica que el regex usa \b correctamente
+    expect(result).not.toBeNull();
+    expect(result?.name).toBe("Marta Torres");
+  });
+
   // ── Caso realista completo ────────────────────────────────────────────────
 
   it("procesa correctamente una respuesta realista del modo Designer", () => {

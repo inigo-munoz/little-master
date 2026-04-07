@@ -1,5 +1,12 @@
 const NAME_PREFIXES = /^(NPC:|NPC\s+|Personaje:|Personaje\s+|Character:|Character\s+|Personaggio:|Nombre:\s*)/i;
 
+// Palabras en el heading que indican claramente una localización (no un NPC)
+const LOCATION_HEADING_RE =
+  /\b(Santuario|Templo|Ciudad|Aldea|Mercado|Fortaleza|Torre|Bosque|Monta[ñn]a|R[íi]o|Mar|Puerto|Camino|Puente|Ruinas|Castillo|Taberna|Mazmorra|Dungeon|Castle|Inn|Forest|Mountain|Village|Town|City|Harbor)\b/i;
+
+// Campos estructurados propios de localizaciones o facciones, nunca de NPCs
+const NON_NPC_FIELD_RE = /^(?:\*\*)?(?:Tipo|Ambiente|Habitantes|Alineamiento|Disposici[oó]n)(?::\*\*|:)\s/im;
+
 // Regex para la línea de rol (con o sin negrita)
 const ROL_LINE_RE = /^(?:\*\*)?Rol(?:e)?(?::\*\*|:)\s+.+$/im;
 const ROL_VALUE_RE = /^(?:\*\*)?Rol(?:e)?(?::\*\*|:)\s+(.+)$/im;
@@ -116,6 +123,12 @@ export function parseNpcFromResponse(
   if (!rawName || !matchedLine) return null;
 
   const name = cleanName(rawName.trim());
+
+  // Rechaza headings que contienen palabras de localización conocidas
+  if (LOCATION_HEADING_RE.test(name)) return null;
+  // Rechaza contenido cuyo primer campo estructurado es de localización o facción
+  if (NON_NPC_FIELD_RE.test(content)) return null;
+
   const role = extractRole(content);
   const description = extractDescription(content, matchedLine);
 
