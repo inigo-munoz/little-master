@@ -378,6 +378,15 @@ export interface ContextChunk {
   relevanceScore: number;
 }
 
+export interface ExtendedMessage extends ChatMessage {
+  id: string;
+  contextChunks?: ContextChunk[];
+  tokensUsed?: number;
+  model?: string;
+  mode?: AssistantMode;
+  toolsUsed?: string[];
+}
+
 export interface AssistantRun {
   id: string;
   mode: string;

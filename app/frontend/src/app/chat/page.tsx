@@ -26,7 +26,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
-import type { ChatMessage, AssistantMode, ChatResponse, ContextChunk } from "../../lib/api";
+import type { ChatMessage, AssistantMode, ChatResponse, ContextChunk, ExtendedMessage } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
 import { SourceBadge, AuthorityBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
@@ -217,10 +217,13 @@ function DesignerSaveButton({ content, campaignId }: { content: string; campaign
     setStatus("saving");
     try {
       if (detected.kind === "npc") {
+        console.log("[DesignerSaveButton] NPC a guardar:", detected.data);
         await api.npcs.create({
           campaignId,
           name: detected.data.name,
+          role: detected.data.role || undefined,
           description: detected.data.description,
+          status: "alive",
           authorType: "assistant",
         });
         setEditPath("/npcs");
@@ -436,21 +439,10 @@ function MessageBubble({ message, contextChunks, tokensUsed, model, mode, campai
   );
 }
 
-interface ExtendedMessage extends ChatMessage {
-  id: string;
-  contextChunks?: ContextChunk[];
-  tokensUsed?: number;
-  model?: string;
-  mode?: AssistantMode;
-  toolsUsed?: string[];
-}
-
 function ChatInterface() {
   const searchParams = useSearchParams();
   const campaignId = searchParams.get("campaignId") ?? undefined;
-  const { chatMode, setChatMode, activeCampaign } = useAppStore();
-
-  const [messages, setMessages] = useState<ExtendedMessage[]>([]);
+  const { chatMode, setChatMode, activeCampaign, messages, addMessage, clearMessages } = useAppStore();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -473,7 +465,7 @@ function ChatInterface() {
       content,
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    addMessage(userMsg);
     setInput("");
     setLoading(true);
     setError("");
@@ -500,7 +492,7 @@ function ChatInterface() {
         toolsUsed: result.toolsUsed,
       };
 
-      setMessages((prev) => [...prev, assistantMsg]);
+      addMessage(assistantMsg);
     } catch (err: any) {
       const code = err.code ?? "";
       if (code === "INSUFFICIENT_CREDITS") {
@@ -556,7 +548,7 @@ function ChatInterface() {
           </div>
           {messages.length > 0 && (
             <button
-              onClick={() => setMessages([])}
+              onClick={clearMessages}
               className="text-xs text-stone-600 hover:text-stone-400 transition-colors"
             >
               Clear history
@@ -620,32 +612,50 @@ function ChatInterface() {
 
         {/* Input */}
         <div className="border-t border-stone-800 p-4 shrink-0">
+          {!effectiveCampaignId && (
+            <div className="flex items-center gap-2 mb-3 px-4 py-3 bg-amber-950/40 border border-amber-700/60 rounded-xl text-sm text-amber-300">
+              <AlertCircle size={15} className="shrink-0 text-amber-400" />
+              <span>
+                Selecciona una campaña activa para usar el asistente.{" "}
+                <Link href="/campaigns" className="underline hover:text-amber-200 transition-colors">
+                  Ve a Campaigns
+                </Link>{" "}
+                y haz clic en tu campaña.
+              </span>
+            </div>
+          )}
           <div className="flex items-end gap-3">
             <ModeSelector value={chatMode} onChange={setChatMode} />
-            <div className="flex-1 bg-stone-900 border border-stone-700 rounded-xl focus-within:border-amber-600 transition-colors">
+            <div className={clsx(
+              "flex-1 bg-stone-900 border rounded-xl transition-colors",
+              effectiveCampaignId
+                ? "border-stone-700 focus-within:border-amber-600"
+                : "border-stone-800 opacity-50"
+            )}>
               <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
+                disabled={!effectiveCampaignId}
                 placeholder={chatMode === "designer"
                   ? "Describe un NPC, localización o facción para generar..."
                   : "Ask about rules, NPCs, session prep... (Enter to send, Shift+Enter for new line)"}
                 rows={1}
-                className="w-full bg-transparent px-4 py-3 text-stone-100 placeholder-stone-600 focus:outline-none resize-none text-sm"
+                className="w-full bg-transparent px-4 py-3 text-stone-100 placeholder-stone-600 focus:outline-none resize-none text-sm disabled:cursor-not-allowed"
                 style={{ maxHeight: "200px", overflowY: "auto" }}
               />
             </div>
             <button
               onClick={handleSend}
-              disabled={loading || !input.trim()}
+              disabled={loading || !input.trim() || !effectiveCampaignId}
               className="p-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors shrink-0"
               aria-label="Send"
             >
               <Send size={16} className="text-stone-950" />
             </button>
           </div>
-          {chatMode === "designer" && (
+          {chatMode === "designer" && effectiveCampaignId && (
             <div className="flex gap-2 mt-2">
               <button
                 onClick={() => setInput("Genera un NPC para mi campaña: ")}

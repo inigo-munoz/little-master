@@ -9,6 +9,7 @@ import { api } from "../../lib/api";
 import type { Location } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
 import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { useAppStore } from "../../store/app.store";
 
 function parseTags(raw: string): string[] {
@@ -137,6 +138,7 @@ function LocationCard({
   onView: () => void;
 }) {
   const [deleting, setDeleting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const tags = parseTags(location.tags);
 
   const cleanDesc = (location.description ?? "")
@@ -146,8 +148,8 @@ function LocationCard({
     .trim()
     .slice(0, 200);
 
-  async function handleDelete() {
-    if (!confirm("¿Eliminar " + location.name + "?")) return;
+  async function doDelete() {
+    setShowConfirm(false);
     setDeleting(true);
     try {
       await api.locations.delete(location.id);
@@ -158,6 +160,7 @@ function LocationCard({
   }
 
   return (
+    <>
     <div
       className="group relative border border-stone-800 bg-stone-900 rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg hover:shadow-black/40 hover:-translate-y-0.5 hover:border-stone-700"
       onClick={onView}
@@ -198,7 +201,7 @@ function LocationCard({
               <Pencil size={12} />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+              onClick={(e) => { e.stopPropagation(); setShowConfirm(true); }}
               disabled={deleting}
               className="p-1.5 text-stone-600 hover:text-red-400 transition-colors rounded"
             >
@@ -211,6 +214,14 @@ function LocationCard({
         )}
       </div>
     </div>
+    <ConfirmModal
+      isOpen={showConfirm}
+      title="Eliminar localización"
+      message={`¿Eliminar localización ${location.name}?`}
+      onConfirm={doDelete}
+      onCancel={() => setShowConfirm(false)}
+    />
+    </>
   );
 }
 

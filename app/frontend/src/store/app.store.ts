@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Campaign, AssistantMode } from "../lib/api";
+import type { Campaign, AssistantMode, ExtendedMessage } from "../lib/api";
 
 interface AppState {
   // Active campaign context
@@ -10,6 +10,12 @@ interface AppState {
   // Chat state
   chatMode: AssistantMode;
   setChatMode: (mode: AssistantMode) => void;
+
+  // Chat history — persists across navigation, resets on page reload
+  messages: ExtendedMessage[];
+  addMessage: (message: ExtendedMessage) => void;
+  setMessages: (messages: ExtendedMessage[]) => void;
+  clearMessages: () => void;
 
   // UI state
   sidebarOpen: boolean;
@@ -25,6 +31,11 @@ export const useAppStore = create<AppState>((set) => ({
 
   chatMode: "archivista",
   setChatMode: (mode) => set({ chatMode: mode }),
+
+  messages: [],
+  addMessage: (message) => set((s) => ({ messages: [...s.messages, message] })),
+  setMessages: (messages) => set({ messages }),
+  clearMessages: () => set({ messages: [] }),
 
   sidebarOpen: true,
   setSidebarOpen: (open) => set({ sidebarOpen: open }),

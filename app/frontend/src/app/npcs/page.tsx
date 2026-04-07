@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import useSWR, { mutate } from "swr";
 import { useSearchParams } from "next/navigation";
 import { Users, Plus, Pencil, Trash2, X, Search, Download } from "lucide-react";
@@ -9,6 +9,7 @@ import { api } from "../../lib/api";
 import type { Npc, UpdateNpc } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
 import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { StatusBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
 
@@ -34,6 +35,17 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
   const [tagInput, setTagInput] = useState(parseTags(initial?.tags ?? "[]").join(", "));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Sincroniza el formulario cuando cambia el NPC a editar.
+  // useState sólo usa el valor inicial en el primer render; este efecto
+  // actualiza los campos si el componente se reutiliza con otro `initial`.
+  useEffect(() => {
+    setName(initial?.name ?? "");
+    setRole(initial?.role ?? "");
+    setDescription(initial?.description ?? "");
+    setStatus((initial?.status as "alive" | "dead" | "unknown" | "missing") ?? "alive");
+    setTagInput(parseTags(initial?.tags ?? "[]").join(", "));
+  }, [initial?.id]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -198,6 +210,7 @@ function NpcCard({
   onView: () => void;
 }) {
   const [deleting, setDeleting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const tags = parseTags(npc.tags);
   const statusStyle = STATUS_COLORS[npc.status] ?? STATUS_COLORS["unknown"]!;
   const allies = extractAllies(npc.description ?? null);
@@ -215,8 +228,8 @@ function NpcCard({
     .trim()
     .slice(0, 300);
 
-  async function handleDelete() {
-    if (!confirm("Eliminar a " + npc.name + "?")) return;
+  async function doDelete() {
+    setShowConfirm(false);
     setDeleting(true);
     try {
       await api.npcs.delete(npc.id);
@@ -234,6 +247,7 @@ function NpcCard({
     : "bg-gradient-to-r from-stone-600 to-stone-900";
 
   return (
+    <>
     <div
       className={clsx(
         "group relative border rounded-xl overflow-hidden cursor-pointer transition-all duration-200",
@@ -286,7 +300,7 @@ function NpcCard({
               <Pencil size={12} />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+              onClick={(e) => { e.stopPropagation(); setShowConfirm(true); }}
               disabled={deleting}
               className="p-1.5 text-stone-600 hover:text-red-400 transition-colors rounded"
             >
@@ -323,6 +337,14 @@ function NpcCard({
         )}
       </div>
     </div>
+    <ConfirmModal
+      isOpen={showConfirm}
+      title="Eliminar NPC"
+      message={`¿Eliminar NPC ${npc.name}?`}
+      onConfirm={doDelete}
+      onCancel={() => setShowConfirm(false)}
+    />
+    </>
   );
 }
 
@@ -443,6 +465,7 @@ function NpcsContent() {
       {selected && <DetailModal entity={selected} onClose={() => setSelected(null)} />}
       {(showForm || editNpc) && effectiveCampaignId && (
         <NpcForm
+          key={editNpc?.id ?? "new"}
           campaignId={effectiveCampaignId}
           initial={editNpc ?? undefined}
           onClose={() => { setShowForm(false); setEditNpc(null); }}

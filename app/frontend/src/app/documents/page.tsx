@@ -21,6 +21,7 @@ import { api } from "../../lib/api";
 import type { Document } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
 import { SourceBadge, AuthorityBadge } from "../../components/ui/Badge";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { useAppStore } from "../../store/app.store";
 
 interface UploadModalProps {
@@ -359,6 +360,7 @@ function DocumentViewModal({ doc, onClose }: { doc: Document; onClose: () => voi
 function DocumentCard({ doc, onAction, onView }: { doc: Document; onAction: () => void; onView: () => void }) {
   const [reindexing, setReindexing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleReindex() {
     setReindexing(true);
@@ -370,8 +372,8 @@ function DocumentCard({ doc, onAction, onView }: { doc: Document; onAction: () =
     }
   }
 
-  async function handleDelete() {
-    if (!confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
+  async function doDelete() {
+    setShowConfirm(false);
     setDeleting(true);
     try {
       await api.documents.delete(doc.id);
@@ -422,7 +424,7 @@ function DocumentCard({ doc, onAction, onView }: { doc: Document; onAction: () =
             <RefreshCw size={14} className={clsx(reindexing && "animate-spin")} />
           </button>
           <button
-            onClick={handleDelete}
+            onClick={() => setShowConfirm(true)}
             disabled={deleting}
             className="p-1.5 text-stone-600 hover:text-red-400 transition-colors"
             title="Delete document"
@@ -431,6 +433,13 @@ function DocumentCard({ doc, onAction, onView }: { doc: Document; onAction: () =
           </button>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={showConfirm}
+        title="Eliminar documento"
+        message={`¿Eliminar documento "${doc.title}"?`}
+        onConfirm={doDelete}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }

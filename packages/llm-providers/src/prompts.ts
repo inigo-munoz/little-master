@@ -72,7 +72,7 @@ The VERY FIRST line of your response MUST be the ## heading with the entity's na
 
 ## [Entity Name]
 
-The name must appear as a standalone Markdown level-2 heading (`##`), never as a bullet, never as a bold field like `**Nombre:** X`, never embedded in a sentence.
+The name must appear as a standalone Markdown level-2 heading (##), never as a bullet, never as a bold field like "**Nombre:** X", never embedded in a sentence.
 
 Concrete example of a correct NPC response (follow this exactly):
 

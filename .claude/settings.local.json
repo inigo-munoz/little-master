@@ -66,7 +66,8 @@
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('Duplicada - código:', d.get\\('error',{}\\).get\\('code','?'\\)\\)\")",
       "Bash(pnpm db:push -- --accept-data-loss)",
       "Bash(npx prisma:*)",
-      "Bash(ls src/routes/*.test.ts)"
+      "Bash(ls src/routes/*.test.ts)",
+      "Bash(timeout 8 pnpm dev:backend)"
     ]
   }
 }

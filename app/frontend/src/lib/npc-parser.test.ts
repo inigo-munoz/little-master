@@ -25,7 +25,11 @@ Inicialmente receloso, pero puede convertirse en aliado si los personajes demues
 [Suggested tags: source_type: homebrew_user, authority_level: low]`;
 
 const DESCRIPCION_NARRATIVA_ESPERADA =
-  `Aldric es un herrero de mediana edad con manos curtidas por años de trabajo en la fragua. Su carácter hosco esconde una lealtad inquebrantable hacia los aventureros que le tratan con respeto.
+  `**Raza:** Humano
+**Clase:** Plebeyo
+**Estado:** Vivo
+
+Aldric es un herrero de mediana edad con manos curtidas por años de trabajo en la fragua. Su carácter hosco esconde una lealtad inquebrantable hacia los aventureros que le tratan con respeto.
 
 Llegó a la ciudad hace veinte años huyendo de una guerra en el norte. Perdió a su esposa durante el viaje y desde entonces se dedicó en cuerpo y alma al trabajo.
 
@@ -111,11 +115,12 @@ describe("parseNpcFromResponse", () => {
     expect(result?.description).not.toContain("[AI GENERATED");
   });
 
-  it("elimina campos de metadatos inline (**Raza:**, **Estado:**, etc.)", () => {
+  it("incluye campos inline (**Raza:**, **Estado:**, etc.) en la descripción", () => {
     const content = `**Aldric el Herrero**\n\n**Raza:** Humano\n**Estado:** Vivo\n\n${DESCRIPCION_SIMPLE}`;
     const result = parseNpcFromResponse(content);
-    expect(result?.description).not.toContain("**Raza:**");
-    expect(result?.description).not.toContain("**Estado:**");
+    // Los campos con valor inline forman parte de la descripción del NPC
+    expect(result?.description).toContain("**Raza:** Humano");
+    expect(result?.description).toContain("**Estado:** Vivo");
     expect(result?.description).toContain("Es un herrero");
   });
 
@@ -173,12 +178,34 @@ describe("parseNpcFromResponse", () => {
     expect(result?.name).toBe("Kira la Sombra");
   });
 
+  // ── Extracción de rol ─────────────────────────────────────────────────────
+
+  it("extrae el rol desde **Rol:** Valor", () => {
+    const content = `## Elara la Exploradora\n\n**Rol:** Exploradora veterana\n\n${DESCRIPCION_SIMPLE}`;
+    const result = parseNpcFromResponse(content);
+    expect(result?.role).toBe("Exploradora veterana");
+    expect(result?.description).not.toContain("**Rol:**");
+  });
+
+  it("extrae el rol desde Rol: Valor (sin negrita)", () => {
+    const content = `## Elara la Exploradora\n\nRol: Guardiana del bosque\n\n${DESCRIPCION_SIMPLE}`;
+    const result = parseNpcFromResponse(content);
+    expect(result?.role).toBe("Guardiana del bosque");
+  });
+
+  it("devuelve role vacío cuando no hay línea de rol", () => {
+    const content = `**Aldric el Herrero**\n\n${DESCRIPCION_SIMPLE}`;
+    const result = parseNpcFromResponse(content);
+    expect(result?.role).toBe("");
+  });
+
   // ── Caso realista completo ────────────────────────────────────────────────
 
   it("procesa correctamente una respuesta realista del modo Designer", () => {
     const result = parseNpcFromResponse(RESPUESTA_DESIGNER);
     expect(result).not.toBeNull();
     expect(result?.name).toBe("Aldric el Herrero");
+    expect(result?.role).toBe("");
     expect(result?.description).toBe(DESCRIPCION_NARRATIVA_ESPERADA);
   });
 });

@@ -1,19 +1,25 @@
 const NAME_PREFIXES = /^(NPC:|NPC\s+|Personaje:|Personaje\s+|Character:|Character\s+|Personaggio:|Nombre:\s*)/i;
 
+// Regex para la línea de rol (con o sin negrita)
+const ROL_LINE_RE = /^(?:\*\*)?Rol(?:e)?(?::\*\*|:)\s+.+$/im;
+const ROL_VALUE_RE = /^(?:\*\*)?Rol(?:e)?(?::\*\*|:)\s+(.+)$/im;
+
 /**
  * Líneas que se eliminan al extraer la descripción narrativa:
  * - Tags entre corchetes del Designer: [AI GENERATED...], [Potential conflicts...], [Suggested tags...]
- * - Campos de metadatos inline: **Raza:** Humano
  * - Cabeceras de sección standalone: **Historia:** (sin valor a continuación)
  * - Headings markdown: ## Sección
+ *
+ * NOTA: Las líneas "**Campo:** Valor" con valor inline (Apariencia, Personalidad,
+ * Motivación, etc.) NO se filtran — forman parte de la descripción del NPC.
+ * Solo se excluye la línea de Rol, que se extrae por separado.
  */
 function isNonNarrativeLine(line: string): boolean {
   const t = line.trim();
   if (t === "") return false; // Las líneas vacías las gestiona el colapsado posterior
-  if (/^\[.+\]$/.test(t)) return true;                  // [AI GENERATED...], [Potential conflicts...], etc.
-  if (/^\*\*[^*\n]+:\*\*\s+\S/.test(t)) return true;   // **Raza:** Humano  (campo con valor inline)
-  if (/^\*\*[^*\n]+:\*\*\s*$/.test(t)) return true;    // **Historia:**     (cabecera standalone)
-  if (/^#{1,3}\s/.test(t)) return true;                 // ## Sección
+  if (/^\[.+\]$/.test(t)) return true;               // [AI GENERATED...], [Potential conflicts...], etc.
+  if (/^\*\*[^*\n]+:\*\*\s*$/.test(t)) return true;  // **Historia:**  (cabecera standalone sin valor)
+  if (/^#{1,3}\s/.test(t)) return true;               // ## Sección
   return false;
 }
 
@@ -21,11 +27,20 @@ function cleanName(raw: string): string {
   return raw.replace(NAME_PREFIXES, "").trim();
 }
 
+function extractRole(content: string): string {
+  const match = content.match(ROL_VALUE_RE);
+  return match?.[1]?.trim() ?? "";
+}
+
 function extractDescription(content: string, nameLine: string): string {
+  const roleLine = content.match(ROL_LINE_RE)?.[0]?.trim() ?? null;
+
   return content
     .split("\n")
     .filter((line) => {
-      if (line.trim() === nameLine.trim()) return false; // Elimina la línea del nombre
+      const t = line.trim();
+      if (t === nameLine.trim()) return false;            // Elimina la línea del nombre
+      if (roleLine && t === roleLine) return false;        // Elimina la línea del rol (se extrae por separado)
       return !isNonNarrativeLine(line);
     })
     .join("\n")
@@ -36,7 +51,9 @@ function extractDescription(content: string, nameLine: string): string {
 // Campos típicos de NPC que indican que la línea anterior es el nombre
 const NPC_FIELD_RE = /^(\*\*)?(Rol|Role|Raza|Race|Clase|Class|Estado|Apariencia|Personalidad|Motivaci[oó]n|Secreto|Ganchos)/i;
 
-export function parseNpcFromResponse(content: string): { name: string; description: string } | null {
+export function parseNpcFromResponse(
+  content: string
+): { name: string; description: string; role: string } | null {
   if (content.length < 100) return null;
 
   let rawName: string | null = null;
@@ -99,7 +116,8 @@ export function parseNpcFromResponse(content: string): { name: string; descripti
   if (!rawName || !matchedLine) return null;
 
   const name = cleanName(rawName.trim());
+  const role = extractRole(content);
   const description = extractDescription(content, matchedLine);
 
-  return { name, description };
+  return { name, description, role };
 }
