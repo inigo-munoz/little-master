@@ -1,6 +1,6 @@
 # D&D Campaign Assistant
 
-Sistema local-first de gestión de campañas D&D con asistente de IA.
+Asistente local para Dungeon Masters de D&D 2024. Gestiona campañas, NPCs, sesiones y reglas con ayuda de IA. Trae tu propia API key.
 
 ---
 
@@ -99,22 +99,13 @@ data/             datos locales del usuario (no commitear)
 - CORS: solo acepta peticiones de `http://localhost:3000`
 - `ENCRYPTION_KEY` debe generarse una vez y mantenerse segura
 
-## Planes y licencias
+## Funcionalidades
 
-| Plan | Límites |
-|------|---------|
-| Gratuito | 1 campaña, 50 mensajes/mes, sin PDF, sin Obsidian |
-| DM | Sin límites de campaña, PDF, mensajes ilimitados |
-| DM + Obsidian | Todo lo anterior + sincronización bidireccional con Obsidian |
-
-Activa tu licencia en **Settings → Licencia**.
-
-## Sprints completados
-
-| Sprint | Contenido |
-|--------|-----------|
-| 1 | Base: monorepo, backend, frontend, SQLite, campañas, sessions, docs, chat |
-| 2 | Embeddings, búsqueda semántica vectorial, indexación |
-| 3 | Upload de documentos, PDF mejorado, sessions, factions |
-| 4 | MCP tools completas, inyección de estado de campaña en chat |
-| 5 | Docker, sistema de licencias, planes y límites |
+- Gestión de campañas, sesiones, NPCs, jugadores, localizaciones y facciones
+- SRD 5.2.1 D&D 2024 indexado para consultas de reglas
+- Asistente IA con 5 modos: Rule Reviewer, Archivista, Designer, Auditor, Session Director
+- Búsqueda semántica sobre documentos de campaña
+- Exportación PDF: NPCs, sesiones, localizaciones, facciones y resumen de campaña
+- Integración bidireccional con Obsidian (importación/exportación)
+- Bring your own API key (OpenAI o Anthropic)
+- Datos 100% locales — nada sale de tu máquina
