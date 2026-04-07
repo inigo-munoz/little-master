@@ -30,6 +30,16 @@ async function request<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
+  const hasBody =
+    res.status !== 204 && res.headers.get("content-length") !== "0";
+
+  if (!hasBody) {
+    if (!res.ok) {
+      throw new ApiError("UNKNOWN", "Request failed", res.status);
+    }
+    return null as T;
+  }
+
   const json = await res.json();
 
   if (!res.ok || !json.success) {

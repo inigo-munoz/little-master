@@ -628,7 +628,9 @@ function ChatInterface() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about rules, NPCs, session prep... (Enter to send, Shift+Enter for new line)"
+                placeholder={chatMode === "designer"
+                  ? "Describe un NPC, localización o facción para generar..."
+                  : "Ask about rules, NPCs, session prep... (Enter to send, Shift+Enter for new line)"}
                 rows={1}
                 className="w-full bg-transparent px-4 py-3 text-stone-100 placeholder-stone-600 focus:outline-none resize-none text-sm"
                 style={{ maxHeight: "200px", overflowY: "auto" }}
@@ -643,6 +645,31 @@ function ChatInterface() {
               <Send size={16} className="text-stone-950" />
             </button>
           </div>
+          {chatMode === "designer" && (
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => setInput("Genera un NPC para mi campaña: ")}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-400 hover:text-purple-300 rounded-lg text-xs transition-colors"
+              >
+                <UserPlus size={11} />
+                + NPC
+              </button>
+              <button
+                onClick={() => setInput("Genera una localización para mi campaña: ")}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-400 hover:text-blue-300 rounded-lg text-xs transition-colors"
+              >
+                <MapPin size={11} />
+                + Localización
+              </button>
+              <button
+                onClick={() => setInput("Genera una facción para mi campaña: ")}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-400 hover:text-amber-300 rounded-lg text-xs transition-colors"
+              >
+                <Users size={11} />
+                + Facción
+              </button>
+            </div>
+          )}
           <p className="text-xs text-stone-700 mt-2 text-center">
             All AI actions are logged. Context retrieved from indexed campaign documents.
           </p>

@@ -133,6 +133,46 @@ describe("parseNpcFromResponse", () => {
     expect(result?.description).not.toContain("[Suggested tags");
   });
 
+  // ── Patrones alternativos de nombre ──────────────────────────────────────
+
+  it('detecta nombre en formato campo "Nombre: X"', () => {
+    const content = `Nombre: Elara\n\n${DESCRIPCION_SIMPLE}`;
+    const result = parseNpcFromResponse(content);
+    expect(result).not.toBeNull();
+    expect(result?.name).toBe("Elara");
+    expect(result?.description).not.toContain("Nombre: Elara");
+  });
+
+  it('detecta nombre en formato campo "Nombre: X" con negrita', () => {
+    const content = `**Nombre:** Elara\n\n${DESCRIPCION_SIMPLE}`;
+    const result = parseNpcFromResponse(content);
+    expect(result).not.toBeNull();
+    expect(result?.name).toBe("Elara");
+  });
+
+  it('"**Elara**" como primera línea de la respuesta → extrae el nombre', () => {
+    const content = `**Elara**\n\n${DESCRIPCION_SIMPLE}`;
+    const result = parseNpcFromResponse(content);
+    expect(result).not.toBeNull();
+    expect(result?.name).toBe("Elara");
+    expect(result?.description).not.toContain("**Elara**");
+  });
+
+  it('"Elara\\n\\nRol:" → extrae nombre de la primera línea no vacía', () => {
+    const content = `Elara\n\nRol: Exploradora veterana de los Bosques del Norte\n\n${DESCRIPCION_SIMPLE}`;
+    const result = parseNpcFromResponse(content);
+    expect(result).not.toBeNull();
+    expect(result?.name).toBe("Elara");
+    expect(result?.description).not.toContain("Elara\n");
+  });
+
+  it('primera línea seguida de "Apariencia:" también detecta el nombre', () => {
+    const content = `Kira la Sombra\n\nApariencia: Mujer delgada con capa oscura\n\n${DESCRIPCION_SIMPLE}`;
+    const result = parseNpcFromResponse(content);
+    expect(result).not.toBeNull();
+    expect(result?.name).toBe("Kira la Sombra");
+  });
+
   // ── Caso realista completo ────────────────────────────────────────────────
 
   it("procesa correctamente una respuesta realista del modo Designer", () => {
