@@ -1,0 +1,32 @@
+import { create } from "zustand";
+import type { Campaign, AssistantMode } from "../lib/api";
+
+interface AppState {
+  // Active campaign context
+  activeCampaignId: string | null;
+  activeCampaign: Campaign | null;
+  setActiveCampaign: (campaign: Campaign | null) => void;
+
+  // Chat state
+  chatMode: AssistantMode;
+  setChatMode: (mode: AssistantMode) => void;
+
+  // UI state
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
+}
+
+export const useAppStore = create<AppState>((set) => ({
+  activeCampaignId: null,
+  activeCampaign: null,
+  setActiveCampaign: (campaign) =>
+    set({ activeCampaign: campaign, activeCampaignId: campaign?.id ?? null }),
+
+  chatMode: "archivista",
+  setChatMode: (mode) => set({ chatMode: mode }),
+
+  sidebarOpen: true,
+  setSidebarOpen: (open) => set({ sidebarOpen: open }),
+  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+}));

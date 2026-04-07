@@ -1,0 +1,70 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: app/backend/Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./data:/data
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      HOST: "0.0.0.0"
+      DATABASE_URL: "file:/data/dnd-assistant.db"
+      DATA_DIR: "/data"
+      DOCUMENTS_DIR: "/data/documents"
+      LOGS_DIR: "/data/logs"
+      MCP_SERVER_URL: "http://mcp-server:3002"
+      CORS_ORIGIN: "http://localhost:3000"
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY must be set — run scripts/setup.sh}
+    networks:
+      - dnd-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: .
+      dockerfile: app/frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3001}
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+    networks:
+      - dnd-net
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: app/mcp-server/Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: production
+      PORT: "3002"
+      HOST: "0.0.0.0"
+      BACKEND_URL: "http://backend:3001"
+    networks:
+      - dnd-net
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  dnd-net:
+    driver: bridge
+
+volumes:
+  data:

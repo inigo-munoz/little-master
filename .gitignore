@@ -1,0 +1,29 @@
+node_modules/
+dist/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Data dirs (contain user data, never commit)
+/data/campaigns/
+/data/documents/
+/data/embeddings/
+/data/logs/
+
+# SQLite db files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Config with secrets
+/config/providers.json
+
+# OS
+.DS_Store
+Thumbs.db

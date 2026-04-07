@@ -1,0 +1,340 @@
+// This is the Prisma schema for the D&D Campaign Assistant.
+// SQLite for MVP. To migrate to PostgreSQL later, only the provider changes
+// and you add pgvector for embeddings.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaigns Campaign[]
+}
+
+// ─── Campaigns ────────────────────────────────────────────────────────────────
+model Campaign {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  system      String   @default("D&D 2024")
+  status      String   @default("active") // CampaignStatus enum
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  sessions      Session[]
+  npcs          Npc[]
+  locations     Location[]
+  factions      Faction[]
+  documents     Document[]
+  campaignRules CampaignRule[]
+  changeLogs    ChangeLog[]
+  issues        Issue[]
+  assistantRuns AssistantRun[]
+  players       Player[]
+}
+
+// ─── Sessions ─────────────────────────────────────────────────────────────────
+model Session {
+  id            String    @id @default(cuid())
+  campaignId    String
+  title         String
+  summary       String?
+  notes         String?
+  sessionNumber Int
+  playedAt      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+// ─── NPCs ─────────────────────────────────────────────────────────────────────
+model Npc {
+  id          String   @id @default(cuid())
+  campaignId  String
+  name        String
+  role        String?
+  description String?
+  rawContent  String?  // Original Obsidian note for export fidelity
+  status      String   @default("alive") // NpcStatus enum
+  tags        String   @default("[]") // JSON array stored as string in SQLite
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+// ─── Locations ────────────────────────────────────────────────────────────────
+model Location {
+  id               String     @id @default(cuid())
+  campaignId       String
+  name             String
+  description      String?
+  parentLocationId String?
+  tags             String     @default("[]")
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  parentLocation Location? @relation("LocationHierarchy", fields: [parentLocationId], references: [id])
+  subLocations   Location[] @relation("LocationHierarchy")
+}
+
+// ─── Factions ─────────────────────────────────────────────────────────────────
+model Faction {
+  id          String   @id @default(cuid())
+  campaignId  String
+  name        String
+  description String?
+  alignment   String?
+  disposition String   @default("unknown")
+  tags        String   @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+// ─── Documents ────────────────────────────────────────────────────────────────
+model Document {
+  id             String   @id @default(cuid())
+  campaignId     String?
+  title          String
+  path           String   // relative to /data/documents/
+  contentType    String   // markdown | plaintext | pdf
+  sourceType     String   // official | srd | campaign | homebrew_* | ai_inferred
+  authorityLevel String   // high | medium | low
+  version        String   @default("1.0")
+  isIndexed      Boolean  @default(false)
+  chunkCount     Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  chunks   DocumentChunk[]
+}
+
+// ─── Document Chunks (for semantic search) ───────────────────────────────────
+model DocumentChunk {
+  id             String   @id @default(cuid())
+  documentId     String
+  campaignId     String?
+  content        String
+  chunkIndex     Int
+  sourceType     String
+  authorityLevel String
+  // Embedding stored as JSON array string (SQLite MVP)
+  // In PostgreSQL + pgvector, this becomes a vector column
+  embeddingJson  String?
+  createdAt      DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+// ─── Rule Sources ─────────────────────────────────────────────────────────────
+model RuleSource {
+  id             String  @id @default(cuid())
+  name           String
+  sourceType     String
+  authorityLevel String
+  version        String?
+  description    String?
+
+  campaignRules CampaignRule[]
+}
+
+// ─── Campaign Rules ───────────────────────────────────────────────────────────
+model CampaignRule {
+  id             String   @id @default(cuid())
+  campaignId     String
+  title          String
+  content        String
+  sourceId       String?
+  sourceType     String
+  authorityLevel String
+  version        String   @default("1.0")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  campaign   Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  ruleSource RuleSource? @relation(fields: [sourceId], references: [id])
+}
+
+// ─── Change Log ───────────────────────────────────────────────────────────────
+model ChangeLog {
+  id         String   @id @default(cuid())
+  campaignId String?
+  entityType String
+  entityId   String
+  beforeJson String?
+  afterJson  String?
+  reason     String?
+  source     String?
+  authorType String   // user | ai | system
+  createdAt  DateTime @default(now())
+
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([entityType, entityId])
+}
+
+// ─── Issues ───────────────────────────────────────────────────────────────────
+model Issue {
+  id                String    @id @default(cuid())
+  campaignId        String?
+  type              String
+  severity          String
+  status            String    @default("open")
+  description       String
+  relatedEntityType String?
+  relatedEntityId   String?
+  resolution        String?
+  createdAt         DateTime  @default(now())
+  resolvedAt        DateTime?
+
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, status])
+}
+
+// ─── LLM Configs ──────────────────────────────────────────────────────────────
+model LlmConfig {
+  id              String   @id @default(cuid())
+  provider        String   // openai | anthropic | openrouter | ollama
+  model           String
+  apiKeyEncrypted String?  // NEVER returned to frontend plain
+  isActive        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  assistantRuns AssistantRun[]
+}
+
+// ─── Assistant Runs ───────────────────────────────────────────────────────────
+model AssistantRun {
+  id            String   @id @default(cuid())
+  campaignId    String?
+  mode          String   // archivista | designer | rule_reviewer | auditor | session_director
+  prompt        String
+  response      String?
+  contextChunks String   @default("[]") // JSON array of chunk IDs
+  toolsUsed     String   @default("[]") // JSON array of MCP tool names
+  tokensUsed    Int?
+  llmConfigId   String?
+  createdAt     DateTime @default(now())
+
+  campaign  Campaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  llmConfig LlmConfig? @relation(fields: [llmConfigId], references: [id])
+}
+
+// ─── App Settings ─────────────────────────────────────────────────────────────
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Players (PJs) ────────────────────────────────────────────────────────────
+model Player {
+  id          String   @id @default(cuid())
+  campaignId  String
+  name        String
+  playerName  String?
+  class       String?
+  subclass    String?
+  race        String?
+  background  String?
+  alignment   String?
+  level       Int      @default(1)
+  experiencePoints Int @default(0)
+
+  // Combat stats
+  hp          Int?
+  hpMax       Int?
+  hpTemp      Int?
+  ac          Int?
+  initiative  Int?
+  speed       Int?
+  hitDice     String?  // e.g. "6d8"
+  deathSaveSuccesses Int @default(0)
+  deathSaveFailures  Int @default(0)
+
+  // Ability scores
+  strength     Int?
+  dexterity    Int?
+  constitution Int?
+  intelligence Int?
+  wisdom       Int?
+  charisma     Int?
+
+  // Saving throw proficiencies (JSON array of ability names)
+  savingThrows String @default("[]")
+
+  // Skill proficiencies (JSON array of skill names)
+  skillProficiencies String @default("[]")
+  skillExpertise     String @default("[]")
+
+  // Other proficiencies
+  armorProficiencies  String?
+  weaponProficiencies String?
+  toolProficiencies   String?
+  languages           String?
+
+  // Spellcasting
+  spellcastingAbility String?
+  spellSaveDC         Int?
+  spellAttackBonus    Int?
+  spellSlots          String @default("{}") // JSON: {"1":4,"2":3,...}
+  spellsKnown         String @default("[]") // JSON array of spell names/objects
+  cantrips            String @default("[]")
+
+  // Equipment & inventory
+  inventory    String @default("[]") // JSON array
+  currency     String @default("{}") // JSON: {cp,sp,ep,gp,pp}
+
+  // Features & traits
+  features     String @default("[]") // JSON array of {name, description, source}
+  traits       String?  // personality traits
+  ideals       String?
+  bonds        String?
+  flaws        String?
+  backstory    String?
+
+  // Appearance
+  age          String?
+  height       String?
+  weight       String?
+  eyes         String?
+  skin         String?
+  hair         String?
+  appearance   String?
+
+  // Passive stats (computed but stored for reference)
+  passivePerception Int?
+  inspiration       Boolean @default(false)
+
+  status      String   @default("active")
+  notes       String?
+  tags        String   @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+

@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist",
+    "paths": {
+      "@dnd/shared": ["../../packages/shared/src/index.ts"],
+      "@dnd/domain": ["../../packages/domain/src/index.ts"],
+      "@dnd/llm-providers": ["../../packages/llm-providers/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "../../packages/shared/src/**/*", "../../packages/domain/src/**/*", "../../packages/llm-providers/src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

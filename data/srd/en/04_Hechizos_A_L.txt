@@ -1,0 +1,3413 @@
+Spells
+
+System Reference Document 5.2.1
+
+Level 3: Sacred Weapon
+When you take the Attack action, you can expend
+one use of your Channel Divinity to imbue one
+Melee weapon that you are holding with positive
+energy. For 10 minutes or until you use this feature
+again, you add your Charisma modifier to attack
+rolls you make with that weapon (minimum bonus
+of +1), and each time you hit with it, you cause it to
+deal its normal damage type or Radiant damage.
+The weapon also emits Bright Light in a 20-foot
+radius and Dim Light 20 feet beyond that.
+You can end this effect early (no action required).
+This effect also ends if you aren’t carrying the
+weapon.
+
+Level 7: Aura of Devotion
+
+You and your allies have Immunity to the Charmed
+condition while in your Aura of Protection. If a
+Charmed ally enters the aura, that condition has no
+effect on that ally while there.
+
+Level 15: Smite of Protection
+Your magical smite now radiates protective energy.
+Whenever you cast Divine Smite, you and your allies
+have Half Cover while in your Aura of Protection.
+The aura has this benefit until the start of your next
+turn.
+
+Level 20: Holy Nimbus
+
+As a Bonus Action, you can imbue your Aura of Protection with holy power, granting the benefits below for 10 minutes or until you end them (no action
+required). Once you use this feature, you can’t use it
+again until you finish a Long Rest. You can also restore your use of it by expending a level 5 spell slot
+(no action required).
+Holy Ward. You have Advantage on any saving
+throw you are forced to make by a Fiend or an
+Undead.
+Radiant Damage. Whenever an enemy starts its
+turn in the aura, that creature takes Radiant damage equal to your Charisma modifier plus your Proficiency Bonus.
+Sunlight. The aura is filled with Bright Light that
+is sunlight.
+
+Ranger
+Core Ranger Traits
+Primary Ability
+
+Dexterity and Wisdom
+
+Hit Point Die
+
+D10 per Ranger level
+
+Saving Throw
+Proficiencies
+
+Strength and Dexterity
+
+Skill Proficiencies
+
+Choose 3: Animal Handling,
+Athletics, Insight, Investigation,
+Nature, Perception, Stealth, or
+Survival
+
+Weapon Proficiencies Simple and Martial weapons
+Armor Training
+
+Light and Medium armor and
+Shields
+
+Starting Equipment
+
+Choose A or B: (A) Studded
+Leather Armor, Scimitar,
+Shortsword, Longbow, 20 Arrows, Quiver, Druidic Focus
+(sprig of mistletoe), Explorer’s
+Pack, and 7 GP; or (B) 150 GP
+
+Becoming a Ranger …
+As a Level 1 Character
+• Gain all the traits in the Core Ranger Traits table.
+• Gain the Ranger’s level 1 features, which are
+listed in the Ranger Features table.
+
+As a Multiclass Character
+
+• Gain the following traits from the Core Ranger
+Traits table: Hit Point Die, proficiency with Martial weapons, proficiency in one skill of your
+choice from the Ranger’s skill list, and training
+with Light and Medium armor and Shields.
+• Gain the Ranger’s level 1 features, which are
+listed in the Ranger Features table. See the multiclassing rules in “Character Creation” to determine your available spell slots.
+
+Ranger Class Features
+
+As a Ranger, you gain the following class features
+when you reach the specified Ranger levels. These
+features are listed in the Ranger Features table.
+
+Level 1: Spellcasting
+
+You have learned to channel the magical essence of
+nature to cast spells. See “Spells” for the rules on
+spellcasting. The information below details how you
+use those rules with Ranger spells, which appear in
+the Ranger spell list later in the class’s description.
+Spell Slots. The Ranger Features table shows
+how many spell slots you have to cast your level 1+
+spells. You regain all expended slots when you finish a Long Rest.
+
+57
+
+System Reference Document 5.2.1
+
+Ranger Features
+Level
+
+Proficiency
+Bonus
+
+1
+
++2
+
+Spellcasting, Favored Enemy,
+Weapon Mastery
+
+2
+
+2
+
++2
+
+Deft Explorer, Fighting Style
+
+3
+
++2
+
+4
+
++2
+
+5
+
+Class Features
+
+Prepared
+Spells
+
+—Spell Slots per Spell Level—
+1
+
+2
+
+3
+
+4
+
+5
+
+2
+
+2
+
+—
+
+—
+
+—
+
+—
+
+2
+
+3
+
+2
+
+—
+
+—
+
+—
+
+—
+
+Ranger Subclass
+
+2
+
+4
+
+3
+
+—
+
+—
+
+—
+
+—
+
+Ability Score Improvement
+
+2
+
+5
+
+3
+
+—
+
+—
+
+—
+
+—
+
++3
+
+Extra Attack
+
+3
+
+6
+
+4
+
+2
+
+—
+
+—
+
+—
+
+6
+
++3
+
+Roving
+
+3
+
+6
+
+4
+
+2
+
+—
+
+—
+
+—
+
+7
+
++3
+
+Subclass feature
+
+3
+
+7
+
+4
+
+3
+
+—
+
+—
+
+—
+
+8
+
++3
+
+Ability Score Improvement
+
+3
+
+7
+
+4
+
+3
+
+—
+
+—
+
+—
+
+9
+
++4
+
+Expertise
+
+4
+
+9
+
+4
+
+3
+
+2
+
+—
+
+—
+
+10
+
++4
+
+Tireless
+
+4
+
+9
+
+4
+
+3
+
+2
+
+—
+
+—
+
+11
+
++4
+
+Subclass feature
+
+4
+
+10
+
+4
+
+3
+
+3
+
+—
+
+—
+
+12
+
++4
+
+Ability Score Improvement
+
+4
+
+10
+
+4
+
+3
+
+3
+
+—
+
+—
+
+13
+
++5
+
+Relentless Hunter
+
+5
+
+11
+
+4
+
+3
+
+3
+
+1
+
+—
+
+14
+
++5
+
+Nature’s Veil
+
+5
+
+11
+
+4
+
+3
+
+3
+
+1
+
+—
+
+15
+
++5
+
+Subclass feature
+
+5
+
+12
+
+4
+
+3
+
+3
+
+2
+
+—
+
+16
+
++5
+
+Ability Score Improvement
+
+5
+
+12
+
+4
+
+3
+
+3
+
+2
+
+—
+
+17
+
++6
+
+Precise Hunter
+
+6
+
+14
+
+4
+
+3
+
+3
+
+3
+
+1
+
+18
+
++6
+
+Feral Senses
+
+6
+
+14
+
+4
+
+3
+
+3
+
+3
+
+1
+
+19
+
++6
+
+Epic Boon
+
+6
+
+15
+
+4
+
+3
+
+3
+
+3
+
+2
+
+20
+
++6
+
+Foe Slayer
+
+6
+
+15
+
+4
+
+3
+
+3
+
+3
+
+2
+
+Prepared Spells of Level 1+. You prepare the
+list of level 1+ spells that are available for you to
+cast with this feature. To start, choose two level 1
+Ranger spells. Cure Wounds and Ensnaring Strike are
+recommended.
+The number of spells on your list increases as you
+gain Ranger levels, as shown in the Prepared Spells
+column of the Ranger Features table. Whenever that
+number increases, choose additional Ranger spells
+until the number of spells on your list matches the
+number in the Ranger Features table. The chosen
+spells must be of a level for which you have spell
+slots. For example, if you’re a level 5 Ranger, your
+list of prepared spells can include six Ranger spells
+of level 1 or 2 in any combination.
+If another Ranger feature gives you spells that
+you always have prepared, those spells don’t count
+against the number of spells you can prepare with
+this feature, but those spells otherwise count as
+Ranger spells for you.
+
+58
+
+Favored
+Enemy
+
+System Reference Document 5.2.1
+
+Changing Your Prepared Spells. Whenever you
+finish a Long Rest, you can replace one spell on your
+list with another Ranger spell for which you have
+spell slots.
+Spellcasting Ability. Wisdom is your spellcasting
+ability for your Ranger spells.
+Spellcasting Focus. You can use a Druidic Focus
+as a Spellcasting Focus for your Ranger spells.
+
+Level 1: Favored Enemy
+
+You always have the Hunter’s Mark spell prepared.
+You can cast it twice without expending a spell slot,
+and you regain all expended uses of this ability
+when you finish a Long Rest.
+The number of times you can cast the spell without a spell slot increases when you reach certain
+Ranger levels, as shown in the Favored Enemy column of the Ranger Features table.
+
+Level 1: Weapon Mastery
+
+Your training with weapons allows you to use the
+mastery properties of two kinds of weapons of your
+
+choice with which you have proficiency, such as
+Longbows and Shortswords.
+Whenever you finish a Long Rest, you can change
+the kinds of weapons you chose. For example, you
+could switch to using the mastery properties of
+Scimitars and Longswords.
+
+Level 2: Deft Explorer
+
+Thanks to your travels, you gain the following
+benefits.
+Expertise. Choose one of your skill proficiencies
+with which you lack Expertise. You gain Expertise
+in that skill.
+Languages. You know two languages of your
+choice from the language tables in “Character
+Creation.”
+
+Level 2: Fighting Style
+
+You gain a Fighting Style feat of your choice (see
+“Feats”). Instead of choosing one of those feats, you
+can choose the option below.
+Druidic Warrior. You learn two Druid cantrips of
+your choice (see the Druid class’s section for a list of
+Druid spells). Guidance and Starry Wisp are recommended. The chosen cantrips count as Ranger spells
+for you, and Wisdom is your spellcasting ability for
+them. Whenever you gain a Ranger level, you can
+replace one of these cantrips with another Druid
+cantrip.
+
+Level 3: Ranger Subclass
+
+You gain a Ranger subclass of your choice. The
+Hunter subclass is detailed after this class’s description. A subclass is a specialization that grants
+you features at certain Ranger levels. For the rest
+of your career, you gain each of your subclass’s features that are of your Ranger level or lower.
+
+Level 4: Ability Score Improvement
+
+You gain the Ability Score Improvement feat (see
+“Feats”) or another feat of your choice for which you
+qualify. You gain this feature again at Ranger levels
+8, 12, and 16.
+
+Level 5: Extra Attack
+
+You can attack twice instead of once whenever you
+take the Attack action on your turn.
+
+Level 6: Roving
+
+Your Speed increases by 10 feet while you aren’t
+wearing Heavy armor. You also have a Climb Speed
+and a Swim Speed equal to your Speed.
+
+59
+
+System Reference Document 5.2.1
+
+Level 9: Expertise
+Choose two of your skill proficiencies with which
+you lack Expertise. You gain Expertise in those
+skills.
+
+Level 10: Tireless
+
+Primal forces now help fuel you on your journeys,
+granting you the following benefits.
+Temporary Hit Points. As a Magic action, you can
+give yourself a number of Temporary Hit Points
+equal to 1d8 plus your Wisdom modifier (minimum
+of 1). You can use this action a number of times
+equal to your Wisdom modifier (minimum of once),
+and you regain all expended uses when you finish a
+Long Rest.
+Decrease Exhaustion. Whenever you finish a
+Short Rest, your Exhaustion level, if any, decreases
+by 1.
+
+Level 13: Relentless Hunter
+
+Taking damage can’t break your Concentration on
+Hunter’s Mark.
+
+Level 14: Nature’s Veil
+
+You invoke spirits of nature to magically hide yourself. As a Bonus Action, you can give yourself the
+Invisible condition until the end of your next turn.
+You can use this feature a number of times equal
+to your Wisdom modifier (minimum of once), and
+you regain all expended uses when you finish a
+Long Rest.
+
+Level 17: Precise Hunter
+
+You have Advantage on attack rolls against the creature currently marked by your Hunter’s Mark.
+
+Level 18: Feral Senses
+
+Your connection to the forces of nature grants you
+Blindsight with a range of 30 feet.
+
+Level 19: Epic Boon
+
+You gain an Epic Boon feat (see “Feats”) or another
+feat of your choice for which you qualify. Boon of Dimensional Travel is recommended.
+
+Level 20: Foe Slayer
+
+The damage die of your Hunter’s Mark is a d10
+rather than a d6.
+
+Ranger Spell List
+
+Level 3 Ranger Spells
+
+This section presents the Ranger spell list. The
+spells are organized by spell level and then alphabetized, and each spell’s school of magic is listed.
+In the Special column, C means the spell requires
+Concentration, R means it’s a Ritual, and M means it
+requires a specific Material component.
+
+Spell
+
+School
+
+Conjure Animals
+
+Conjuration
+
+C
+
+Daylight
+
+Evocation
+
+—
+
+Dispel Magic
+
+Abjuration
+
+—
+
+Meld into Stone
+
+Transmutation
+
+R
+
+Nondetection
+
+Abjuration
+
+M
+
+Plant Growth
+
+Transmutation
+
+—
+
+Protection from Energy
+
+Abjuration
+
+C
+
+Revivify
+
+Necromancy
+
+M
+
+Speak with Plants
+
+Transmutation
+
+—
+
+Water Breathing
+
+Transmutation
+
+R
+
+Water Walk
+
+Transmutation
+
+R
+
+Wind Wall
+
+Evocation
+
+C
+
+Special
+
+Level 1 Ranger Spells
+
+Special
+
+Spell
+
+School
+
+Alarm
+
+Abjuration
+
+R
+
+Animal Friendship
+
+Enchantment
+
+—
+
+Cure Wounds
+
+Abjuration
+
+—
+
+Detect Magic
+
+Divination
+
+C, R
+
+Detect Poison and Disease
+
+Divination
+
+C, R
+
+Ensnaring Strike
+
+Conjuration
+
+C
+
+Entangle
+
+Conjuration
+
+C
+
+Fog Cloud
+
+Conjuration
+
+C
+
+Spell
+
+School
+
+Conjuration
+
+C
+
+Level 4 Ranger Spells
+
+Goodberry
+
+Conjuration
+
+—
+
+Conjure Woodland Beings
+
+Hunter’s Mark
+
+Divination
+
+C
+
+Dominate Beast
+
+Enchantment
+
+C
+
+Jump
+
+Transmutation
+
+—
+
+Freedom of Movement
+
+Abjuration
+
+—
+
+Longstrider
+
+Transmutation
+
+—
+
+Locate Creature
+
+Divination
+
+C
+
+Speak with Animals
+
+Divination
+
+R
+
+Stoneskin
+
+Transmutation
+
+C, M
+
+Level 5 Ranger Spells
+
+Level 2 Ranger Spells
+Spell
+
+60
+
+Special
+
+School
+
+Special
+
+Spell
+
+School
+
+Special
+
+Divination
+
+R
+
+Aid
+
+Abjuration
+
+—
+
+Commune with Nature
+
+Animal Messenger
+
+Enchantment
+
+R
+
+Greater Restoration
+
+Abjuration
+
+M
+
+Barkskin
+
+Transmutation
+
+—
+
+Tree Stride
+
+Conjuration
+
+C
+
+Darkvision
+
+Transmutation
+
+—
+
+Enhance Ability
+
+Transmutation
+
+C
+
+Find Traps
+
+Divination
+
+—
+
+Gust of Wind
+
+Evocation
+
+C
+
+Lesser Restoration
+
+Abjuration
+
+—
+
+Locate Animals or Plants
+
+Divination
+
+R
+
+Locate Object
+
+Divination
+
+C
+
+Magic Weapon
+
+Transmutation
+
+—
+
+Pass without Trace
+
+Abjuration
+
+C
+
+Protection from Poison
+
+Abjuration
+
+—
+
+Silence
+
+Illusion
+
+C, R
+
+Spike Growth
+
+Transmutation
+
+C
+
+System Reference Document 5.2.1
+
+Ranger Subclass: Hunter
+Protect Nature and People from Destruction
+You stalk prey in the wilds and elsewhere, using
+your abilities as a Hunter to protect nature and
+people everywhere from forces that would destroy
+them.
+
+Level 3: Hunter’s Lore
+
+You can call on the forces of nature to reveal certain
+strengths and weaknesses of your prey. While a
+creature is marked by your Hunter’s Mark, you know
+whether that creature has any Immunities, Resistances, or Vulnerabilities, and if the creature has
+any, you know what they are.
+
+Level 3: Hunter’s Prey
+
+You gain one of the following feature options of your
+choice. Whenever you finish a Short or Long Rest,
+you can replace the chosen option with the other
+one.
+Colossus Slayer. Your tenacity can wear down
+even the most resilient foes. When you hit a creature with a weapon, the weapon deals an extra 1d8
+damage to the target if it’s missing any of its Hit
+Points. You can deal this extra damage only once
+per turn.
+Horde Breaker. Once on each of your turns when
+you make an attack with a weapon, you can make
+another attack with the same weapon against a different creature that is within 5 feet of the original
+target, that is within the weapon’s range, and that
+you haven’t attacked this turn.
+
+Level 7: Defensive Tactics
+
+You gain one of the following feature options of your
+choice. Whenever you finish a Short or Long Rest,
+you can replace the chosen option with the other
+one.
+Escape the Horde. Opportunity Attacks have Disadvantage against you.
+Multiattack Defense. When a creature hits you
+with an attack roll, that creature has Disadvantage
+on all other attack rolls against you this turn.
+
+Level 11: Superior Hunter’s Prey
+
+Once per turn when you deal damage to a creature
+marked by your Hunter’s Mark, you can also deal
+that spell’s extra damage to a different creature that
+you can see within 30 feet of the first creature.
+
+Level 15: Superior Hunter’s Defense
+
+When you take damage, you can take a Reaction to
+give yourself Resistance to that damage and any
+other damage of the same type until the end of the
+current turn.
+
+61
+
+System Reference Document 5.2.1
+
+Rogue
+Core Rogue Traits
+Primary Ability
+
+Dexterity
+
+Hit Point Die
+
+D8 per Rogue level
+
+Saving Throw
+Proficiencies
+
+Dexterity and Intelligence
+
+Skill Proficiencies
+
+Choose 4: Acrobatics, Athletics, Deception, Insight,
+Intimidation, Investigation,
+Perception, Persuasion, Sleight
+of Hand, or Stealth
+
+Weapon Proficiencies Simple weapons and Martial
+weapons that have the Finesse
+or Light property
+Tool Proficiencies
+
+Thieves’ Tools
+
+Armor Training
+
+Light armor
+
+Starting Equipment
+
+Choose A or B: (A) Leather Armor, 2 Daggers, Short­sword,
+Shortbow, 20 Arrows, Quiver,
+Thieves’ Tools, Burglar’s Pack,
+and 8 GP; or (B) 100 GP
+
+Becoming a Rogue …
+As a Level 1 Character
+• Gain all the traits in the Core Rogue Traits table.
+• Gain the Rogue’s level 1 features, which are listed
+in the Rogue Features table.
+
+As a Multiclass Character
+
+• Gain the following traits from the Core Rogue
+Traits table: Hit Point Die, proficiency in one skill
+of your choice from the Rogue’s skill list, proficiency with Thieves’ Tools, and training with
+Light armor.
+• Gain the Rogue’s level 1 features, which are listed
+in the Rogue Features table.
+
+Rogue Class Features
+
+As a Rogue, you gain the following class features
+when you reach the specified Rogue levels. These
+features are listed in the Rogue Features table.
+
+Level 1: Expertise
+
+You gain Expertise in two of your skill proficiencies
+of your choice. Sleight of Hand and Stealth are recommended if you have proficiency in them.
+At Rogue level 6, you gain Expertise in two more
+of your skill proficiencies of your choice.
+
+Level 1: Sneak Attack
+
+You know how to strike subtly and exploit a foe’s
+distraction. Once per turn, you can deal an extra
+1d6 damage to one creature you hit with an attack
+
+Rogue Features
+Level
+
+Proficiency
+Bonus
+
+1
+
++2
+
+Class Features
+
+Expertise, Sneak Attack, Thieves’ Cant, Weapon Mastery
+
+1d6
+
+2
+
++2
+
+Cunning Action
+
+1d6
+
+3
+
++2
+
+Rogue Subclass, Steady Aim
+
+2d6
+
+4
+
++2
+
+Ability Score Improvement
+
+2d6
+
+5
+
++3
+
+Cunning Strike, Uncanny Dodge
+
+3d6
+
+6
+
++3
+
+Expertise
+
+3d6
+
+7
+
++3
+
+Evasion, Reliable Talent
+
+4d6
+
+8
+
++3
+
+Ability Score Improvement
+
+4d6
+
+9
+
++4
+
+Subclass feature
+
+5d6
+
+10
+
++4
+
+Ability Score Improvement
+
+5d6
+
+11
+
++4
+
+Improved Cunning Strike
+
+6d6
+
+12
+
++4
+
+Ability Score Improvement
+
+6d6
+
+13
+
++5
+
+Subclass feature
+
+7d6
+
+14
+
++5
+
+Devious Strikes
+
+7d6
+
+15
+
++5
+
+Slippery Mind
+
+8d6
+
+16
+
++5
+
+Ability Score Improvement
+
+8d6
+
+17
+
++6
+
+Subclass feature
+
+9d6
+
+18
+
++6
+
+Elusive
+
+9d6
+
+19
+
++6
+
+Epic Boon
+
+10d6
+
+20
+
++6
+
+Stroke of Luck
+
+10d6
+
+roll if you have Advantage on the roll and the attack
+uses a Finesse or a Ranged weapon. The extra damage’s type is the same as the weapon’s type.
+You don’t need Advantage on the attack roll if at
+least one of your allies is within 5 feet of the target,
+the ally doesn’t have the Incapacitated condition,
+and you don’t have Disadvantage on the attack roll.
+The extra damage increases as you gain Rogue
+levels, as shown in the Sneak Attack column of the
+Rogue Features table.
+
+Level 1: Thieves’ Cant
+
+You picked up various languages in the communities where you plied your roguish talents. You
+know Thieves’ Cant and one other language of your
+choice, which you choose from the language tables
+in “Character Creation.”
+
+Level 1: Weapon Mastery
+
+Your training with weapons allows you to use the
+mastery properties of two kinds of weapons of your
+choice with which you have proficiency, such as
+Daggers and Shortbows.
+
+62
+
+Sneak Attack
+
+System Reference Document 5.2.1
+
+Whenever you finish a Long Rest, you can change
+the kinds of weapons you chose. For example, you
+could switch to using the mastery properties of
+Scimitars and Shortswords.
+
+Level 2: Cunning Action
+
+Your quick thinking and agility allow you to move
+and act quickly. On your turn, you can take one of
+the following actions as a Bonus Action: Dash, Disengage, or Hide.
+
+Level 3: Rogue Subclass
+
+You gain a Rogue subclass of your choice. The Thief
+subclass is detailed after this class’s description. A
+subclass is a specialization that grants you features
+at certain Rogue levels. For the rest of your career,
+you gain each of your subclass’s features that are of
+your Rogue level or lower.
+
+Level 3: Steady Aim
+
+As a Bonus Action, you give yourself Advantage on
+your next attack roll on the current turn. You can
+use this feature only if you haven’t moved during
+this turn, and after you use it, your Speed is 0 until
+the end of the current turn.
+
+Level 4: Ability Score Improvement
+
+Level 7: Reliable Talent
+
+You gain the Ability Score Improvement feat (see
+“Feats”) or another feat of your choice for which you
+qualify. You gain this feature again at Rogue levels
+8, 10, 12, and 16.
+
+Whenever you make an ability check that uses one
+of your skill or tool proficiencies, you can treat a
+d20 roll of 9 or lower as a 10.
+
+Level 5: Cunning Strike
+
+You’ve developed cunning ways to use your Sneak
+Attack. When you deal Sneak Attack damage, you
+can add one of the following Cunning Strike effects.
+Each effect has a die cost, which is the number of
+Sneak Attack damage dice you must forgo to add the
+effect. You remove the die before rolling, and the
+effect occurs immediately after the attack’s damage
+is dealt. For example, if you add the Poison effect,
+remove 1d6 from the Sneak Attack’s damage before
+rolling.
+If a Cunning Strike effect requires a saving throw,
+the DC equals 8 plus your Dexterity modifier and
+Proficiency Bonus.
+Poison (Cost: 1d6). You add a toxin to your strike,
+forcing the target to make a Constitution saving
+throw. On a failed save, the target has the Poisoned
+condition for 1 minute. At the end of each of its
+turns, the Poisoned target repeats the save, ending
+the effect on itself on a success.
+To use this effect, you must have a Poisoner’s Kit
+on your person.
+Trip (Cost: 1d6). If the target is Large or smaller,
+it must succeed on a Dexterity saving throw or have
+the Prone condition.
+Withdraw (Cost: 1d6). Immediately after the
+attack, you move up to half your Speed without provoking Opportunity Attacks.
+
+Level 5: Uncanny Dodge
+
+When an attacker that you can see hits you with an
+attack roll, you can take a Reaction to halve the attack’s damage against you (round down).
+
+Level 7: Evasion
+
+You can nimbly dodge out of the way of certain dangers. When you’re subjected to an effect that allows
+you to make a Dexterity saving throw to take only
+half damage, you instead take no damage if you
+succeed on the saving throw and only half damage
+if you fail. You can’t use this feature if you have the
+Incapacitated condition.
+
+63
+
+System Reference Document 5.2.1
+
+Level 11: Improved Cunning Strike
+
+You can use up to two Cunning Strike effects when
+you deal Sneak Attack damage, paying the die cost
+for each effect.
+
+Level 14: Devious Strikes
+
+You’ve practiced new ways to use your Sneak Attack
+deviously. The following effects are now among
+your Cunning Strike options.
+Daze (Cost: 2d6). The target must succeed on a
+Constitution saving throw, or on its next turn, it can
+do only one of the following: move or take an action
+or a Bonus Action.
+Knock Out (Cost: 6d6). The target must succeed
+on a Constitution saving throw, or it has the Unconscious condition for 1 minute or until it takes any
+damage. The Unconscious target repeats the save
+at the end of each of its turns, ending the effect on
+itself on a success.
+Obscure (Cost: 3d6). The target must succeed on
+a Dexterity saving throw, or it has the Blinded condition until the end of its next turn.
+
+Level 15: Slippery Mind
+
+Your cunning mind is exceptionally difficult to control. You gain proficiency in Wisdom and Charisma
+saving throws.
+
+Level 18: Elusive
+
+You’re so evasive that attackers rarely gain the
+upper hand against you. No attack roll can have
+Advantage against you unless you have the Incapacitated condition.
+
+Level 19: Epic Boon
+
+You gain an Epic Boon feat (see “Feats”) or another
+feat of your choice for which you qualify. Boon of the
+Night Spirit is recommended.
+
+Level 20: Stroke of Luck
+
+You have a marvelous knack for succeeding when
+you need to. If you fail a D20 Test, you can turn the
+roll into a 20.
+Once you use this feature, you can’t use it again
+until you finish a Short or Long Rest.
+
+Rogue Subclass: Thief
+Hunt for Treasure as a Classic Adventurer
+A mix of burglar, treasure hunter, and explorer, you
+are the epitome of an adventurer. In addition to improving your agility and stealth, you gain abilities
+useful for delving into ruins and getting maximum
+benefit from the magic items you find there.
+
+Level 3: Fast Hands
+
+As a Bonus Action, you can do one of the following.
+Sleight of Hand. Make a Dexterity (Sleight of
+Hand) check to pick a lock or disarm a trap with
+Thieves’ Tools or to pick a pocket.
+Use an Object. Take the Utilize action, or take the
+Magic action to use a magic item that requires that
+action.
+
+Level 3: Second-Story Work
+
+You’ve trained to get into especially hard-to-reach
+places, granting you these benefits.
+Climber. You gain a Climb Speed equal to your
+Speed.
+Jumper. You can determine your jump distance
+using your Dexterity rather than your Strength.
+
+Level 9: Supreme Sneak
+
+You gain the following Cunning Strike option.
+Stealth Attack (Cost: 1d6). If you have the Hide
+action’s Invisible condition, this attack doesn’t end
+that condition on you if you end the turn behind
+Three-Quarters Cover or Total Cover.
+
+Level 13: Use Magic Device
+
+You’ve learned how to maximize use of magic items,
+granting you the following benefits.
+Attunement. You can attune to up to four magic
+items at once.
+Charges. Whenever you use a magic item property that expends charges, roll 1d6. On a roll of
+6, you use the property without expending the
+charges.
+Scrolls. You can use any Spell Scroll, using Intelligence as your spellcasting ability for the spell. If the
+spell is a cantrip or a level 1 spell, you can cast it reliably. If the scroll contains a higher-level spell, you
+must first succeed on an Intelligence (Arcana) check
+(DC 10 plus the spell’s level). On a successful check,
+you cast the spell from the scroll. On a failed check,
+the scroll disintegrates.
+
+Level 17: Thief’s Reflexes
+
+You are adept at laying ambushes and quickly escaping danger. You can take two turns during the
+first round of any combat. You take your first turn
+at your normal Initiative and your second turn at
+your Initiative minus 10.
+
+64
+
+System Reference Document 5.2.1
+
+Sorcerer
+Core Sorcerer Traits
+Primary Ability
+
+Charisma
+
+Hit Point Die
+
+D6 per Sorcerer level
+
+Saving Throw
+Proficiencies
+
+Constitution and Charisma
+
+Skill Proficiencies
+
+Choose 2: Arcana, Deception,
+Insight, Intimidation, Persuasion, or Religion
+
+Weapon Proficiencies Simple weapons
+Armor Training
+
+None
+
+Starting Equipment
+
+Choose A or B: (A) Spear,
+2 Daggers, Arcane Focus
+(crystal), Dungeoneer’s Pack,
+and 28 GP; or (B) 50 GP
+
+Becoming a Sorcerer …
+As a Level 1 Character
+• Gain all the traits in the Core Sorcerer Traits
+table.
+• Gain the Sorcerer’s level 1 features, which are
+listed in the Sorcerer Features table.
+
+As a Multiclass Character
+
+• Gain the Hit Point Die from the Core Sorcerer
+Traits table.
+• Gain the Sorcerer’s level 1 features, which are
+listed in the Sorcerer Features table. See the multiclassing rules in “Character Creation” to determine your available spell slots.
+
+Sorcerer Class Features
+
+As a Sorcerer, you gain the following class features
+when you reach the specified Sorcerer levels. These
+features are listed in the Sorcerer Features table.
+
+Level 1: Spellcasting
+
+Drawing from your innate magic, you can cast
+spells. See “Spells” for the rules on spellcasting. The
+information below details how you use those rules
+with Sorcerer spells, which appear in the Sorcerer
+spell list later in the class’s description.
+Cantrips. You know four Sorcerer cantrips of your
+choice. Light, Prestidigitation, Shocking Grasp, and
+Sorcerous Burst are recommended. Whenever you
+gain a Sorcerer level, you can replace one of your
+cantrips from this feature with another Sorcerer
+cantrip of your choice.
+When you reach Sorcerer levels 4 and 10, you
+learn another Sorcerer cantrip of your choice, as
+shown in the Cantrips column of the Sorcerer Features table.
+Spell Slots. The Sorcerer Features table shows
+how many spell slots you have to cast your level 1+
+
+Sorcerer Features
+Proficiency
+Level Bonus
+Class Features
+
+65
+
+Sorcery
+Points
+
+——Spell Slots per Spell Level——
+
+Cantrips
+
+Prepared
+Spells
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+1
+
++2
+
+Spellcasting,
+Innate Sorcery
+
+—
+
+4
+
+2
+
+2
+
+— — — — — — — —
+
+2
+
++2
+
+Font of Magic,
+Metamagic
+
+2
+
+4
+
+4
+
+3
+
+— — — — — — — —
+
+3
+
++2
+
+Sorcerer Subclass
+
+3
+
+4
+
+6
+
+4
+
+2
+
+— — — — — — —
+
+4
+
++2
+
+Ability Score
+Improvement
+
+4
+
+5
+
+7
+
+4
+
+3
+
+— — — — — — —
+
+5
+
++3
+
+Sorcerous
+Restoration
+
+5
+
+5
+
+9
+
+4
+
+3
+
+2
+
+— — — — — —
+
+6
+
++3
+
+Subclass feature
+
+6
+
+5
+
+10
+
+4
+
+3
+
+3
+
+— — — — — —
+
+7
+
++3
+
+Sorcery Incarnate
+
+7
+
+5
+
+11
+
+4
+
+3
+
+3
+
+1
+
+— — — — —
+
+8
+
++3
+
+Ability Score
+Improvement
+
+8
+
+5
+
+12
+
+4
+
+3
+
+3
+
+2
+
+— — — — —
+
+9
+
++4
+
+—
+
+9
+
+5
+
+14
+
+4
+
+3
+
+3
+
+3
+
+1
+
+— — — —
+
+10
+
++4
+
+Metamagic
+
+10
+
+6
+
+15
+
+4
+
+3
+
+3
+
+3
+
+2
+
+— — — —
+
+11
+
++4
+
+—
+
+11
+
+6
+
+16
+
+4
+
+3
+
+3
+
+3
+
+2
+
+1
+
+— — —
+
+12
+
++4
+
+Ability Score
+Improvement
+
+12
+
+6
+
+16
+
+4
+
+3
+
+3
+
+3
+
+2
+
+1
+
+— — —
+
+13
+
++5
+
+—
+
+13
+
+6
+
+17
+
+4
+
+3
+
+3
+
+3
+
+2
+
+1
+
+1
+
+— —
+
+14
+
++5
+
+Subclass feature
+
+14
+
+6
+
+17
+
+4
+
+3
+
+3
+
+3
+
+2
+
+1
+
+1
+
+— —
+
+15
+
++5
+
+—
+
+15
+
+6
+
+18
+
+4
+
+3
+
+3
+
+3
+
+2
+
+1
+
+1
+
+1
+
+—
+
+16
+
++5
+
+Ability Score
+Improvement
+
+16
+
+6
+
+18
+
+4
+
+3
+
+3
+
+3
+
+2
+
+1
+
+1
+
+1
+
+—
+
+17
+
++6
+
+Metamagic
+
+17
+
+6
+
+19
+
+4
+
+3
+
+3
+
+3
+
+2
+
+1
+
+1
+
+1
+
+1
+
+18
+
++6
+
+Subclass feature
+
+18
+
+6
+
+20
+
+4
+
+3
+
+3
+
+3
+
+3
+
+1
+
+1
+
+1
+
+1
+
+19
+
++6
+
+Epic Boon
+
+19
+
+6
+
+21
+
+4
+
+3
+
+3
+
+3
+
+3
+
+2
+
+1
+
+1
+
+1
+
+20
+
++6
+
+Arcane Apotheosis
+
+20
+
+6
+
+22
+
+4
+
+3
+
+3
+
+3
+
+3
+
+2
+
+2
+
+1
+
+1
+
+spells. You regain all expended slots when you finish a Long Rest.
+Prepared Spells of Level 1+. You prepare the list
+of level 1+ spells that are available for you to cast
+with this feature. To start, choose two level 1 Sorcerer spells. Burning Hands and Detect Magic are
+recommended.
+The number of spells on your list increases as
+you gain Sorcerer levels, as shown in the Prepared
+Spells column of the Sorcerer Features table. Whenever that number increases, choose additional
+Sorcerer spells until the number of spells on your
+list matches the number in the Sorcerer Features
+table. The chosen spells must be of a level for which
+you have spell slots. For example, if you’re a level 3
+Sorcerer, your list of prepared spells can include six
+Sorcerer spells of level 1 or 2 in any combination.
+If another Sorcerer feature gives you spells that
+you always have prepared, those spells don’t count
+
+System Reference Document 5.2.1
+
+against the number of spells you can prepare with
+this feature, but those spells otherwise count as
+Sorcerer spells for you.
+Changing Your Prepared Spells. Whenever you
+gain a Sorcerer level, you can replace one spell on
+your list with another Sorcerer spell for which you
+have spell slots.
+Spellcasting Ability. Charisma is your spellcasting ability for your Sorcerer spells.
+Spellcasting Focus. You can use an Arcane Focus
+as a Spellcasting Focus for your Sorcerer spells.
+
+Level 1: Innate Sorcery
+
+An event in your past left an indelible mark on you,
+infusing you with simmering magic. As a Bonus
+Action, you can unleash that magic for 1 minute,
+during which you gain the following benefits:
+
+• The spell save DC of your Sorcerer spells
+increases by 1.
+• You have Advantage on the attack rolls of
+Sorcerer spells you cast.
+
+You can use this feature twice, and you regain all
+expended uses of it when you finish a Long Rest.
+
+Level 2: Font of Magic
+
+You can tap into the wellspring of magic within
+yourself. This wellspring is represented by Sorcery
+Points, which allow you to create a variety of magical effects.
+You have 2 Sorcery Points, and you gain more as
+you reach higher levels, as shown in the Sorcery
+Points column of the Sorcerer Features table. You
+can’t have more Sorcery Points than the number
+shown in the table for your level. You regain all expended Sorcery Points when you finish a Long Rest.
+You can use your Sorcery Points to fuel the options below, along with other features, such as
+Metamagic, that use those points.
+Converting Spell Slots to Sorcery Points. You
+can expend a spell slot to gain a number of Sorcery
+Points equal to the slot’s level (no action required).
+Creating Spell Slots. As a Bonus Action, you can
+transform unexpended Sorcery Points into one spell
+slot. The Creating Spell Slots table shows the cost
+of creating a spell slot of a given level, and it lists
+the minimum Sorcerer level you must be to create
+a slot. You can create a spell slot no higher than
+level 5.
+Any spell slot you create with this feature vanishes when you finish a Long Rest.
+
+Creating Spell Slots
+Spell Slot
+Level
+
+Sorcery Point
+Cost
+
+Min. Sorcerer
+Level
+
+1
+
+2
+
+2
+
+2
+
+3
+
+3
+
+3
+
+5
+
+5
+
+4
+
+6
+
+7
+
+5
+
+7
+
+9
+
+Level 2: Metamagic
+Because your magic flows from within, you can
+alter your spells to suit your needs; you gain two
+Metamagic options of your choice from “Meta­magic
+Options” later in this class’s description. You use
+the chosen options to temporarily modify spells you
+cast. To use an option, you must spend the number
+of Sorcery Points that it costs.
+You can use only one Metamagic option on a spell
+when you cast it unless otherwise noted in one of
+those options.
+
+66
+
+System Reference Document 5.2.1
+
+Whenever you gain a Sorcerer level, you can replace one of your Metamagic options with one you
+don’t know. You gain two more options at Sorcerer
+level 10 and two more at Sorcerer level 17.
+
+Level 3: Sorcerer Subclass
+
+You gain a Sorcerer subclass of your choice. The
+Draconic Sorcery subclass is detailed after this
+class’s description. A subclass is a specialization
+that grants you features at certain Sorcerer levels.
+For the rest of your career, you gain each of your
+subclass’s features that are of your Sorcerer level or
+lower.
+
+Level 4: Ability Score Improvement
+
+You gain the Ability Score Improvement feat (see
+“Feats”) or another feat of your choice for which you
+qualify. You gain this feature again at Sorcerer levels 8, 12, and 16.
+
+Level 5: Sorcerous Restoration
+
+When you finish a Short Rest, you can regain expended Sorcery Points, but no more than a number
+equal to half your Sorcerer level (round down). Once
+you use this feature, you can’t do so again until you
+finish a Long Rest.
+
+Level 7: Sorcery Incarnate
+
+If you have no uses of Innate Sorcery left, you can
+use it if you spend 2 Sorcery Points when you take
+the Bonus Action to activate it.
+In addition, while your Innate Sorcery feature is
+active, you can use up to two of your Metamagic options on each spell you cast.
+
+Level 19: Epic Boon
+
+You gain an Epic Boon feat (see “Feats”) or another
+feat of your choice for which you qualify. Boon of Dimensional Travel is recommended.
+
+Level 20: Arcane Apotheosis
+
+While your Innate Sorcery feature is active, you can
+use one Metamagic option on each of your turns
+without spending Sorcery Points on it.
+
+Metamagic Options
+
+The following options are available to your Meta­
+magic feature. The options are presented in alphabetical order.
+
+Careful Spell
+
+Cost: 1 Sorcery Point
+
+When you cast a spell that forces other creatures
+to make a saving throw, you can protect some of
+those creatures from the spell’s full force. To do so,
+spend 1 Sorcery Point and choose a number of those
+creatures up to your Charisma modifier (minimum
+of one creature). A chosen creature automatically
+succeeds on its saving throw against the spell, and
+
+it takes no damage if it would normally take half
+damage on a successful save.
+
+Distant Spell
+
+Cost: 1 Sorcery Point
+
+When you cast a spell that has a range of at least 5
+feet, you can spend 1 Sorcery Point to double the
+spell’s range. Or when you cast a spell that has a
+range of Touch, you can spend 1 Sorcery Point to
+make the spell’s range 30 feet.
+
+Empowered Spell
+Cost: 1 Sorcery Point
+
+When you roll damage for a spell, you can spend 1
+Sorcery Point to reroll a number of the damage dice
+up to your Charisma modifier (minimum of one),
+and you must use the new rolls.
+You can use Empowered Spell even if you’ve already used a different Metamagic option during the
+casting of the spell.
+
+Extended Spell
+
+Cost: 1 Sorcery Point
+
+When you cast a spell that has a duration of 1 minute or longer, you can spend 1 Sorcery Point to double its duration to a maximum duration of 24 hours.
+If the affected spell requires Concentration, you
+have Advantage on any saving throw you make to
+maintain that Concentration.
+
+Heightened Spell
+Cost: 2 Sorcery Points
+
+When you cast a spell that forces a creature to make
+a saving throw, you can spend 2 Sorcery Points to
+give one target of the spell Disadvantage on saves
+against the spell.
+
+Quickened Spell
+
+Cost: 1 Sorcery Point
+When you cast a spell, you can spend 1 Sorcery
+Point to cast it without any Verbal, Somatic, or Material components, except Material components that
+are consumed by the spell or that have a cost specified in the spell.
+
+Transmuted Spell
+Cost: 1 Sorcery Point
+
+When you cast a spell that deals a type of damage
+from the following list, you can spend 1 Sorcery
+Point to change that damage type to one of the
+other listed types: Acid, Cold, Fire, Lightning, Poison, Thunder.
+
+Twinned Spell
+
+Cost: 1 Sorcery Point
+
+When you cast a spell, such as Charm Person, that
+can be cast with a higher-level spell slot to target an
+additional creature, you can spend 1 Sorcery Point
+to increase the spell’s effective level by 1.
+
+Sorcerer Spell List
+
+This section presents the Sorcerer spell list. The
+spells are organized by spell level and then alphabetized, and each spell’s school of magic is listed.
+In the Special column, C means the spell requires
+Concentration, R means it’s a Ritual, and M means it
+requires a specific Material component.
+
+Cantrips (Level 0 Sorcerer Spells)
+Spell
+
+School
+
+Special
+
+Acid Splash
+
+Evocation
+
+—
+
+Chill Touch
+
+Necromancy
+
+—
+
+Dancing Lights
+
+Illusion
+
+C
+
+Cost: 2 Sorcery Points
+
+Elementalism
+
+Transmutation
+
+—
+
+When you cast a spell that has a casting time of an
+action, you can spend 2 Sorcery Points to change
+the casting time to a Bonus Action for this casting.
+You can’t modify a spell in this way if you’ve already
+cast a level 1+ spell on the current turn, nor can you
+cast a level 1+ spell on this turn after modifying a
+spell in this way.
+
+Fire Bolt
+
+Evocation
+
+—
+
+Light
+
+Evocation
+
+—
+
+Mage Hand
+
+Conjuration
+
+—
+
+Mending
+
+Transmutation
+
+—
+
+Message
+
+Transmutation
+
+—
+
+Minor Illusion
+
+Illusion
+
+—
+
+Seeking Spell
+
+67
+
+Subtle Spell
+
+Poison Spray
+
+Necromancy
+
+—
+
+Cost: 1 Sorcery Point
+
+Prestidigitation
+
+Transmutation
+
+—
+
+If you make an attack roll for a spell and miss, you
+can spend 1 Sorcery Point to reroll the d20, and you
+must use the new roll.
+You can use Seeking Spell even if you’ve already
+used a different Metamagic option during the casting of the spell.
+
+Ray of Frost
+
+Evocation
+
+—
+
+Shocking Grasp
+
+Evocation
+
+—
+
+Sorcerous Burst
+
+Evocation
+
+—
+
+True Strike
+
+Divination
+
+—
+
+System Reference Document 5.2.1
+
+Level 1 Sorcerer Spells
+
+Spell
+
+School
+
+Spell
+
+School
+
+Special
+
+Hold Person
+
+Enchantment
+
+C
+
+Burning Hands
+
+Evocation
+
+—
+
+Invisibility
+
+Illusion
+
+C
+
+Charm Person
+
+Enchantment
+
+—
+
+Knock
+
+Transmutation
+
+—
+
+Chromatic Orb
+
+Evocation
+
+M
+
+Levitate
+
+Transmutation
+
+C
+
+Color Spray
+
+Illusion
+
+—
+
+Magic Weapon
+
+Transmutation
+
+—
+
+Comprehend Languages
+
+Divination
+
+R
+
+Mirror Image
+
+Illusion
+
+—
+
+Detect Magic
+
+Divination
+
+C, R
+
+Misty Step
+
+Conjuration
+
+—
+
+Disguise Self
+
+Illusion
+
+—
+
+Scorching Ray
+
+Evocation
+
+—
+
+Expeditious Retreat
+
+Transmutation
+
+C
+
+See Invisibility
+
+Divination
+
+—
+
+False Life
+
+Necromancy
+
+–
+
+Shatter
+
+Evocation
+
+—
+
+Feather Fall
+
+Transmutation
+
+—
+
+Spider Climb
+
+Transmutation
+
+C
+
+Fog Cloud
+
+Conjuration
+
+C
+
+Suggestion
+
+Enchantment
+
+C
+
+Grease
+
+Conjuration
+
+—
+
+Web
+
+Conjuration
+
+C
+
+Ice Knife
+
+Conjuration
+
+—
+
+Jump
+
+Transmutation
+
+—
+
+Level 3 Sorcerer Spells
+
+Mage Armor
+
+Abjuration
+
+—
+
+Spell
+
+School
+
+Magic Missile
+
+Evocation
+
+—
+
+Blink
+
+Transmutation
+
+—
+
+Divination
+
+C, M
+
+Special
+
+Ray of Sickness
+
+Necromancy
+
+—
+
+Clairvoyance
+
+Shield
+
+Abjuration
+
+—
+
+Counterspell
+
+Abjuration
+
+—
+
+Silent Image
+
+Illusion
+
+C
+
+Daylight
+
+Evocation
+
+—
+
+Sleep
+
+Enchantment
+
+C
+
+Dispel Magic
+
+Abjuration
+
+—
+
+Thunderwave
+
+Evocation
+
+—
+
+Fear
+
+Illusion
+
+C
+
+Fireball
+
+Evocation
+
+—
+
+Fly
+
+Transmutation
+
+C
+
+Level 2 Sorcerer Spells
+
+68
+
+Special
+
+Spell
+
+School
+
+Gaseous Form
+
+Transmutation
+
+C
+
+Alter Self
+
+Transmutation
+
+C
+
+Haste
+
+Transmutation
+
+C
+
+Blindness/Deafness
+
+Transmutation
+
+—
+
+Hypnotic Pattern
+
+Illusion
+
+C
+
+Blur
+
+Illusion
+
+C
+
+Lightning Bolt
+
+Evocation
+
+—
+
+Darkness
+
+Evocation
+
+C
+
+Major Image
+
+Illusion
+
+C
+
+Darkvision
+
+Transmutation
+
+—
+
+Protection from Energy
+
+Abjuration
+
+C
+
+Detect Thoughts
+
+Divination
+
+C
+
+Sleet Storm
+
+Conjuration
+
+C
+
+Dragon’s Breath
+
+Transmutation
+
+C
+
+Slow
+
+Transmutation
+
+C
+
+Enhance Ability
+
+Transmutation
+
+C
+
+Stinking Cloud
+
+Conjuration
+
+C
+
+Enlarge/Reduce
+
+Transmutation
+
+C
+
+Tongues
+
+Divination
+
+—
+
+Flame Blade
+
+Evocation
+
+C
+
+Vampiric Touch
+
+Necromancy
+
+C
+
+Flaming Sphere
+
+Evocation
+
+C
+
+Water Breathing
+
+Transmutation
+
+R
+
+Gust of Wind
+
+Evocation
+
+C
+
+Water Walk
+
+Transmutation
+
+R
+
+System Reference Document 5.2.1
+
+Special
+
+Level 4 Sorcerer Spells
+
+Level 7 Sorcerer Spells
+
+Spell
+
+School
+
+Banishment
+
+Abjuration
+
+Blight
+
+Special
+
+Spell
+
+School
+
+Special
+
+C
+
+Delayed Blast Fireball
+
+Evocation
+
+C
+
+Necromancy
+
+—
+
+Etherealness
+
+Conjuration
+
+—
+
+Charm Monster
+
+Enchantment
+
+—
+
+Finger of Death
+
+Necromancy
+
+—
+
+Confusion
+
+Enchantment
+
+C
+
+Fire Storm
+
+Evocation
+
+—
+
+Dimension Door
+
+Conjuration
+
+—
+
+Plane Shift
+
+Conjuration
+
+M
+
+Dominate Beast
+
+Enchantment
+
+C
+
+Prismatic Spray
+
+Evocation
+
+—
+
+Fire Shield
+
+Evocation
+
+—
+
+Reverse Gravity
+
+Transmutation
+
+C
+
+Greater Invisibility
+
+Illusion
+
+C
+
+Teleport
+
+Conjuration
+
+—
+
+Ice Storm
+
+Evocation
+
+—
+
+Polymorph
+
+Transmutation
+
+C
+
+Stoneskin
+
+Transmutation
+
+C, M
+
+Vitriolic Sphere
+
+Evocation
+
+—
+
+Wall of Fire
+
+Evocation
+
+C
+
+Level 5 Sorcerer Spells
+Spell
+
+School
+
+Animate Objects
+
+Transmutation
+
+Special
+
+C
+
+Arcane Hand
+
+Evocation
+
+C
+
+Cloudkill
+
+Conjuration
+
+C
+
+Cone of Cold
+
+Evocation
+
+—
+
+Creation
+
+Illusion
+
+—
+
+Dominate Person
+
+Enchantment
+
+C
+
+Hold Monster
+
+Enchantment
+
+C
+
+Insect Plague
+
+Conjuration
+
+C
+
+Seeming
+
+Illusion
+
+—
+
+Spell
+
+School
+
+Demiplane
+
+Conjuration
+
+—
+
+Dominate Monster
+
+Enchantment
+
+C
+
+Earthquake
+
+Transmutation
+
+C
+
+Incendiary Cloud
+
+Conjuration
+
+C
+
+Power Word Stun
+
+Enchantment
+
+—
+
+Sunburst
+
+Evocation
+
+—
+
+Spell
+
+School
+
+Special
+
+Gate
+
+Conjuration
+
+C, M
+
+Meteor Swarm
+
+Evocation
+
+—
+
+Power Word Kill
+
+Enchantment
+
+—
+
+Time Stop
+
+Transmutation
+
+—
+
+Wish
+
+Conjuration
+
+—
+
+Telekinesis
+
+Transmutation
+
+C
+
+Conjuration
+
+M
+
+Sorcerer Subclass: Draconic
+Sorcery
+
+Wall of Stone
+
+Evocation
+
+C
+
+Breathe the Magic of Dragons
+
+Spell
+
+School
+
+Special
+
+Chain Lightning
+
+Evocation
+
+—
+
+Circle of Death
+
+Necromancy
+
+M
+
+Disintegrate
+
+Transmutation
+
+—
+
+Eyebite
+
+Necromancy
+
+C
+
+Flesh to Stone
+
+Transmutation
+
+C
+
+Freezing Sphere
+
+Evocation
+
+—
+
+Globe of Invulnerability
+
+Abjuration
+
+C
+
+Mass Suggestion
+
+Enchantment
+
+—
+
+Move Earth
+
+Transmutation
+
+C
+
+Sunbeam
+
+Evocation
+
+C
+
+True Seeing
+
+Divination
+
+M
+
+System Reference Document 5.2.1
+
+Special
+
+Level 9 Sorcerer Spells
+
+Teleportation Circle
+
+Level 6 Sorcerer Spells
+
+69
+
+Level 8 Sorcerer Spells
+
+Your innate magic comes from the gift of a dragon.
+Perhaps an ancient dragon facing death bequeathed
+some of its magical power to you or your ancestor.
+You might have absorbed magic from a site infused
+with dragons’ power. Or perhaps you handled a
+treasure taken from a dragon’s hoard that was
+steeped in draconic power. Or you might have a
+dragon for an ancestor.
+
+Level 3: Draconic Resilience
+
+The magic in your body manifests physical traits
+of your draconic gift. Your Hit Point maximum increases by 3, and it increases by 1 whenever you
+gain another Sorcerer level.
+Parts of you are also covered by dragon-like
+scales. While you aren’t wearing armor, your base
+Armor Class equals 10 plus your Dexterity and Charisma modifiers.
+
+Level 3: Draconic Spells
+When you reach a Sorcerer level specified in the
+Draconic Spells table, you thereafter always have
+the listed spells prepared.
+
+Draconic Spells
+Sorcerer
+Level
