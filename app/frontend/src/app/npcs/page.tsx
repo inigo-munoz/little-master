@@ -714,7 +714,7 @@ function NpcsContent() {
         </div>
       </div>
 
-      {selected && <DetailModal entity={selected} onClose={() => setSelected(null)} />}
+      {selected && <DetailModal entity={selected} onClose={() => setSelected(null)} campaignId={effectiveCampaignId} />}
       {(showForm || editNpc) && effectiveCampaignId && (
         <NpcForm
           key={editNpc?.id ?? "new"}

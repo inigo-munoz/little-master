@@ -297,6 +297,13 @@ export const api = {
     delete: (id: string) => del(`/api/players/${id}`),
   },
 
+  wiki: {
+    search: (campaignId: string, name: string) =>
+      get<Array<{ type: string; id: string; name: string; summary: string }>>(
+        `/api/campaigns/${campaignId}/wiki/${encodeURIComponent(name)}`
+      ),
+  },
+
 };
 
 // ─── Types (mirrors backend domain) ─────────────────────────────────────────

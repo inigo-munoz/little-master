@@ -78,19 +78,7 @@
       "Bash(cp ~/Downloads/PHB2024_Trasfondos.md \"/media/inigo/Loki/Mis Repos/dnd-assistant/data/phb2024/trasfondos.md\")",
       "Bash(cp ~/Downloads/PHB2024_Hechizos_Listas.md \"/media/inigo/Loki/Mis Repos/dnd-assistant/data/phb2024/hechizos-listas.md\")",
       "Bash(cp ~/Downloads/PHB2024_Dones.md \"/media/inigo/Loki/Mis Repos/dnd-assistant/data/phb2024/dones.md\")",
-      "Bash(pnpm phb:import)",
-      "Bash(node -e ':*)",
-      "Bash(npx tsc:*)",
-      "Bash(node_modules/.bin/tsc --noEmit)",
-      "Bash(grep -n \"DetailModal\\\\|effectiveCampaignId\\\\|activeCampaign\" \"/media/inigo/Loki/Mis Repos/dnd-assistant/app/frontend/src/app/campaigns/\"*\"/page.tsx\")",
-      "Bash(grep -n \"DetailModal\\\\|campaignId\\\\|activeCampaign\\\\|params\" \"/media/inigo/Loki/Mis Repos/dnd-assistant/app/frontend/src/app/campaigns/\"*\"/page.tsx\")",
-      "Bash(sed -n '350,356p' \"/media/inigo/Loki/Mis Repos/dnd-assistant/app/frontend/src/app/factions/page.tsx\")",
-      "Bash(sed -n '320,326p' \"/media/inigo/Loki/Mis Repos/dnd-assistant/app/frontend/src/app/locations/page.tsx\")",
-      "Bash(sed -n '464,470p' \"/media/inigo/Loki/Mis Repos/dnd-assistant/app/frontend/src/app/players/page.tsx\")",
-      "Bash(sed -n '714,720p' \"/media/inigo/Loki/Mis Repos/dnd-assistant/app/frontend/src/app/npcs/page.tsx\")",
-      "Bash(npx vitest:*)",
-      "Bash(pnpm --filter app/frontend typecheck)",
-      "Bash(pnpm --filter app/backend typecheck)"
+      "Bash(pnpm phb:import)"
     ]
   }
 }

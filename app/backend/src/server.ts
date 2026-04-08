@@ -26,6 +26,7 @@ import { factionRoutes } from "./routes/factions.js";
 import { pdfRoutes } from "./routes/pdf.js";
 import { srdRoutes } from "./routes/srd.js";
 import { encounterRoutes } from "./routes/encounters.js";
+import { wikiRoutes } from "./routes/wiki.js";
 
 const server = Fastify({
   logger: {
@@ -71,6 +72,7 @@ async function bootstrap() {
   await server.register(pdfRoutes, { prefix: "/api/pdf" });
   await server.register(srdRoutes, { prefix: "/api/srd" });
   await server.register(encounterRoutes, { prefix: "/api/encounters" });
+  await server.register(wikiRoutes, { prefix: "/api/campaigns" });
 
   // ── Start ─────────────────────────────────────────────────────────────────
   await server.listen({ port: env.PORT, host: env.HOST });

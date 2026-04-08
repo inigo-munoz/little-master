@@ -3,9 +3,8 @@
 import { useEffect } from "react";
 import { X, Shield, Heart, Star, Users, MapPin, Swords, ScrollText } from "lucide-react";
 import { clsx } from "clsx";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { StatusBadge, SourceBadge } from "./Badge";
+import { WikiMarkdown } from "./WikiMarkdown";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type ModalEntity =
@@ -93,9 +92,11 @@ interface FactionData {
 export function DetailModal({
   entity,
   onClose,
+  campaignId,
 }: {
   entity: ModalEntity;
   onClose: () => void;
+  campaignId?: string;
 }) {
   // Close on Escape
   useEffect(() => {
@@ -131,11 +132,11 @@ export function DetailModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
-          {entity.type === "player" && <PlayerDetail data={entity.data} />}
+          {entity.type === "player" && <PlayerDetail data={entity.data} campaignId={campaignId} />}
           {entity.type === "npc" && <NpcDetail data={entity.data} />}
-          {entity.type === "session" && <SessionDetail data={entity.data} />}
-          {entity.type === "location" && <LocationDetail data={entity.data} />}
-          {entity.type === "faction" && <FactionDetail data={entity.data} />}
+          {entity.type === "session" && <SessionDetail data={entity.data} campaignId={campaignId} />}
+          {entity.type === "location" && <LocationDetail data={entity.data} campaignId={campaignId} />}
+          {entity.type === "faction" && <FactionDetail data={entity.data} campaignId={campaignId} />}
         </div>
       </div>
     </div>
@@ -143,7 +144,7 @@ export function DetailModal({
 }
 
 // ─── Entity-specific content ──────────────────────────────────────────────────
-function PlayerDetail({ data }: { data: PlayerData }) {
+function PlayerDetail({ data, campaignId }: { data: PlayerData; campaignId?: string }) {
   return (
     <div className="space-y-5">
       {/* Stats row */}
@@ -173,7 +174,7 @@ function PlayerDetail({ data }: { data: PlayerData }) {
         <div>
           <p className="text-xs text-stone-500 uppercase tracking-wider mb-2">Notas</p>
           <div className="prose-dnd text-sm bg-stone-950 rounded-lg p-4">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.notes}</ReactMarkdown>
+            <WikiMarkdown campaignId={campaignId}>{data.notes}</WikiMarkdown>
           </div>
         </div>
       )}
@@ -431,7 +432,7 @@ function NpcDetail({ data }: { data: NpcData }) {
   );
 }
 
-function SessionDetail({ data }: { data: SessionData }) {
+function SessionDetail({ data, campaignId }: { data: SessionData; campaignId?: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4 text-sm">
@@ -456,7 +457,7 @@ function SessionDetail({ data }: { data: SessionData }) {
         <div>
           <p className="text-xs text-stone-500 uppercase tracking-wider mb-2">Notas completas</p>
           <div className="prose-dnd text-sm bg-stone-950 rounded-lg p-4">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.notes}</ReactMarkdown>
+            <WikiMarkdown campaignId={campaignId}>{data.notes}</WikiMarkdown>
           </div>
         </div>
       ) : (
@@ -466,7 +467,7 @@ function SessionDetail({ data }: { data: SessionData }) {
   );
 }
 
-function LocationDetail({ data }: { data: LocationData }) {
+function LocationDetail({ data, campaignId }: { data: LocationData; campaignId?: string }) {
   let tags: string[] = [];
   try { tags = JSON.parse(data.tags); } catch {}
 
@@ -480,7 +481,7 @@ function LocationDetail({ data }: { data: LocationData }) {
 
       {data.description ? (
         <div className="prose-dnd text-sm bg-stone-950 rounded-lg p-4">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.description}</ReactMarkdown>
+          <WikiMarkdown campaignId={campaignId}>{data.description}</WikiMarkdown>
         </div>
       ) : (
         <p className="text-stone-600 text-sm italic">Sin descripción.</p>
@@ -489,7 +490,7 @@ function LocationDetail({ data }: { data: LocationData }) {
   );
 }
 
-function FactionDetail({ data }: { data: FactionData }) {
+function FactionDetail({ data, campaignId }: { data: FactionData; campaignId?: string }) {
   let tags: string[] = [];
   try { tags = JSON.parse(data.tags); } catch {}
 
@@ -512,7 +513,7 @@ function FactionDetail({ data }: { data: FactionData }) {
 
       {data.description ? (
         <div className="prose-dnd text-sm bg-stone-950 rounded-lg p-4">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.description}</ReactMarkdown>
+          <WikiMarkdown campaignId={campaignId}>{data.description}</WikiMarkdown>
         </div>
       ) : (
         <p className="text-stone-600 text-sm italic">Sin descripción.</p>

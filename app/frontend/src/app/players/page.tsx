@@ -464,7 +464,7 @@ function PlayersContent() {
         )}
       </div>
 
-      {selected && <DetailModal entity={selected} onClose={() => setSelected(null)} />}
+      {selected && <DetailModal entity={selected} onClose={() => setSelected(null)} campaignId={effectiveCampaignId} />}
 
       {showForm && effectiveCampaignId && (
         <PlayerForm
