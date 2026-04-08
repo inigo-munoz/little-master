@@ -14,10 +14,29 @@ export const embeddingRoutes: FastifyPluginAsync = async (server) => {
       ? { OR: [{ campaignId }, { campaignId: null as unknown as string }] }
       : {};
 
-    const [total, embedded] = await Promise.all([
-      prisma.documentChunk.count({ where }),
-      prisma.documentChunk.count({ where: { ...where, embeddingJson: { not: null } } }),
-    ]);
+    // Fetch lightweight projection to compute breakdowns in-process
+    const chunks = await prisma.documentChunk.findMany({
+      where,
+      select: { sourceType: true, authorityLevel: true, embeddingJson: true },
+    });
+
+    const total = chunks.length;
+    const embedded = chunks.filter((c) => c.embeddingJson !== null).length;
+
+    const bySourceType: Record<string, { total: number; embedded: number }> = {};
+    const byAuthorityLevel: Record<string, { total: number; embedded: number }> = {};
+
+    for (const chunk of chunks) {
+      const isEmbedded = chunk.embeddingJson !== null;
+
+      bySourceType[chunk.sourceType] ??= { total: 0, embedded: 0 };
+      bySourceType[chunk.sourceType]!.total++;
+      if (isEmbedded) bySourceType[chunk.sourceType]!.embedded++;
+
+      byAuthorityLevel[chunk.authorityLevel] ??= { total: 0, embedded: 0 };
+      byAuthorityLevel[chunk.authorityLevel]!.total++;
+      if (isEmbedded) byAuthorityLevel[chunk.authorityLevel]!.embedded++;
+    }
 
     return {
       success: true,
@@ -26,6 +45,8 @@ export const embeddingRoutes: FastifyPluginAsync = async (server) => {
         embeddedChunks: embedded,
         pendingChunks: total - embedded,
         coverage: total === 0 ? 0 : Math.round((embedded / total) * 100),
+        bySourceType,
+        byAuthorityLevel,
       },
     };
   });
@@ -56,6 +77,52 @@ export const embeddingRoutes: FastifyPluginAsync = async (server) => {
       success: true,
       data: {
         documentsProcessed: documents.length,
+        chunksEmbedded: totalEmbedded,
+        chunksFailed: totalFailed,
+      },
+    };
+  });
+
+  // Re-embed documents that still have pending (null) chunks, prioritising HIGH authority first
+  server.post<{ Body: unknown }>("/reindex-pending", async (request) => {
+    const { campaignId } = z
+      .object({ campaignId: z.string().optional() })
+      .parse(request.body ?? {});
+
+    const AUTHORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+    // One row per document that has at least one unembedded chunk
+    const pendingRows = await prisma.documentChunk.findMany({
+      where: {
+        embeddingJson: null,
+        ...(campaignId
+          ? { OR: [{ campaignId }, { campaignId: null as unknown as string }] }
+          : {}),
+      },
+      select: { documentId: true, authorityLevel: true },
+      distinct: ["documentId"],
+    });
+
+    // Sort HIGH → MEDIUM → LOW so high-authority content is re-embedded first
+    pendingRows.sort((a, b) => {
+      const aOrd = AUTHORITY_ORDER[a.authorityLevel] ?? 2;
+      const bOrd = AUTHORITY_ORDER[b.authorityLevel] ?? 2;
+      return aOrd - bOrd;
+    });
+
+    let totalEmbedded = 0;
+    let totalFailed = 0;
+
+    for (const { documentId } of pendingRows) {
+      const result = await embeddingService.embedDocument(documentId);
+      totalEmbedded += result.embedded;
+      totalFailed += result.failed;
+    }
+
+    return {
+      success: true,
+      data: {
+        documentsProcessed: pendingRows.length,
         chunksEmbedded: totalEmbedded,
         chunksFailed: totalFailed,
       },

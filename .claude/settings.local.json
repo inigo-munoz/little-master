@@ -67,7 +67,18 @@
       "Bash(pnpm db:push -- --accept-data-loss)",
       "Bash(npx prisma:*)",
       "Bash(ls src/routes/*.test.ts)",
-      "Bash(timeout 8 pnpm dev:backend)"
+      "Bash(timeout 8 pnpm dev:backend)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:d[k] for k in ['dependencies','devDependencies','scripts'] if k in d}, indent=2\\)\\)\")",
+      "Bash(wc -l ~/Desktop/PHB2024_*.md)",
+      "Bash(wc -c ~/Desktop/PHB2024_*.md)",
+      "Bash(ls ~/Downloads/PHB2024*.md)",
+      "Bash(wc -c ~/Downloads/PHB2024*.md)",
+      "Bash(cp ~/Downloads/PHB2024_Clases.md \"/media/inigo/Loki/Mis Repos/dnd-assistant/data/phb2024/clases.md\")",
+      "Bash(cp ~/Downloads/PHB2024_Especies.md \"/media/inigo/Loki/Mis Repos/dnd-assistant/data/phb2024/especies.md\")",
+      "Bash(cp ~/Downloads/PHB2024_Trasfondos.md \"/media/inigo/Loki/Mis Repos/dnd-assistant/data/phb2024/trasfondos.md\")",
+      "Bash(cp ~/Downloads/PHB2024_Hechizos_Listas.md \"/media/inigo/Loki/Mis Repos/dnd-assistant/data/phb2024/hechizos-listas.md\")",
+      "Bash(cp ~/Downloads/PHB2024_Dones.md \"/media/inigo/Loki/Mis Repos/dnd-assistant/data/phb2024/dones.md\")",
+      "Bash(pnpm phb:import)"
     ]
   }
 }

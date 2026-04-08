@@ -6,11 +6,11 @@
 function isNonNarrativeLine(line: string): boolean {
   const t = line.trim();
   if (t === "") return false;
-  if (/^\[.+\]$/.test(t)) return true;
-  if (/^\*\*[^*\n]+:\*\*\s+\S/.test(t)) return true;
-  if (/^\*\*[^*\n]+:\*\*\s*$/.test(t)) return true;
-  if (/^#{1,3}\s/.test(t)) return true;
+  if (/^\[.+\]$/.test(t)) return true;               // [AI GENERATED...], [Potential conflicts...], etc.
+  if (/^\*\*[^*\n]+:\*\*\s*$/.test(t)) return true;  // **Sección:** (cabecera standalone sin valor)
+  if (/^#{1,3}\s/.test(t)) return true;               // ## Heading
   return false;
+  // NOTA: Las líneas "**Campo:** Valor" con valor inline se conservan en la descripción.
 }
 
 function cleanDescription(content: string, headingLine: string): string {
@@ -68,4 +68,20 @@ export function parseFactionFromResponse(
   content: string
 ): { name: string; description: string } | null {
   return parseEntityFromResponse(content, FACTION_KEYWORDS, 100);
+}
+
+/**
+ * Extrae nombre y descripción de cualquier entidad con heading ##,
+ * sin requerir palabras clave específicas en el nombre.
+ * Se usa cuando el tipo ya se conoce por contexto (entityHint).
+ */
+export function parseGenericEntityFromResponse(
+  content: string
+): { name: string; description: string } | null {
+  const headingMatch = content.match(/^#{1,3}\s+(.{2,80})$/m);
+  if (!headingMatch?.[1]) return null;
+  const name = headingMatch[1].trim();
+  const description = cleanDescription(content, headingMatch[0]);
+  if (description.length < 50) return null;
+  return { name, description };
 }

@@ -218,18 +218,40 @@ export const api = {
       get<{ name: string; cr: string; type: string; size: string }[]>(
         `/api/srd/monsters${q ? `?q=${encodeURIComponent(q)}` : ""}`
       ),
+    monsterDetail: (name: string) =>
+      get<MonsterDetail | null>(`/api/srd/monsters/${encodeURIComponent(name)}`),
     import: (force = false) =>
       post<{ message: string }>("/api/srd/import", { force }),
   },
 
+  encounters: {
+    list: (campaignId: string, limit?: number) =>
+      get<Encounter[]>(
+        `/api/encounters?campaignId=${campaignId}${limit ? `&limit=${limit}` : ""}`
+      ),
+    create: (data: CreateEncounter) =>
+      post<Encounter>("/api/encounters", data),
+    delete: (id: string) => del(`/api/encounters/${id}`),
+  },
+
   embeddings: {
     status: (campaignId?: string) =>
-      get<{ totalChunks: number; embeddedChunks: number; pendingChunks: number; coverage: number }>(
-        `/api/embeddings/status${campaignId ? `?campaignId=${campaignId}` : ""}`
-      ),
+      get<{
+        totalChunks: number;
+        embeddedChunks: number;
+        pendingChunks: number;
+        coverage: number;
+        bySourceType: Record<string, { total: number; embedded: number }>;
+        byAuthorityLevel: Record<string, { total: number; embedded: number }>;
+      }>(`/api/embeddings/status${campaignId ? `?campaignId=${campaignId}` : ""}`),
     embedAll: (campaignId?: string) =>
       post<{ documentsProcessed: number; chunksEmbedded: number; chunksFailed: number }>(
         "/api/embeddings/embed-all",
+        { campaignId }
+      ),
+    reindexPending: (campaignId?: string) =>
+      post<{ documentsProcessed: number; chunksEmbedded: number; chunksFailed: number }>(
+        "/api/embeddings/reindex-pending",
         { campaignId }
       ),
   },
@@ -263,6 +285,16 @@ export const api = {
     update: (id: string, data: UpdateFaction) =>
       patch<Faction>(`/api/factions/${id}`, data),
     delete: (id: string) => del(`/api/factions/${id}`),
+  },
+
+  players: {
+    list: (campaignId: string) =>
+      get<Player[]>(`/api/players?campaignId=${campaignId}`),
+    get: (id: string) => get<Player>(`/api/players/${id}`),
+    create: (data: CreatePlayer) => post<Player>("/api/players", data),
+    update: (id: string, data: UpdatePlayer) =>
+      patch<Player>(`/api/players/${id}`, data),
+    delete: (id: string) => del(`/api/players/${id}`),
   },
 
 };
@@ -385,6 +417,7 @@ export interface ExtendedMessage extends ChatMessage {
   model?: string;
   mode?: AssistantMode;
   toolsUsed?: string[];
+  entityHint?: "npc" | "location" | "faction";
 }
 
 export interface AssistantRun {
@@ -497,5 +530,105 @@ export interface UpdateFaction {
   description?: string;
   alignment?: string;
   tags?: string[];
+}
+
+export interface Player {
+  id: string;
+  campaignId: string;
+  name: string;
+  playerName?: string | null;
+  class?: string | null;
+  race?: string | null;
+  level: number;
+  hp?: number | null;
+  ac?: number | null;
+  status: "active" | "inactive" | "dead" | "retired";
+  notes?: string | null;
+  tags: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePlayer {
+  campaignId: string;
+  name: string;
+  playerName?: string;
+  class?: string;
+  subclass?: string;
+  race?: string;
+  level?: number;
+  hp?: number;
+  ac?: number;
+  status?: "active" | "inactive" | "dead" | "retired";
+  notes?: string;
+}
+
+export interface UpdatePlayer {
+  name?: string;
+  class?: string;
+  race?: string;
+  level?: number;
+  status?: "active" | "inactive" | "dead" | "retired";
+  notes?: string;
+}
+
+export interface MonsterDetail {
+  name: string;
+  size: string;
+  type: string;
+  alignment: string;
+  ac: string;
+  hp: string;
+  speed: string;
+  initiative: string;
+  str: number | null;
+  dex: number | null;
+  con: number | null;
+  int: number | null;
+  wis: number | null;
+  cha: number | null;
+  savingThrows: string;
+  skills: string;
+  resistances: string;
+  immunities: string;
+  conditionImmunities: string;
+  vulnerabilities: string;
+  senses: string;
+  languages: string;
+  cr: string;
+  xp: string;
+  profBonus: string;
+  traits: { name: string; description: string }[];
+  actions: { name: string; description: string }[];
+  bonusActions: { name: string; description: string }[];
+  reactions: { name: string; description: string }[];
+  legendaryActions: { name: string; description: string }[];
+  rawText: string;
+}
+
+export interface Encounter {
+  id: string;
+  campaignId: string;
+  title?: string | null;
+  monsters: { name: string; cr: string; count: number }[];
+  partySize: number;
+  partyLevel: number;
+  baseXp: number;
+  adjustedXp: number;
+  difficulty: string;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface CreateEncounter {
+  campaignId: string;
+  title?: string;
+  monsters: { name: string; cr: string; count: number }[];
+  partySize: number;
+  partyLevel: number;
+  baseXp: number;
+  adjustedXp: number;
+  difficulty: "trivial" | "easy" | "medium" | "hard" | "deadly" | "impossible";
+  notes?: string;
 }
 

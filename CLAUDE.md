@@ -25,13 +25,12 @@ pnpm lint               # Frontend only
 
 # Tests
 cd app/frontend && pnpm test   # Vitest — tests unitarios del frontend
+cd app/backend  && pnpm test   # Vitest — tests unitarios del backend
 
 # Database
 pnpm db:migrate         # Run Prisma migrations
 pnpm db:studio          # Open Prisma Studio GUI
 ```
-
-There is no test framework configured in this project.
 
 ### First-time setup
 
@@ -73,7 +72,7 @@ data/           User-local data (gitignored): DB, docs, logs, embeddings
 
 - `server.ts` — Fastify bootstrap, plugin registration, route mounting
 - `routes/` — One file per resource (campaigns, sessions, npcs, chat, documents, llmConfig, obsidian, rules, changeLog, issues, players, embeddings, etc.)
-- `services/` — Business logic. Key ones: `chat.service.ts` (AI context + LLM calls), `llmConfig.service.ts` (encrypted API key storage), `obsidian.service.ts` (vault sync), `embedding.service.ts` (vector search — Sprint 2)
+- `services/` — Business logic. Key ones: `chat.service.ts` (AI context + LLM calls), `llmConfig.service.ts` (encrypted API key storage), `obsidian.service.ts` (vault sync), `embedding.service.ts` + `embedding-tiers.ts` (vector search con retrieval por tiers)
 - `db/prisma.ts` — Prisma client singleton
 - `crypto/encryption.ts` — AES-256-GCM for API keys
 - `config/env.ts` — Zod-validated environment config
@@ -103,6 +102,51 @@ Factory pattern: `providers/factory.ts` selects OpenAI or Anthropic at runtime b
 ### Database
 
 SQLite via Prisma (schema at `app/backend/prisma/schema.prisma`). PostgreSQL-ready. Key tables: Campaign, Session, Npc, Player, Location, Faction, Document, DocumentChunk, LlmConfig (encrypted), AssistantRun, ChangeLog, Issue. API keys are encrypted before storage and never returned to the frontend in plaintext.
+
+### Semantic search / embeddings
+
+`embedding-tiers.ts` contiene la lógica pura de selección por tiers (sin dependencias externas — testeable). `embedding.service.ts` orquesta DB + OpenAI + tiered selection. Tiers:
+- **HIGH**: `official`, `srd` — cuota por defecto 50% del límite
+- **MEDIUM**: `campaign`, `homebrew_external` — cuota 37.5%
+- **LOW**: `homebrew_user`, `ai_inferred` — cuota 12.5%
+
+Los slots sobrantes de un tier se redistribuyen al tier inmediatamente superior. La función `selectByTier` acepta `tierQuotas` opcional para override.
+
+Endpoints: `GET /api/embeddings/status` (incluye `bySourceType` y `byAuthorityLevel`), `POST /api/embeddings/embed-all`, `POST /api/embeddings/reindex-pending` (procesa documentos con chunks sin embeddings, orden HIGH→MEDIUM→LOW).
+
+### Player (PJ) model
+
+`Player` en Prisma tiene campos completos de D&D 2024: habilidades, tiradas de salvación, habilidades, inventario, magia (`spellsPrepared` — sistema de preparación de hechizos), rasgos de especie (`speciesTraits`), dones (`feats`), armas, objetos mágicos, monedas, etc.
+
+`lib/dnd-2024-data.ts` expone constantes del PHB 2024: `DND_CLASSES` (12 clases con 4 subclases cada una), `DND_SPECIES` (10 especies), `DND_SPECIES_VARIANTS` (linajes para Dracónido/Elfo/Gnomo/Tiefling), `DND_BACKGROUNDS` (16 trasfondos), `DND_ALIGNMENTS` (9 alineamientos). La ficha de personaje (`app/players/[id]/page.tsx`) usa selects dependientes: Especie → Linaje, Clase → Subclase.
+
+### Designer chat (modo AI)
+
+`chat/page.tsx` usa `entityType` state para indicar el tipo de entidad que el usuario quiere crear (npc/location/faction). Este hint se propaga a `ExtendedMessage.entityHint` y lo usa `DesignerSaveButton` para parsear la respuesta con el parser correcto en lugar de intentar inferir el tipo.
+
+- `lib/npc-parser.ts` — extrae NPC (nombre, descripción, rol) rechazando headings de localización/facción
+- `lib/entity-parser.ts` — `parseLocationFromResponse`, `parseFactionFromResponse`, `parseGenericEntityFromResponse`
+
+## Contenido PHB 2024
+
+Los archivos en `data/phb2024/` contienen el contenido oficial del PHB 2024. Se importan automáticamente en el setup del proyecto (`npx tsx src/db/setup.ts`).
+
+Archivos disponibles:
+- `clases.md` — 12 clases con subclases
+- `especies.md` — 10 especies
+- `trasfondos.md` — 16 trasfondos
+- `hechizos-listas.md` — Listas de hechizos por clase
+- `dones.md` — Dones de Origen, Generales, Estilo de Combate y Épicos
+- `equipo.md` — Armas, armaduras, equipo de aventurero
+- `reglas.md` — Mecánicas de juego, combate, condiciones
+- `multiverso.md` — Planos de existencia
+- `criaturas.md` — Bloques de estadísticas (bestias, familiares, monturas, no muertos)
+- `glosario.md` — Glosario oficial de reglas
+
+Los documentos se importan con `sourceType: "official"` y `authorityLevel: "high"` — máxima prioridad en retrieval. Los embeddings se generan por separado vía Settings → Semantic Search → Embed All.
+
+Para reimportar: `cd app/backend && pnpm phb:import`
+Para reimportar forzando (borra y recrea): `cd app/backend && pnpm phb:import:force`
 
 ## Environment variables
 
