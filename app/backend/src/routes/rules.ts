@@ -24,24 +24,8 @@ export const rulesRoutes: FastifyPluginAsync = async (server) => {
       monsters: z.array(MonsterSchema).min(1),
     });
 
-    const { party, monsters, campaignId } = schema.parse(request.body);
+    const { party, monsters } = schema.parse(request.body);
     const result = rulesEngine.validateEncounter(party, monsters);
-
-    // Log as an issue if deadly or impossible
-    if (
-      campaignId &&
-      (result.difficulty === "deadly" || result.difficulty === "impossible")
-    ) {
-      await prisma.issue.create({
-        data: {
-          campaignId,
-          type: "unbalanced_encounter",
-          severity: result.difficulty === "impossible" ? "critical" : "major",
-          status: "open",
-          description: `Encounter validated as ${result.difficulty.toUpperCase()}. Adjusted XP: ${result.adjustedXp} (party deadly threshold: ${result.thresholds.deadly}). ${result.recommendation}`,
-        },
-      });
-    }
 
     return { success: true, data: result };
   });

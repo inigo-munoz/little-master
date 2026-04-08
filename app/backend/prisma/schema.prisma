@@ -76,6 +76,31 @@ model Npc {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Stat block de combate
+  armorClass      Int?
+  hitPoints       String?   // ej: "45 (7d8 + 14)"
+  speed           String?   // ej: "30 pies"
+  strength        Int?
+  dexterity       Int?
+  constitution    Int?
+  intelligence    Int?
+  wisdom          Int?
+  charisma        Int?
+  savingThrows    String?   // ej: "DES +4, CAR +3"
+  skills          String?
+  resistances     String?
+  immunities      String?
+  senses          String?
+  languages       String?
+  challengeRating String?   // ej: "3 (700 XP)"
+  traits          String?   // JSON: [{name, description}]
+  actions         String?   // JSON: [{name, description}]
+  bonusActions    String?   // JSON: [{name, description}]
+  reactions       String?   // JSON: [{name, description}]
+  npcType         String?   // "monster" | "player"
+  npcClass        String?
+  npcLevel        Int?
+
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 }
 

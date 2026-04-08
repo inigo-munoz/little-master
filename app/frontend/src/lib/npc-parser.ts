@@ -58,6 +58,65 @@ function extractDescription(content: string, nameLine: string): string {
 // Campos típicos de NPC que indican que la línea anterior es el nombre
 const NPC_FIELD_RE = /^(\*\*)?(Rol|Role|Raza|Race|Clase|Class|Estado|Apariencia|Personalidad|Motivaci[oó]n|Secreto|Ganchos)/i;
 
+// ─── Stat Block Parser ────────────────────────────────────────────────────────
+
+export interface ParsedStatBlock {
+  npcType?: "monster" | "player";
+  armorClass?: number;
+  hitPoints?: string;
+  speed?: string;
+  strength?: number;
+  dexterity?: number;
+  constitution?: number;
+  intelligence?: number;
+  wisdom?: number;
+  charisma?: number;
+  challengeRating?: string;
+  savingThrows?: string;
+  skills?: string;
+  resistances?: string;
+  immunities?: string;
+  senses?: string;
+  languages?: string;
+  traits?: { name: string; description: string }[];
+  actions?: { name: string; description: string }[];
+  bonusActions?: { name: string; description: string }[];
+  reactions?: { name: string; description: string }[];
+  npcClass?: string;
+  npcLevel?: number;
+}
+
+type RawEntry = string | { name: string; description?: string; type?: string; attackBonus?: number; damage?: string };
+
+function normalizeStatEntry(entry: RawEntry): { name: string; description: string } {
+  if (typeof entry === "string") return { name: entry, description: "" };
+  let desc = entry.description ?? "";
+  if (!desc && (entry.attackBonus != null || entry.damage != null)) {
+    const parts: string[] = [];
+    if (entry.damage) parts.push(`daño: ${entry.damage}`);
+    if (entry.attackBonus != null) parts.push(`ataque: +${entry.attackBonus}`);
+    desc = parts.join(", ");
+  }
+  return { name: entry.name, description: desc };
+}
+
+export function parseStatBlockFromResponse(content: string): ParsedStatBlock | null {
+  const match = content.match(/STAT_BLOCK:\s*([\s\S]*?)\s*:END_STAT_BLOCK/);
+  if (!match?.[1]) return null;
+  try {
+    const raw = JSON.parse(match[1].trim()) as any;
+    return {
+      ...raw,
+      traits: (raw.traits as RawEntry[] | undefined)?.map(normalizeStatEntry),
+      actions: (raw.actions as RawEntry[] | undefined)?.map(normalizeStatEntry),
+      bonusActions: (raw.bonusActions as RawEntry[] | undefined)?.map(normalizeStatEntry),
+      reactions: (raw.reactions as RawEntry[] | undefined)?.map(normalizeStatEntry),
+    } as ParsedStatBlock;
+  } catch {
+    return null;
+  }
+}
+
 export function parseNpcFromResponse(
   content: string
 ): { name: string; description: string; role: string } | null {

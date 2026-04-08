@@ -83,13 +83,39 @@ export const NpcSchema = z.object({
 });
 export type Npc = z.infer<typeof NpcSchema>;
 
-export const CreateNpcSchema = NpcSchema.pick({
-  campaignId: true,
-  name: true,
-  role: true,
-  description: true,
-  status: true,
-  tags: true,
+const StatBlockEntrySchema = z.object({ name: z.string(), description: z.string() });
+
+export const CreateNpcSchema = z.object({
+  campaignId: z.string(),
+  name: z.string().min(1).max(200),
+  role: z.string().max(200).optional().nullable(),
+  description: z.string().max(10000).optional().nullable(),
+  status: NpcStatusSchema.default("alive"),
+  tags: z.array(z.string()).default([]),
+  // Stat block de combate — todos opcionales
+  armorClass: z.number().int().optional().nullable(),
+  hitPoints: z.string().optional().nullable(),
+  speed: z.string().optional().nullable(),
+  strength: z.number().int().optional().nullable(),
+  dexterity: z.number().int().optional().nullable(),
+  constitution: z.number().int().optional().nullable(),
+  intelligence: z.number().int().optional().nullable(),
+  wisdom: z.number().int().optional().nullable(),
+  charisma: z.number().int().optional().nullable(),
+  savingThrows: z.string().optional().nullable(),
+  skills: z.string().optional().nullable(),
+  resistances: z.string().optional().nullable(),
+  immunities: z.string().optional().nullable(),
+  senses: z.string().optional().nullable(),
+  languages: z.string().optional().nullable(),
+  challengeRating: z.string().optional().nullable(),
+  traits: z.array(StatBlockEntrySchema).optional().nullable(),
+  actions: z.array(StatBlockEntrySchema).optional().nullable(),
+  bonusActions: z.array(StatBlockEntrySchema).optional().nullable(),
+  reactions: z.array(StatBlockEntrySchema).optional().nullable(),
+  npcType: z.string().optional().nullable(),
+  npcClass: z.string().optional().nullable(),
+  npcLevel: z.number().int().optional().nullable(),
 });
 export type CreateNpc = z.infer<typeof CreateNpcSchema>;
 
