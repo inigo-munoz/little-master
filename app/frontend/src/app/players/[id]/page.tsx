@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import { Shield, Heart, Star, Zap, ChevronLeft, Save, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
 import { AppShell } from "../../../components/layout/AppShell";
+import {
+  DND_CLASSES,
+  DND_SPECIES,
+  DND_SPECIES_VARIANTS,
+  DND_BACKGROUNDS,
+  DND_ALIGNMENTS,
+} from "../../../lib/dnd-2024-data";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
@@ -83,6 +90,28 @@ function Input({ value, onChange, type = "text", placeholder = "" }: {
   );
 }
 
+function Select({ value, onChange, options, placeholder, disabled }: {
+  value: string | null | undefined;
+  onChange: (v: string) => void;
+  options: readonly string[] | string[];
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <select
+      value={value ?? ""}
+      onChange={e => onChange(e.target.value)}
+      disabled={disabled}
+      className="w-full bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-100 text-sm focus:outline-none focus:border-amber-500 disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      <option value="">{placeholder ?? "—"}</option>
+      {options.map(opt => (
+        <option key={opt} value={opt}>{opt}</option>
+      ))}
+    </select>
+  );
+}
+
 function NumberInput({ value, onChange, min, max }: {
   value: number | null | undefined;
   onChange: (v: number | null) => void;
@@ -139,11 +168,15 @@ function CharacterSheetContent() {
   );
 
   const [form, setForm] = useState<Record<string, any>>({});
+  const formInitialized = useRef(false);
 
-  // Merge player data into form on load
-  if (player && Object.keys(form).length === 0) {
-    setForm(player);
-  }
+  // Popula el formulario con los datos del jugador al montar
+  useEffect(() => {
+    if (player && !formInitialized.current) {
+      setForm(player);
+      formInitialized.current = true;
+    }
+  }, [player]);
 
   function set(key: string, value: any) {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -174,6 +207,45 @@ function CharacterSheetContent() {
   const skillExpert: string[] = parseJson(form.skillExpertise ?? "[]", []);
   const saveProfs: string[] = parseJson(form.savingThrows ?? "[]", []);
 
+  // Especie + linaje: se almacenan como "Especie (Variante)" o simplemente "Especie"
+  const raceStr: string = form.race ?? "";
+  const raceMatch = raceStr.match(/^(.+?) \((.+)\)$/);
+  const currentSpecies = raceMatch ? raceMatch[1] : raceStr;
+  const currentVariant = raceMatch ? raceMatch[2] : "";
+  const speciesVariants = currentSpecies && Object.prototype.hasOwnProperty.call(DND_SPECIES_VARIANTS, currentSpecies)
+    ? DND_SPECIES_VARIANTS[currentSpecies] ?? []
+    : [];
+
+  function setSpecies(species: string) {
+    // Al cambiar especie, se limpia la variante
+    set("race", species);
+  }
+  function setVariant(variant: string) {
+    if (!variant) {
+      set("race", currentSpecies);
+    } else {
+      set("race", `${currentSpecies} (${variant})`);
+    }
+  }
+
+  // Subclases disponibles según la clase seleccionada
+  const currentClass: string = form.class ?? "";
+  const availableSubclasses = DND_CLASSES[currentClass] ?? [];
+  // Subclase solo visible cuando hay clase Y nivel >= 3
+  const showSubclass = !!currentClass && (form.level ?? 1) >= 3;
+
+  // Label del subtipo varía según la especie
+  const SPECIES_VARIANT_LABEL: Record<string, string> = {
+    "Dracónido": "Ascendencia",
+    "Elfo": "Linaje",
+    "Gnomo": "Linaje",
+    "Goliath": "Ascendencia",
+    "Tiefling": "Legado",
+  };
+  const variantLabel = (currentSpecies && Object.prototype.hasOwnProperty.call(SPECIES_VARIANT_LABEL, currentSpecies)
+    ? SPECIES_VARIANT_LABEL[currentSpecies]
+    : undefined) ?? "Linaje";
+
   const TABS = [
     { id: "core", label: "Básico" },
     { id: "abilities", label: "Estadísticas" },
@@ -183,7 +255,7 @@ function CharacterSheetContent() {
     { id: "backstory", label: "Trasfondo" },
   ] as const;
 
-  if (!player) return (
+  if (!player || Object.keys(form).length === 0) return (
     <AppShell>
       <div className="flex items-center justify-center h-64">
         <Loader2 className="animate-spin text-stone-600" />
@@ -263,12 +335,101 @@ function CharacterSheetContent() {
             <div className="grid grid-cols-2 gap-4">
               <Field label="Nombre"><Input value={form.name} onChange={v => set("name", v)} /></Field>
               <Field label="Jugador"><Input value={form.playerName} onChange={v => set("playerName", v)} /></Field>
-              <Field label="Clase"><Input value={form.class} onChange={v => set("class", v)} /></Field>
-              <Field label="Subclase"><Input value={form.subclass} onChange={v => set("subclass", v)} /></Field>
-              <Field label="Raza / Especie"><Input value={form.race} onChange={v => set("race", v)} /></Field>
-              <Field label="Trasfondo"><Input value={form.background} onChange={v => set("background", v)} /></Field>
-              <Field label="Alineamiento"><Input value={form.alignment} onChange={v => set("alignment", v)} placeholder="Neutral Bueno..." /></Field>
-              <Field label="Nivel"><NumberInput value={form.level} onChange={v => set("level", v)} min={1} max={20} /></Field>
+
+              {/* Clase — ordenada alfabéticamente */}
+              <Field label="Clase">
+                <Select
+                  value={currentClass}
+                  onChange={v => { set("class", v); set("subclass", ""); }}
+                  options={Object.keys(DND_CLASSES).sort()}
+                  placeholder="Selecciona clase..."
+                />
+              </Field>
+
+              {/* Nivel — junto a Clase para que el condicional de subclase tenga contexto visual */}
+              <Field label="Nivel">
+                <NumberInput
+                  value={form.level}
+                  onChange={v => {
+                    set("level", v);
+                    if ((v ?? 1) < 3) set("subclass", "");
+                  }}
+                  min={1}
+                  max={20}
+                />
+              </Field>
+
+              {/* Subclase — solo visible con clase seleccionada Y nivel ≥ 3 */}
+              <Field label="Subclase">
+                {showSubclass ? (
+                  <Select
+                    value={form.subclass}
+                    onChange={v => set("subclass", v)}
+                    options={[...availableSubclasses, "Homebrew / Otra"]}
+                    placeholder="Selecciona subclase..."
+                  />
+                ) : currentClass ? (
+                  <p className="text-xs text-stone-500 italic py-1.5 px-1">
+                    La subclase se elige al nivel 3
+                  </p>
+                ) : (
+                  <select disabled className="w-full bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-500 text-sm opacity-40 cursor-not-allowed">
+                    <option>Selecciona clase primero</option>
+                  </select>
+                )}
+              </Field>
+
+              {/* Especie */}
+              <Field label="Especie">
+                <Select
+                  value={currentSpecies}
+                  onChange={setSpecies}
+                  options={[...DND_SPECIES, "Otra (homebrew)"]}
+                  placeholder="Selecciona especie..."
+                />
+              </Field>
+
+              {/* Subtipo de especie — label específico por especie; ocupa el slot de Trasfondo si no hay variante */}
+              {speciesVariants.length > 0 ? (
+                <Field label={variantLabel}>
+                  <Select
+                    value={currentVariant}
+                    onChange={setVariant}
+                    options={speciesVariants}
+                    placeholder={`Selecciona ${variantLabel.toLowerCase()}...`}
+                  />
+                </Field>
+              ) : (
+                <Field label="Trasfondo">
+                  <Select
+                    value={form.background}
+                    onChange={v => set("background", v)}
+                    options={[...DND_BACKGROUNDS, "Otro (homebrew)"]}
+                    placeholder="Selecciona trasfondo..."
+                  />
+                </Field>
+              )}
+
+              {/* Trasfondo siempre visible cuando la especie ya ocupa su slot con el subtipo */}
+              {speciesVariants.length > 0 && (
+                <Field label="Trasfondo">
+                  <Select
+                    value={form.background}
+                    onChange={v => set("background", v)}
+                    options={[...DND_BACKGROUNDS, "Otro (homebrew)"]}
+                    placeholder="Selecciona trasfondo..."
+                  />
+                </Field>
+              )}
+
+              <Field label="Alineamiento">
+                <Select
+                  value={form.alignment}
+                  onChange={v => set("alignment", v)}
+                  options={DND_ALIGNMENTS}
+                  placeholder="Selecciona alineamiento..."
+                />
+              </Field>
               <Field label="Puntos de experiencia"><NumberInput value={form.experiencePoints} onChange={v => set("experiencePoints", v)} min={0} /></Field>
             </div>
 
@@ -414,10 +575,10 @@ function CharacterSheetContent() {
               className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-300 text-sm focus:outline-none focus:border-amber-500 resize-none"
             />
 
-            <SectionTitle>Hechizos conocidos / preparados</SectionTitle>
+            <SectionTitle>Hechizos preparados</SectionTitle>
             <textarea
-              value={parseJson(form.spellsKnown ?? "[]", []).join("\n")}
-              onChange={e => set("spellsKnown", JSON.stringify(e.target.value.split("\n").filter(Boolean)))}
+              value={parseJson(form.spellsPrepared ?? "[]", []).join("\n")}
+              onChange={e => set("spellsPrepared", JSON.stringify(e.target.value.split("\n").filter(Boolean)))}
               placeholder="Un hechizo por línea (ej: Bola de Fuego - Nivel 3)..."
               rows={12}
               className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-300 text-sm focus:outline-none focus:border-amber-500 resize-none"

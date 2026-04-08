@@ -2,14 +2,86 @@
 
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
-import { Plus, Swords, Users, BookOpen, AlertTriangle } from "lucide-react";
+import { Plus, Swords, Users, BookOpen, AlertTriangle, Zap } from "lucide-react";
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
-import type { Campaign } from "../../lib/api";
+import type { Campaign, Encounter } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
 import { StatusBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
 import Link from "next/link";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const DIFFICULTY_CONFIG = {
+  trivial:    { color: "text-stone-400", bg: "bg-stone-800",   label: "Trivial" },
+  easy:       { color: "text-emerald-400", bg: "bg-emerald-950", label: "Easy" },
+  medium:     { color: "text-blue-400",  bg: "bg-blue-950",    label: "Medium" },
+  hard:       { color: "text-amber-400", bg: "bg-amber-950",   label: "Hard" },
+  deadly:     { color: "text-red-400",   bg: "bg-red-950",     label: "Deadly" },
+  impossible: { color: "text-red-300",   bg: "bg-red-950",     label: "Impossible" },
+} as const;
+
+function relativeDate(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / 86_400_000);
+  if (days === 0) return "hoy";
+  if (days === 1) return "ayer";
+  if (days < 7) return `hace ${days} días`;
+  if (days < 30) return `hace ${Math.floor(days / 7)} sem.`;
+  return `hace ${Math.floor(days / 30)} meses`;
+}
+
+// ─── Encuentros Recientes Widget ──────────────────────────────────────────────
+
+function EncuentrosRecientes({ campaignId }: { campaignId: string }) {
+  const { data: encounters } = useSWR(
+    `/encounters-recent/${campaignId}`,
+    () => api.encounters.list(campaignId, 5)
+  );
+
+  if (!encounters || encounters.length === 0) return null;
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Zap size={15} className="text-amber-400" />
+          <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-wider">
+            Encuentros Recientes
+          </h2>
+        </div>
+        <Link href="/encounter" className="text-xs text-amber-500 hover:text-amber-400 transition-colors">
+          Ver validador →
+        </Link>
+      </div>
+
+      <div className="space-y-2">
+        {encounters.map((enc) => {
+          const dcfg = DIFFICULTY_CONFIG[enc.difficulty as keyof typeof DIFFICULTY_CONFIG];
+          const summary = enc.monsters.map((m) => `${m.name} ×${m.count}`).join(", ");
+          return (
+            <Link
+              key={enc.id}
+              href="/encounter"
+              className="flex items-center gap-3 border border-stone-800 bg-stone-900 rounded-lg px-4 py-2.5 hover:border-stone-700 transition-colors group"
+            >
+              {dcfg && (
+                <span className={clsx("text-xs font-bold px-2 py-0.5 rounded shrink-0", dcfg.bg, dcfg.color)}>
+                  {dcfg.label}
+                </span>
+              )}
+              <span className="text-sm text-stone-300 truncate flex-1 group-hover:text-stone-100">
+                {enc.title || summary}
+              </span>
+              <span className="text-xs text-stone-600 shrink-0">{relativeDate(enc.createdAt)}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function CreateCampaignModal({
   onClose,
@@ -187,6 +259,7 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
 export default function CampaignsPage() {
   const { data: campaigns, error, isLoading } = useSWR("/campaigns", () => api.campaigns.list());
   const [showCreate, setShowCreate] = useState(false);
+  const { activeCampaignId } = useAppStore();
 
   return (
     <AppShell>
@@ -232,6 +305,8 @@ export default function CampaignsPage() {
         <div className="space-y-4">
           {campaigns?.map((c) => <CampaignCard key={c.id} campaign={c} />)}
         </div>
+
+        {activeCampaignId && <EncuentrosRecientes campaignId={activeCampaignId} />}
       </div>
 
       {showCreate && (

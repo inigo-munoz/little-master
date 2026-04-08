@@ -32,7 +32,7 @@ import { SourceBadge, AuthorityBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
 import { parseNpcFromResponse } from "../../lib/npc-parser";
 import { parseSessionSummaryFromResponse } from "../../lib/session-parser";
-import { parseLocationFromResponse, parseFactionFromResponse } from "../../lib/entity-parser";
+import { parseLocationFromResponse, parseFactionFromResponse, parseGenericEntityFromResponse } from "../../lib/entity-parser";
 
 const MODE_CONFIG: Record<
   AssistantMode,
@@ -191,24 +191,52 @@ const MODE_TOOLS: Record<string, string[]> = {
 };
 
 // ─── DesignerSaveButton ───────────────────────────────────────────────────────
-// Detecta NPC, localización o facción (en ese orden) y muestra el botón correcto.
+// Si entityHint está definido (el usuario usó un botón de acceso rápido), usa ese
+// tipo directamente. Si es null (texto libre), intenta detectar con los parsers.
 
-function DesignerSaveButton({ content, campaignId }: { content: string; campaignId: string }) {
+type EntityKind = "npc" | "location" | "faction";
+type DetectedEntity = {
+  kind: EntityKind;
+  name: string;
+  data: { name: string; description: string; role?: string };
+};
+
+function DesignerSaveButton({
+  content,
+  campaignId,
+  entityHint,
+}: {
+  content: string;
+  campaignId: string;
+  entityHint?: EntityKind;
+}) {
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [savedName, setSavedName] = useState("");
   const [editPath, setEditPath] = useState("");
 
-  const npc = parseNpcFromResponse(content);
-  const location = !npc ? parseLocationFromResponse(content) : null;
-  const faction = !npc && !location ? parseFactionFromResponse(content) : null;
+  let detected: DetectedEntity | null = null;
 
-  const detected = npc
-    ? { kind: "npc" as const, name: npc.name, data: npc }
-    : location
-    ? { kind: "location" as const, name: location.name, data: location }
-    : faction
-    ? { kind: "faction" as const, name: faction.name, data: faction }
-    : null;
+  if (entityHint) {
+    if (entityHint === "npc") {
+      const npc = parseNpcFromResponse(content);
+      if (npc) detected = { kind: "npc", name: npc.name, data: npc };
+    } else {
+      const entity = parseGenericEntityFromResponse(content);
+      if (entity) detected = { kind: entityHint, name: entity.name, data: entity };
+    }
+  } else {
+    // Fallback: auto-detección por parsers
+    const npc = parseNpcFromResponse(content);
+    const location = !npc ? parseLocationFromResponse(content) : null;
+    const faction = !npc && !location ? parseFactionFromResponse(content) : null;
+    detected = npc
+      ? { kind: "npc", name: npc.name, data: npc }
+      : location
+      ? { kind: "location", name: location.name, data: location }
+      : faction
+      ? { kind: "faction", name: faction.name, data: faction }
+      : null;
+  }
 
   if (!detected) return null;
 
@@ -251,19 +279,23 @@ function DesignerSaveButton({ content, campaignId }: { content: string; campaign
     }
   }
 
-  const labels = {
-    npc: { btn: "Guardar NPC", icon: UserPlus, color: "purple" },
-    location: { btn: "Guardar Localización", icon: MapPin, color: "blue" },
-    faction: { btn: "Guardar Facción", icon: Users, color: "amber" },
-  } as const;
+  const labels: Record<EntityKind, { btn: string; icon: React.ElementType; color: string }> = {
+    npc:      { btn: "Guardar NPC",          icon: UserPlus, color: "purple" },
+    location: { btn: "Guardar Localización", icon: MapPin,   color: "blue"   },
+    faction:  { btn: "Guardar Facción",      icon: Users,    color: "amber"  },
+  };
   const cfg = labels[detected.kind];
   const Icon = cfg.icon;
+
+  const kindLabel: Record<EntityKind, string> = {
+    npc: "NPC", location: "Localización", faction: "Facción",
+  };
 
   if (status === "saved") {
     return (
       <p className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400">
         <Check size={12} />
-        {detected.kind === "npc" ? "NPC" : detected.kind === "location" ? "Localización" : "Facción"} guardado:{" "}
+        {kindLabel[detected.kind]} guardado:{" "}
         <span className="font-medium">{savedName}</span>
         <Link href={editPath} className="ml-1 underline hover:text-emerald-300">
           Editar →
@@ -283,8 +315,8 @@ function DesignerSaveButton({ content, campaignId }: { content: string; campaign
 
   const colorMap: Record<string, string> = {
     purple: "bg-purple-900/40 border-purple-700 text-purple-300 hover:bg-purple-900/70",
-    blue: "bg-blue-900/40 border-blue-700 text-blue-300 hover:bg-blue-900/70",
-    amber: "bg-amber-900/40 border-amber-700 text-amber-300 hover:bg-amber-900/70",
+    blue:   "bg-blue-900/40 border-blue-700 text-blue-300 hover:bg-blue-900/70",
+    amber:  "bg-amber-900/40 border-amber-700 text-amber-300 hover:bg-amber-900/70",
   };
 
   return (
@@ -374,9 +406,10 @@ interface MessageBubbleProps {
   mode?: AssistantMode;
   campaignId?: string;
   toolsUsed?: string[];
+  entityHint?: EntityKind;
 }
 
-function MessageBubble({ message, contextChunks, tokensUsed, model, mode, campaignId, toolsUsed }: MessageBubbleProps) {
+function MessageBubble({ message, contextChunks, tokensUsed, model, mode, campaignId, toolsUsed, entityHint }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
   return (
@@ -420,7 +453,7 @@ function MessageBubble({ message, contextChunks, tokensUsed, model, mode, campai
         </div>
 
         {!isUser && mode === "designer" && campaignId && (
-          <DesignerSaveButton content={message.content} campaignId={campaignId} />
+          <DesignerSaveButton content={message.content} campaignId={campaignId} entityHint={entityHint} />
         )}
 
         {!isUser && mode === "session_director" && campaignId && (
@@ -444,6 +477,7 @@ function ChatInterface() {
   const campaignId = searchParams.get("campaignId") ?? undefined;
   const { chatMode, setChatMode, activeCampaign, messages, addMessage, clearMessages } = useAppStore();
   const [input, setInput] = useState("");
+  const [entityType, setEntityType] = useState<"npc" | "location" | "faction" | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -458,6 +492,9 @@ function ChatInterface() {
   async function handleSend() {
     const content = input.trim();
     if (!content || loading) return;
+
+    const capturedEntityType = entityType;
+    setEntityType(null);
 
     const userMsg: ExtendedMessage = {
       id: crypto.randomUUID(),
@@ -490,6 +527,7 @@ function ChatInterface() {
         model: result.model,
         mode: result.mode,
         toolsUsed: result.toolsUsed,
+        entityHint: capturedEntityType ?? undefined,
       };
 
       addMessage(assistantMsg);
@@ -578,6 +616,7 @@ function ChatInterface() {
               mode={msg.mode}
               campaignId={effectiveCampaignId}
               toolsUsed={msg.toolsUsed}
+              entityHint={msg.entityHint}
             />
           ))}
 
@@ -635,7 +674,10 @@ function ChatInterface() {
               <textarea
                 ref={textareaRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  if (!e.target.value.trim()) setEntityType(null);
+                }}
                 onKeyDown={handleKeyDown}
                 disabled={!effectiveCampaignId}
                 placeholder={chatMode === "designer"
@@ -658,22 +700,37 @@ function ChatInterface() {
           {chatMode === "designer" && effectiveCampaignId && (
             <div className="flex gap-2 mt-2">
               <button
-                onClick={() => setInput("Genera un NPC para mi campaña: ")}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-400 hover:text-purple-300 rounded-lg text-xs transition-colors"
+                onClick={() => { setInput("Genera un NPC para mi campaña: "); setEntityType("npc"); }}
+                className={clsx(
+                  "flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border rounded-lg text-xs transition-colors",
+                  entityType === "npc"
+                    ? "border-purple-600 text-purple-300"
+                    : "border-stone-700 text-stone-400 hover:text-purple-300"
+                )}
               >
                 <UserPlus size={11} />
                 + NPC
               </button>
               <button
-                onClick={() => setInput("Genera una localización para mi campaña: ")}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-400 hover:text-blue-300 rounded-lg text-xs transition-colors"
+                onClick={() => { setInput("Genera una localización para mi campaña: "); setEntityType("location"); }}
+                className={clsx(
+                  "flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border rounded-lg text-xs transition-colors",
+                  entityType === "location"
+                    ? "border-blue-600 text-blue-300"
+                    : "border-stone-700 text-stone-400 hover:text-blue-300"
+                )}
               >
                 <MapPin size={11} />
                 + Localización
               </button>
               <button
-                onClick={() => setInput("Genera una facción para mi campaña: ")}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-400 hover:text-amber-300 rounded-lg text-xs transition-colors"
+                onClick={() => { setInput("Genera una facción para mi campaña: "); setEntityType("faction"); }}
+                className={clsx(
+                  "flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border rounded-lg text-xs transition-colors",
+                  entityType === "faction"
+                    ? "border-amber-600 text-amber-300"
+                    : "border-stone-700 text-stone-400 hover:text-amber-300"
+                )}
               >
                 <Users size={11} />
                 + Facción

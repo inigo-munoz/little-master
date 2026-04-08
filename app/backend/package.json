@@ -12,6 +12,8 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
+    "phb:import": "npx tsx src/db/phb-import-cli.ts",
+    "phb:import:force": "npx tsx src/db/phb-import-cli.ts --force",
     "test": "vitest run"
   },
   "dependencies": {

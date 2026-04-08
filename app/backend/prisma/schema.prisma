@@ -45,6 +45,7 @@ model Campaign {
   issues        Issue[]
   assistantRuns AssistantRun[]
   players       Player[]
+  encounters    Encounter[]
 }
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
@@ -271,9 +272,13 @@ model Player {
   ac          Int?
   initiative  Int?
   speed       Int?
+  size        String?  // Tiny, Small, Medium, Large, Huge, Gargantuan
+  shield      Boolean  @default(false)
   hitDice     String?  // e.g. "6d8"
-  deathSaveSuccesses Int @default(0)
-  deathSaveFailures  Int @default(0)
+  hitDiceSpent        Int @default(0)
+  deathSaveSuccesses  Int @default(0)
+  deathSaveFailures   Int @default(0)
+  exhaustionLevel     Int @default(0)  // 0-6, D&D 2024
 
   // Ability scores
   strength     Int?
@@ -292,29 +297,35 @@ model Player {
 
   // Other proficiencies
   armorProficiencies  String?
+  armorTraining       String?  // "Light, Medium, Heavy, Shields"
   weaponProficiencies String?
   toolProficiencies   String?
   languages           String?
+  proficiencyBonus    Int?     // computed by level, stored for reference
 
-  // Spellcasting
+  // Spellcasting (D&D 2024: todos los hechizos son preparados)
   spellcastingAbility String?
   spellSaveDC         Int?
   spellAttackBonus    Int?
   spellSlots          String @default("{}") // JSON: {"1":4,"2":3,...}
-  spellsKnown         String @default("[]") // JSON array of spell names/objects
+  spellsPrepared      String @default("[]") // JSON array of spell names/objects (renombrado de spellsKnown)
   cantrips            String @default("[]")
 
   // Equipment & inventory
   inventory    String @default("[]") // JSON array
+  weapons      String @default("[]") // JSON [{name, atkBonus, damageDie, damageType, notes}]
+  magicItems   String @default("[]") // JSON [{name, description, attuned}] — max 3 attuned
   currency     String @default("{}") // JSON: {cp,sp,ep,gp,pp}
 
-  // Features & traits
-  features     String @default("[]") // JSON array of {name, description, source}
-  traits       String?  // personality traits
-  ideals       String?
-  bonds        String?
-  flaws        String?
-  backstory    String?
+  // Features, traits & dons
+  features      String @default("[]") // JSON array of {name, description, source}
+  speciesTraits String @default("[]") // JSON — rasgos de especie (D&D 2024)
+  feats         String @default("[]") // JSON — dones (backgrounds dan 1 feat a nivel 1)
+  traits        String?  // personality traits
+  ideals        String?
+  bonds         String?
+  flaws         String?
+  backstory     String?
 
   // Appearance
   age          String?
@@ -327,13 +338,33 @@ model Player {
 
   // Passive stats (computed but stored for reference)
   passivePerception Int?
-  inspiration       Boolean @default(false)
+
+  // Inspiración (D&D 2024: Heroic Inspiration)
+  inspiration       Boolean @default(false)  // legacy
+  heroicInspiration Boolean @default(false)  // D&D 2024
 
   status      String   @default("active")
   notes       String?
   tags        String   @default("[]")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+// ─── Encounters ───────────────────────────────────────────────────────────────
+model Encounter {
+  id          String   @id @default(cuid())
+  campaignId  String
+  title       String?
+  monsters    String   @default("[]") // JSON: [{name, cr, count}, ...]
+  partySize   Int
+  partyLevel  Int
+  baseXp      Int
+  adjustedXp  Int
+  difficulty  String   // trivial | easy | medium | hard | deadly | impossible
+  notes       String?
+  createdAt   DateTime @default(now())
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 }

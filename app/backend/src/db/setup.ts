@@ -12,6 +12,7 @@ import { PrismaClient } from "@prisma/client";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { importSrd } from "./srd-import.js";
+import { importPhb2024 } from "./phb-import.js";
 
 const prisma = new PrismaClient();
 
@@ -105,6 +106,14 @@ async function main() {
   console.log(
     `\n  SRD result: ${srdResult.imported} imported, ${srdResult.skipped} skipped`
   );
+
+  console.log("\nImporting PHB 2024 content...");
+  const phbResult = await importPhb2024(prisma, DATA_DIR, { verbose: true });
+  if (phbResult.errors.length > 0) {
+    console.log("\n  ⚠ PHB import warnings:");
+    phbResult.errors.forEach((e: string) => console.log(`    - ${e}`));
+  }
+  console.log(`\n  PHB result: ${phbResult.imported} imported, ${phbResult.skipped} skipped`);
 
   console.log("\n✅ Setup complete\n");
 console.log("\nImporting core DM rules...");

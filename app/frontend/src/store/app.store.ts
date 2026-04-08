@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type { Campaign, AssistantMode, ExtendedMessage } from "../lib/api";
 
 interface AppState {
@@ -23,21 +24,33 @@ interface AppState {
   toggleSidebar: () => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  activeCampaignId: null,
-  activeCampaign: null,
-  setActiveCampaign: (campaign) =>
-    set({ activeCampaign: campaign, activeCampaignId: campaign?.id ?? null }),
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      activeCampaignId: null,
+      activeCampaign: null,
+      setActiveCampaign: (campaign) =>
+        set({ activeCampaign: campaign, activeCampaignId: campaign?.id ?? null }),
 
-  chatMode: "archivista",
-  setChatMode: (mode) => set({ chatMode: mode }),
+      chatMode: "archivista",
+      setChatMode: (mode) => set({ chatMode: mode }),
 
-  messages: [],
-  addMessage: (message) => set((s) => ({ messages: [...s.messages, message] })),
-  setMessages: (messages) => set({ messages }),
-  clearMessages: () => set({ messages: [] }),
+      messages: [],
+      addMessage: (message) => set((s) => ({ messages: [...s.messages, message] })),
+      setMessages: (messages) => set({ messages }),
+      clearMessages: () => set({ messages: [] }),
 
-  sidebarOpen: true,
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
-  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-}));
+      sidebarOpen: true,
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+    }),
+    {
+      name: "dnd-assistant-store",
+      // Solo persiste la campaña activa; el resto es estado de sesión
+      partialize: (state) => ({
+        activeCampaignId: state.activeCampaignId,
+        activeCampaign: state.activeCampaign,
+      }),
+    }
+  )
+);

@@ -16,6 +16,7 @@ import { prisma } from "../db/prisma.js";
 import { llmConfigService } from "./llmConfig.service.js";
 import { OpenAIProvider } from "@dnd/llm-providers";
 import { AppError, ErrorCode } from "@dnd/shared";
+import { selectByTier } from "./embedding-tiers.js";
 
 // text-embedding-3-small: 1536 dims, cheap, good quality
 const EMBEDDING_MODEL = "text-embedding-3-small";
@@ -136,8 +137,9 @@ export const embeddingService = {
     sourceTypes?: string[];
     limit?: number;
     minScore?: number;
+    tierQuotas?: { high?: number; medium?: number; low?: number };
   }): Promise<SemanticSearchResult[]> {
-    const { query, campaignId, sourceTypes, limit = 8, minScore = 0.3 } = input;
+    const { query, campaignId, sourceTypes, limit = 8, minScore = 0.3, tierQuotas } = input;
 
     // Get query embedding
     const queryVector = await this.embed(query);
@@ -158,15 +160,11 @@ export const embeddingService = {
 
     if (candidates.length === 0) return [];
 
-    // Score each candidate
-    const authorityBoost: Record<string, number> = { high: 0.05, medium: 0.02, low: 0 };
-
+    // Score each candidate by cosine similarity
     const scored = candidates
       .map((chunk: any) => {
         const chunkVector = JSON.parse(chunk.embeddingJson!) as number[];
         const similarity = cosineSimilarity(queryVector, chunkVector);
-        const boost = authorityBoost[chunk.authorityLevel] ?? 0;
-
         return {
           id: chunk.id,
           content: chunk.content,
@@ -174,15 +172,14 @@ export const embeddingService = {
           authorityLevel: chunk.authorityLevel,
           documentTitle: chunk.document.title,
           chunkIndex: chunk.chunkIndex,
-          relevanceScore: similarity + boost,
+          relevanceScore: similarity,
           rawSimilarity: similarity,
         };
       })
-      .filter((r: any) => r.rawSimilarity >= minScore)
-      .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
-      .slice(0, limit);
+      .filter((r: any) => r.rawSimilarity >= minScore);
 
-    return scored;
+    // Tiered selection: HIGH sources always fill their quota before MEDIUM/LOW
+    return selectByTier(scored, limit, tierQuotas);
   },
 };
 
