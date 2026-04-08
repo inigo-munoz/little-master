@@ -320,7 +320,7 @@ function LocationsContent() {
         </div>
       </div>
 
-      {selected && <DetailModal entity={selected} onClose={() => setSelected(null)} />}
+      {selected && <DetailModal entity={selected} onClose={() => setSelected(null)} campaignId={effectiveCampaignId} />}
       {(showForm || editLocation) && effectiveCampaignId && (
         <LocationForm
           campaignId={effectiveCampaignId}

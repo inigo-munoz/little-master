@@ -585,7 +585,7 @@ export default function CampaignDetailPage() {
         </div>
       </div>
 
-      {selected && <DetailModal entity={selected} onClose={() => setSelected(null)} />}
+      {selected && <DetailModal entity={selected} onClose={() => setSelected(null)} campaignId={params.id} />}
       {(showSessionForm || editSession) && (
         <SessionForm
           campaignId={campaign.id}
