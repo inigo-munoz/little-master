@@ -15,6 +15,8 @@ export type ModalEntity =
   | { type: "location"; data: LocationData }
   | { type: "faction"; data: FactionData };
 
+interface StatBlockEntry { name: string; description: string; }
+
 interface NpcData {
   id: string;
   name: string;
@@ -23,6 +25,30 @@ interface NpcData {
   status: string;
   tags: string;
   createdAt: string;
+  // Stat block
+  armorClass?: number | null;
+  hitPoints?: string | null;
+  speed?: string | null;
+  strength?: number | null;
+  dexterity?: number | null;
+  constitution?: number | null;
+  intelligence?: number | null;
+  wisdom?: number | null;
+  charisma?: number | null;
+  savingThrows?: string | null;
+  skills?: string | null;
+  resistances?: string | null;
+  immunities?: string | null;
+  senses?: string | null;
+  languages?: string | null;
+  challengeRating?: string | null;
+  traits?: StatBlockEntry[] | string | null;
+  actions?: StatBlockEntry[] | string | null;
+  bonusActions?: StatBlockEntry[] | string | null;
+  reactions?: StatBlockEntry[] | string | null;
+  npcType?: string | null;
+  npcClass?: string | null;
+  npcLevel?: number | null;
 }
 
 interface PlayerData {
@@ -231,6 +257,117 @@ function cleanNpcDescription(description: string | null): string {
 }
 
 
+function parseEntries(raw: StatBlockEntry[] | string | null | undefined): StatBlockEntry[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try { return JSON.parse(raw) as StatBlockEntry[]; } catch { return []; }
+}
+
+function modStr(score: number | null | undefined): string {
+  if (score == null) return "—";
+  const m = Math.floor((score - 10) / 2);
+  return m >= 0 ? `+${m}` : `${m}`;
+}
+
+function AbilityBox({ label, score }: { label: string; score: number | null | undefined }) {
+  return (
+    <div className="text-center bg-stone-950 rounded p-2">
+      <p className="text-xs text-amber-500 font-bold uppercase mb-0.5">{label}</p>
+      <p className="text-sm font-bold text-stone-100">{score ?? "—"}</p>
+      <p className="text-xs text-stone-400">{modStr(score)}</p>
+    </div>
+  );
+}
+
+function StatRow({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value) return null;
+  return (
+    <div className="flex gap-2 text-xs">
+      <span className="text-amber-600 font-semibold shrink-0">{label}</span>
+      <span className="text-stone-300">{value}</span>
+    </div>
+  );
+}
+
+function EntryList({ title, entries }: { title: string; entries: StatBlockEntry[] }) {
+  if (!entries.length) return null;
+  return (
+    <div className="border-t border-red-900/40 pt-2">
+      <p className="text-xs font-bold text-amber-500 uppercase tracking-wider mb-1.5">{title}</p>
+      <div className="space-y-1.5">
+        {entries.map((e, i) => (
+          <p key={i} className="text-xs">
+            <span className="font-semibold text-stone-200">{e.name}. </span>
+            <span className="text-stone-400">{e.description}</span>
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NpcStatBlockDisplay({ data }: { data: NpcData }) {
+  const hasStats = data.armorClass != null || data.hitPoints || data.strength != null;
+  if (!hasStats) return null;
+
+  const traits = parseEntries(data.traits);
+  const actions = parseEntries(data.actions);
+  const bonusActions = parseEntries(data.bonusActions);
+  const reactions = parseEntries(data.reactions);
+
+  const subtitle = data.npcType === "player" && data.npcClass
+    ? `${data.npcClass}${data.npcLevel ? ` nivel ${data.npcLevel}` : ""}`
+    : data.npcType === "monster" ? "Monstruo" : null;
+
+  return (
+    <div className="border border-red-900/50 bg-stone-950 rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b-2 border-red-800/60 bg-gradient-to-r from-red-950/60 to-stone-950">
+        <p className="font-bold text-stone-100">{data.name}</p>
+        {subtitle && <p className="text-xs text-stone-400 italic">{subtitle}</p>}
+      </div>
+
+      <div className="px-4 py-3 space-y-2">
+        {/* CA / PG / Velocidad */}
+        <div className="space-y-1">
+          <StatRow label="Clase de Armadura" value={data.armorClass != null ? String(data.armorClass) : null} />
+          <StatRow label="Puntos de Golpe" value={data.hitPoints} />
+          <StatRow label="Velocidad" value={data.speed} />
+          {data.challengeRating && <StatRow label="CR" value={data.challengeRating} />}
+        </div>
+
+        {/* Ability scores */}
+        {(data.strength != null || data.dexterity != null) && (
+          <div className="grid grid-cols-6 gap-1 border-t border-red-900/30 pt-2">
+            <AbilityBox label="FUE" score={data.strength} />
+            <AbilityBox label="DES" score={data.dexterity} />
+            <AbilityBox label="CON" score={data.constitution} />
+            <AbilityBox label="INT" score={data.intelligence} />
+            <AbilityBox label="SAB" score={data.wisdom} />
+            <AbilityBox label="CAR" score={data.charisma} />
+          </div>
+        )}
+
+        {/* Secondary stats */}
+        <div className="space-y-1 border-t border-red-900/30 pt-2">
+          <StatRow label="Salvaciones" value={data.savingThrows} />
+          <StatRow label="Habilidades" value={data.skills} />
+          <StatRow label="Resistencias" value={data.resistances} />
+          <StatRow label="Inmunidades" value={data.immunities} />
+          <StatRow label="Sentidos" value={data.senses} />
+          <StatRow label="Idiomas" value={data.languages} />
+        </div>
+
+        {/* Traits & Actions */}
+        <EntryList title="Rasgos" entries={traits} />
+        <EntryList title="Acciones" entries={actions} />
+        <EntryList title="Acciones Adicionales" entries={bonusActions} />
+        <EntryList title="Reacciones" entries={reactions} />
+      </div>
+    </div>
+  );
+}
+
 function NpcDetail({ data }: { data: NpcData }) {
   let tags: string[] = [];
   try { tags = JSON.parse(data.tags); } catch {}
@@ -287,6 +424,9 @@ function NpcDetail({ data }: { data: NpcData }) {
           )}
         </div>
       )}
+
+      {/* Stat block */}
+      <NpcStatBlockDisplay data={data} />
     </div>
   );
 }

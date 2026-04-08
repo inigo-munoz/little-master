@@ -99,6 +99,12 @@ For an NPC:
 **Secreto:** [something hidden about them]
 **Ganchos de trama:** [1-3 plot hooks]
 
+Always include a combat stat block immediately after the narrative section, using exactly this format:
+
+STAT_BLOCK: {"npcType":"monster","armorClass":13,"hitPoints":"45 (7d8+14)","speed":"30 pies","strength":16,"dexterity":12,"constitution":14,"intelligence":10,"wisdom":11,"charisma":9,"challengeRating":"3 (700 XP)","traits":[{"name":"Resistencia a Fuego","description":"Tiene resistencia a daño de fuego."},{"name":"Visión en la Oscuridad","description":"Ve en oscuridad hasta 60 pies."}],"actions":[{"name":"Garra","description":"Ataque melé: +5, alcance 5 pies. Impacto: 2d6+3 cortante."},{"name":"Mordisco","description":"Ataque melé: +5, alcance 5 pies. Impacto: 1d8+3 perforante."}],"bonusActions":[],"reactions":[]} :END_STAT_BLOCK
+
+Adjust all values to match the NPC's role and power level. Use "npcType": "player" for NPCs built as D&D characters (with a class and level) instead of as monsters.
+
 For a location:
 ## [Name]
 **Tipo:** [settlement / dungeon / wilderness / etc.]

@@ -30,7 +30,7 @@ import type { ChatMessage, AssistantMode, ChatResponse, ContextChunk, ExtendedMe
 import { AppShell } from "../../components/layout/AppShell";
 import { SourceBadge, AuthorityBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
-import { parseNpcFromResponse } from "../../lib/npc-parser";
+import { parseNpcFromResponse, parseStatBlockFromResponse } from "../../lib/npc-parser";
 import { parseSessionSummaryFromResponse } from "../../lib/session-parser";
 import { parseLocationFromResponse, parseFactionFromResponse, parseGenericEntityFromResponse } from "../../lib/entity-parser";
 
@@ -245,7 +245,7 @@ function DesignerSaveButton({
     setStatus("saving");
     try {
       if (detected.kind === "npc") {
-        console.log("[DesignerSaveButton] NPC a guardar:", detected.data);
+        const statBlock = parseStatBlockFromResponse(content);
         await api.npcs.create({
           campaignId,
           name: detected.data.name,
@@ -253,6 +253,25 @@ function DesignerSaveButton({
           description: detected.data.description,
           status: "alive",
           authorType: "assistant",
+          ...(statBlock && {
+            npcType: statBlock.npcType,
+            armorClass: statBlock.armorClass,
+            hitPoints: statBlock.hitPoints,
+            speed: statBlock.speed,
+            strength: statBlock.strength,
+            dexterity: statBlock.dexterity,
+            constitution: statBlock.constitution,
+            intelligence: statBlock.intelligence,
+            wisdom: statBlock.wisdom,
+            charisma: statBlock.charisma,
+            challengeRating: statBlock.challengeRating,
+            traits: statBlock.traits,
+            actions: statBlock.actions,
+            bonusActions: statBlock.bonusActions,
+            reactions: statBlock.reactions,
+            npcClass: statBlock.npcClass,
+            npcLevel: statBlock.npcLevel,
+          }),
         });
         setEditPath("/npcs");
       } else if (detected.kind === "location") {

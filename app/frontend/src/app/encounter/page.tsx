@@ -11,7 +11,74 @@ import { clsx } from "clsx";
 import { AppShell } from "../../components/layout/AppShell";
 import { useAppStore } from "../../store/app.store";
 import { api } from "../../lib/api";
-import type { MonsterDetail, Encounter } from "../../lib/api";
+import type { MonsterDetail, Encounter, Npc, StatBlockEntry } from "../../lib/api";
+
+// NPC stat block data shaped for display in the encounter panel
+interface NpcStatBlockDisplay {
+  name: string;
+  role?: string | null;
+  npcType?: string | null;
+  armorClass?: number | null;
+  hitPoints?: string | null;
+  speed?: string | null;
+  strength?: number | null;
+  dexterity?: number | null;
+  constitution?: number | null;
+  intelligence?: number | null;
+  wisdom?: number | null;
+  charisma?: number | null;
+  savingThrows?: string | null;
+  skills?: string | null;
+  resistances?: string | null;
+  immunities?: string | null;
+  senses?: string | null;
+  languages?: string | null;
+  challengeRating?: string | null;
+  traits?: StatBlockEntry[];
+  actions?: StatBlockEntry[];
+  bonusActions?: StatBlockEntry[];
+  reactions?: StatBlockEntry[];
+}
+
+function parseCrFromChallengeRating(cr: string | null | undefined): string {
+  if (!cr) return "1";
+  const m = cr.match(/^([\d/]+)/);
+  return m ? m[1]! : cr;
+}
+
+function parseNpcEntries(raw: StatBlockEntry[] | string | null | undefined): StatBlockEntry[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try { return JSON.parse(raw) as StatBlockEntry[]; } catch { return []; }
+}
+
+function npcToStatBlockDisplay(npc: Npc): NpcStatBlockDisplay {
+  return {
+    name: npc.name,
+    role: npc.role,
+    npcType: npc.npcType,
+    armorClass: npc.armorClass,
+    hitPoints: npc.hitPoints,
+    speed: npc.speed,
+    strength: npc.strength,
+    dexterity: npc.dexterity,
+    constitution: npc.constitution,
+    intelligence: npc.intelligence,
+    wisdom: npc.wisdom,
+    charisma: npc.charisma,
+    savingThrows: npc.savingThrows,
+    skills: npc.skills,
+    resistances: npc.resistances,
+    immunities: npc.immunities,
+    senses: npc.senses,
+    languages: npc.languages,
+    challengeRating: npc.challengeRating,
+    traits: parseNpcEntries(npc.traits),
+    actions: parseNpcEntries(npc.actions),
+    bonusActions: parseNpcEntries(npc.bonusActions),
+    reactions: parseNpcEntries(npc.reactions),
+  };
+}
 
 const CR_OPTIONS = [
   "0", "1/8", "1/4", "1/2",
@@ -39,6 +106,8 @@ interface MonsterEntry {
   cr: string;
   count: number;
   expanded: boolean;
+  npcStatBlock?: NpcStatBlockDisplay | null;
+  source?: "srd" | "phb" | null;
 }
 
 const DIFFICULTY_CONFIG = {
@@ -62,30 +131,42 @@ interface ValidationResult {
 
 // ─── Monster Autocomplete ─────────────────────────────────────────────────────
 
-interface SrdMonster { name: string; cr: string; type: string; size: string; }
+interface SrdMonster { name: string; cr: string; type: string; size: string; source?: "srd" | "phb"; }
 
 function MonsterAutocomplete({
   value,
   onChange,
   onSelectMonster,
+  campaignNpcs,
 }: {
   value: string;
   onChange: (v: string) => void;
-  onSelectMonster: (name: string, cr: string) => void;
+  onSelectMonster: (name: string, cr: string, npcStatBlock?: NpcStatBlockDisplay | null, source?: "srd" | "phb") => void;
+  campaignNpcs?: Npc[];
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { data: allMonsters } = useSWR("/srd-monsters", () => api.srd.monsters());
 
-  const filtered = useMemo<SrdMonster[]>(() => {
+  const filteredSrd = useMemo<SrdMonster[]>(() => {
     if (!allMonsters || value.length < 2) return [];
     const lower = value.toLowerCase();
-    return allMonsters.filter((m) => m.name.toLowerCase().includes(lower)).slice(0, 8);
+    return allMonsters.filter((m) => m.name.toLowerCase().includes(lower)).slice(0, 6);
   }, [allMonsters, value]);
 
+  const filteredNpcs = useMemo<Npc[]>(() => {
+    if (!campaignNpcs || value.length < 2) return [];
+    const lower = value.toLowerCase();
+    return campaignNpcs
+      .filter((n) => n.name.toLowerCase().includes(lower) && n.challengeRating)
+      .slice(0, 4);
+  }, [campaignNpcs, value]);
+
+  const hasResults = filteredSrd.length > 0 || filteredNpcs.length > 0;
+
   useEffect(() => {
-    setOpen(filtered.length > 0);
-  }, [filtered]);
+    setOpen(hasResults);
+  }, [hasResults]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -108,25 +189,58 @@ function MonsterAutocomplete({
         className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
       />
       {open && (
-        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-stone-800 border border-stone-700 rounded-lg overflow-hidden shadow-xl">
-          {filtered.map((m) => (
+        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-stone-800 border border-stone-700 rounded-lg overflow-hidden shadow-xl max-h-64 overflow-y-auto">
+          {/* SRD monsters */}
+          {filteredSrd.map((m) => (
             <button
-              key={m.name}
+              key={`srd-${m.name}`}
               type="button"
               onMouseDown={(e) => {
                 e.preventDefault();
-                onSelectMonster(m.name, m.cr);
+                onSelectMonster(m.name, m.cr, null, m.source ?? "srd");
                 setOpen(false);
               }}
               className="w-full px-3 py-2 text-left hover:bg-stone-700 flex items-center justify-between gap-2 transition-colors"
             >
               <span className="text-stone-200 text-sm truncate">{m.name}</span>
               <div className="flex items-center gap-2 shrink-0 text-xs">
-                {m.type && <span className="text-stone-500 truncate max-w-24">{m.type}</span>}
+                {m.type && <span className="text-stone-500 truncate max-w-20">{m.type}</span>}
+                {m.source === "phb" && (
+                  <span className="bg-blue-900/60 text-blue-300 border border-blue-700/50 px-1.5 py-0.5 rounded text-xs">PHB 2024</span>
+                )}
                 <span className="text-amber-400 font-mono">CR {m.cr}</span>
               </div>
             </button>
           ))}
+          {/* Campaign NPCs */}
+          {filteredNpcs.length > 0 && (
+            <>
+              {filteredSrd.length > 0 && <div className="border-t border-stone-700 my-0.5" />}
+              <p className="px-3 py-1 text-xs text-stone-600 uppercase tracking-wider">NPCs de campaña</p>
+              {filteredNpcs.map((n) => {
+                const crVal = parseCrFromChallengeRating(n.challengeRating);
+                return (
+                  <button
+                    key={`npc-${n.id}`}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      onSelectMonster(n.name, crVal, npcToStatBlockDisplay(n));
+                      setOpen(false);
+                    }}
+                    className="w-full px-3 py-2 text-left hover:bg-stone-700 flex items-center justify-between gap-2 transition-colors"
+                  >
+                    <span className="text-stone-200 text-sm truncate">{n.name}</span>
+                    <div className="flex items-center gap-2 shrink-0 text-xs">
+                      {n.role && <span className="text-stone-500 truncate max-w-20">{n.role}</span>}
+                      <span className="bg-purple-900/60 text-purple-300 border border-purple-700/50 px-1.5 py-0.5 rounded text-xs">NPC</span>
+                      <span className="text-amber-400 font-mono">CR {crVal}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </>
+          )}
         </div>
       )}
     </div>
@@ -172,11 +286,76 @@ function SectionBlock({ title, entries }: { title: string; entries: { name: stri
   );
 }
 
-function MonsterStatBlockPanel({ name }: { name: string }) {
+function NpcStatBlockPanel({ data }: { data: NpcStatBlockDisplay }) {
+  return (
+    <div className="mt-2 p-4 bg-stone-900 border border-purple-800/40 rounded-lg text-xs space-y-2">
+      <div>
+        <p className="font-bold text-stone-100 text-sm">{data.name}</p>
+        {data.role && <p className="text-stone-500 italic">{data.role}</p>}
+      </div>
+      <div className="space-y-1 border-t border-stone-700 pt-2">
+        {data.armorClass != null && <div className="flex gap-2"><span className="text-stone-500 font-semibold">CA</span><span className="text-stone-300">{data.armorClass}</span></div>}
+        {data.hitPoints && <div className="flex gap-2"><span className="text-stone-500 font-semibold">PG</span><span className="text-stone-300">{data.hitPoints}</span></div>}
+        {data.speed && <div className="flex gap-2"><span className="text-stone-500 font-semibold">Velocidad</span><span className="text-stone-300">{data.speed}</span></div>}
+        {data.challengeRating && <div className="flex gap-2"><span className="text-stone-500 font-semibold">CR</span><span className="text-stone-300">{data.challengeRating}</span></div>}
+      </div>
+      {(data.strength != null || data.dexterity != null) && (
+        <div className="grid grid-cols-6 gap-1 border-t border-stone-700 pt-2">
+          {[["FUE", data.strength], ["DES", data.dexterity], ["CON", data.constitution],
+            ["INT", data.intelligence], ["SAB", data.wisdom], ["CAR", data.charisma]].map(([label, score]) => (
+            <div key={label as string} className="text-center">
+              <p className="text-xs text-amber-500 font-bold uppercase">{label}</p>
+              <p className="text-sm font-bold text-stone-100">{score ?? "—"}</p>
+              <p className="text-xs text-stone-400">{modStr(score as number | null)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="space-y-1 border-t border-stone-700 pt-2">
+        {data.savingThrows && <div className="flex gap-2 text-xs"><span className="text-stone-500 font-semibold">Salvaciones</span><span className="text-stone-300">{data.savingThrows}</span></div>}
+        {data.skills && <div className="flex gap-2 text-xs"><span className="text-stone-500 font-semibold">Habilidades</span><span className="text-stone-300">{data.skills}</span></div>}
+        {data.resistances && <div className="flex gap-2 text-xs"><span className="text-stone-500 font-semibold">Resistencias</span><span className="text-stone-300">{data.resistances}</span></div>}
+        {data.immunities && <div className="flex gap-2 text-xs"><span className="text-stone-500 font-semibold">Inmunidades</span><span className="text-stone-300">{data.immunities}</span></div>}
+        {data.senses && <div className="flex gap-2 text-xs"><span className="text-stone-500 font-semibold">Sentidos</span><span className="text-stone-300">{data.senses}</span></div>}
+        {data.languages && <div className="flex gap-2 text-xs"><span className="text-stone-500 font-semibold">Idiomas</span><span className="text-stone-300">{data.languages}</span></div>}
+      </div>
+      {data.traits && data.traits.length > 0 && (
+        <div className="border-t border-stone-700 pt-2">
+          <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Rasgos</p>
+          {data.traits.map((t, i) => <p key={i} className="text-xs mb-1"><span className="font-semibold text-stone-200">{t.name}. </span><span className="text-stone-400">{t.description}</span></p>)}
+        </div>
+      )}
+      {data.actions && data.actions.length > 0 && (
+        <div className="border-t border-stone-700 pt-2">
+          <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Acciones</p>
+          {data.actions.map((a, i) => <p key={i} className="text-xs mb-1"><span className="font-semibold text-stone-200">{a.name}. </span><span className="text-stone-400">{a.description}</span></p>)}
+        </div>
+      )}
+      {data.bonusActions && data.bonusActions.length > 0 && (
+        <div className="border-t border-stone-700 pt-2">
+          <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Acciones Adicionales</p>
+          {data.bonusActions.map((a, i) => <p key={i} className="text-xs mb-1"><span className="font-semibold text-stone-200">{a.name}. </span><span className="text-stone-400">{a.description}</span></p>)}
+        </div>
+      )}
+      {data.reactions && data.reactions.length > 0 && (
+        <div className="border-t border-stone-700 pt-2">
+          <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Reacciones</p>
+          {data.reactions.map((r, i) => <p key={i} className="text-xs mb-1"><span className="font-semibold text-stone-200">{r.name}. </span><span className="text-stone-400">{r.description}</span></p>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonsterStatBlockPanel({ name, npcStatBlock, source }: { name: string; npcStatBlock?: NpcStatBlockDisplay | null; source?: "srd" | "phb" | null }) {
+  // Hook always called (Rules of Hooks). Key is null when NPC data is already available.
   const { data, isLoading } = useSWR(
-    name ? `/srd/monster-detail/${name}` : null,
+    !npcStatBlock && name ? `/srd/monster-detail/${name}` : null,
     () => api.srd.monsterDetail(name)
   );
+
+  // If we have NPC stat block data, show it directly (no fetch needed)
+  if (npcStatBlock) return <NpcStatBlockPanel data={npcStatBlock} />;
 
   if (isLoading) {
     return (
@@ -198,7 +377,12 @@ function MonsterStatBlockPanel({ name }: { name: string }) {
     <div className="mt-2 p-4 bg-stone-900 border border-stone-700 rounded-lg text-xs space-y-2">
       {/* Header */}
       <div>
-        <p className="font-bold text-stone-100 text-sm">{data.name}</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-bold text-stone-100 text-sm">{data.name}</p>
+          {source === "phb" && (
+            <span className="bg-blue-900/60 text-blue-300 border border-blue-700/50 px-1.5 py-0.5 rounded text-xs">PHB 2024</span>
+          )}
+        </div>
         <p className="text-stone-500 italic">
           {[data.size, data.type, data.alignment].filter(Boolean).join(", ")}
         </p>
@@ -254,6 +438,55 @@ function MonsterStatBlockPanel({ name }: { name: string }) {
   );
 }
 
+// ─── Saved Encounter Monster Row ─────────────────────────────────────────────
+
+function SavedEncounterMonsterRow({
+  monster,
+  campaignNpcs,
+}: {
+  monster: { name: string; cr: string; count: number };
+  campaignNpcs?: Npc[];
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const matchingNpc = campaignNpcs?.find(
+    (n) => n.name.toLowerCase() === monster.name.toLowerCase()
+  );
+  const npcStatBlock = matchingNpc ? npcToStatBlockDisplay(matchingNpc) : null;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2 py-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm text-stone-300 truncate">{monster.name}</span>
+          <span className="text-stone-500 text-sm shrink-0">×{monster.count}</span>
+          {matchingNpc && (
+            <span className="bg-purple-900/60 text-purple-300 border border-purple-700/50 px-1.5 py-0.5 rounded text-xs shrink-0">NPC</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs text-amber-400 font-mono">CR {monster.cr}</span>
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            title="Ver bloque de estadísticas"
+            className={clsx(
+              "p-1 rounded transition-colors",
+              expanded
+                ? "text-amber-400 bg-amber-900/30"
+                : "text-stone-600 hover:text-stone-400"
+            )}
+          >
+            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+        </div>
+      </div>
+      {expanded && (
+        <MonsterStatBlockPanel name={monster.name} npcStatBlock={npcStatBlock} />
+      )}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function EncounterPage() {
@@ -267,12 +500,19 @@ export default function EncounterPage() {
 
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [dangerModal, setDangerModal] = useState(false);
 
   const [partySize, setPartySize] = useState(4);
   const [avgLevel, setAvgLevel] = useState(5);
   const [monsters, setMonsters] = useState<MonsterEntry[]>([
-    { id: "1", name: "Goblin", cr: "1/4", count: 4, expanded: false },
+    { id: "1", name: "Goblin", cr: "1/4", count: 4, expanded: false, npcStatBlock: null },
   ]);
+
+  // Campaign NPCs for autocomplete
+  const { data: campaignNpcs } = useSWR(
+    activeCampaign ? `/npcs/${activeCampaign.id}` : null,
+    () => api.npcs.list(activeCampaign!.id)
+  );
   const [result, setResult] = useState<ValidationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -280,7 +520,7 @@ export default function EncounterPage() {
   const [saved, setSaved] = useState(false);
 
   function addMonster() {
-    setMonsters((m) => [...m, { id: crypto.randomUUID(), name: "", cr: "1", count: 1, expanded: false }]);
+    setMonsters((m) => [...m, { id: crypto.randomUUID(), name: "", cr: "1", count: 1, expanded: false, npcStatBlock: null }]);
   }
 
   function removeMonster(id: string) {
@@ -291,9 +531,8 @@ export default function EncounterPage() {
     setMonsters((m) => m.map((x) => x.id === id ? { ...x, [field]: value } : x));
   }
 
-  function selectMonster(id: string, name: string, cr: string) {
-    // CR se rellena automáticamente con el valor del SRD
-    setMonsters((m) => m.map((x) => x.id === id ? { ...x, name, cr } : x));
+  function selectMonster(id: string, name: string, cr: string, npcStatBlock?: NpcStatBlockDisplay | null, source?: "srd" | "phb") {
+    setMonsters((m) => m.map((x) => x.id === id ? { ...x, name, cr, npcStatBlock: npcStatBlock ?? null, source: source ?? null } : x));
   }
 
   function toggleExpand(id: string) {
@@ -326,13 +565,10 @@ export default function EncounterPage() {
     }
   }
 
-  async function saveEncounter() {
-    if (!result) return;
-    if (!activeCampaign) {
-      setError("Selecciona una campaña para guardar el encuentro.");
-      return;
-    }
+  async function doSave() {
+    if (!result || !activeCampaign) return;
     setSaving(true);
+    setDangerModal(false);
     try {
       await api.encounters.create({
         campaignId: activeCampaign.id,
@@ -353,6 +589,19 @@ export default function EncounterPage() {
     }
   }
 
+  function saveEncounter() {
+    if (!result) return;
+    if (!activeCampaign) {
+      setError("Selecciona una campaña para guardar el encuentro.");
+      return;
+    }
+    if (result.difficulty === "deadly" || result.difficulty === "impossible") {
+      setDangerModal(true);
+      return;
+    }
+    doSave();
+  }
+
   function loadEncounter(enc: Encounter) {
     setMonsters(
       enc.monsters.map((m) => ({
@@ -361,6 +610,7 @@ export default function EncounterPage() {
         cr: m.cr,
         count: m.count,
         expanded: false,
+        npcStatBlock: null,
       }))
     );
     setResult(null);
@@ -509,7 +759,8 @@ export default function EncounterPage() {
                   <MonsterAutocomplete
                     value={m.name}
                     onChange={(v) => updateMonster(m.id, "name", v)}
-                    onSelectMonster={(name, cr) => selectMonster(m.id, name, cr)}
+                    onSelectMonster={(name, cr, npcData, source) => selectMonster(m.id, name, cr, npcData, source)}
+                    campaignNpcs={campaignNpcs}
                   />
                   <div className="flex items-center gap-1">
                     <label className="text-xs text-stone-600">CR</label>
@@ -553,7 +804,7 @@ export default function EncounterPage() {
 
                 {/* Stat block panel */}
                 {m.expanded && m.name.trim() && (
-                  <MonsterStatBlockPanel name={m.name} />
+                  <MonsterStatBlockPanel name={m.name} npcStatBlock={m.npcStatBlock} source={m.source} />
                 )}
               </div>
             ))}
@@ -628,9 +879,6 @@ export default function EncounterPage() {
           <div className="space-y-3">
             {savedEncounters?.map((enc) => {
               const dcfg = DIFFICULTY_CONFIG[enc.difficulty as keyof typeof DIFFICULTY_CONFIG];
-              const monsterSummary = enc.monsters
-                .map((m) => `${m.name} ×${m.count}`)
-                .join(", ");
               const dateStr = new Date(enc.createdAt).toLocaleDateString("es-ES", {
                 day: "2-digit", month: "short", year: "numeric",
               });
@@ -638,40 +886,47 @@ export default function EncounterPage() {
               return (
                 <div
                   key={enc.id}
-                  className="border border-stone-800 bg-stone-900 rounded-xl p-4 flex gap-4 items-start"
+                  className="border border-stone-800 bg-stone-900 rounded-xl p-4"
                 >
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      {dcfg && (
-                        <span className={clsx("text-xs font-bold px-2 py-0.5 rounded", dcfg.bg, dcfg.color)}>
-                          {dcfg.label}
+                  {/* Header row */}
+                  <div className="flex gap-4 items-start">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        {dcfg && (
+                          <span className={clsx("text-xs font-bold px-2 py-0.5 rounded", dcfg.bg, dcfg.color)}>
+                            {dcfg.label}
+                          </span>
+                        )}
+                        <span className="text-xs text-stone-500">{dateStr}</span>
+                        <span className="text-xs text-stone-600 font-mono">
+                          {enc.adjustedXp.toLocaleString()} XP · Grupo {enc.partySize} · Nv.{enc.partyLevel}
                         </span>
-                      )}
-                      <span className="text-xs text-stone-500">{dateStr}</span>
-                      <span className="text-xs text-stone-600 font-mono">
-                        {enc.adjustedXp.toLocaleString()} XP · Grupo {enc.partySize} · Nv.{enc.partyLevel}
-                      </span>
+                      </div>
+                      {/* Monster list with per-monster expand */}
+                      <div className="space-y-0.5">
+                        {enc.monsters.map((m, i) => (
+                          <SavedEncounterMonsterRow key={i} monster={m} campaignNpcs={campaignNpcs} />
+                        ))}
+                      </div>
                     </div>
-                    <p className="text-sm text-stone-300 truncate">{monsterSummary}</p>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-2 shrink-0">
-                    <button
-                      onClick={() => loadEncounter(enc)}
-                      title="Cargar en el validador"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-300 rounded-lg text-xs transition-colors"
-                    >
-                      <RotateCcw size={12} /> Cargar
-                    </button>
-                    <button
-                      onClick={() => setConfirmDelete(enc.id)}
-                      title="Eliminar encuentro"
-                      className="p-1.5 text-stone-600 hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {/* Actions */}
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        onClick={() => loadEncounter(enc)}
+                        title="Cargar en el validador"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-300 rounded-lg text-xs transition-colors"
+                      >
+                        <RotateCcw size={12} /> Cargar
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(enc.id)}
+                        title="Eliminar encuentro"
+                        className="p-1.5 text-stone-600 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -679,6 +934,37 @@ export default function EncounterPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Modal de advertencia por dificultad peligrosa ────────────────────── */}
+      {dangerModal && result && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-sm w-full">
+            <p className="text-stone-100 font-bold text-lg mb-3">
+              {result.difficulty === "impossible" ? "☠️ Encuentro Imposible" : "⚠️ Encuentro Peligroso"}
+            </p>
+            <p className="text-stone-400 text-sm mb-6">
+              {result.difficulty === "impossible"
+                ? "Este encuentro probablemente matará a todo el grupo. Resérvalo para jefes finales con opciones de huida o protección narrativa. ¿Quieres guardarlo de todas formas?"
+                : "Este encuentro puede matar a uno o más personajes. ¿Estás seguro de que quieres proceder?"}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDangerModal(false)}
+                className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 text-sm transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={doSave}
+                disabled={saving}
+                className="flex-1 px-4 py-2 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
+              >
+                {saving ? "Guardando..." : "Guardar de todas formas"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal de confirmación de borrado ──────────────────────────────────── */}
       {confirmDelete && (

@@ -215,7 +215,7 @@ export const api = {
         coverage: number;
       }>("/api/srd/custom-rules"),
     monsters: (q?: string) =>
-      get<{ name: string; cr: string; type: string; size: string }[]>(
+      get<{ name: string; cr: string; type: string; size: string; source?: "srd" | "phb" }[]>(
         `/api/srd/monsters${q ? `?q=${encodeURIComponent(q)}` : ""}`
       ),
     monsterDetail: (name: string) =>
@@ -333,7 +333,36 @@ export interface CreateSession {
   authorType?: "user" | "assistant";
 }
 
-export interface Npc {
+export interface StatBlockEntry { name: string; description: string; }
+
+export interface NpcStatBlock {
+  armorClass?: number | null;
+  hitPoints?: string | null;
+  speed?: string | null;
+  strength?: number | null;
+  dexterity?: number | null;
+  constitution?: number | null;
+  intelligence?: number | null;
+  wisdom?: number | null;
+  charisma?: number | null;
+  savingThrows?: string | null;
+  skills?: string | null;
+  resistances?: string | null;
+  immunities?: string | null;
+  senses?: string | null;
+  languages?: string | null;
+  challengeRating?: string | null;
+  // DB may return these as JSON strings; use parseNpcEntries() to normalize at the call site
+  traits?: StatBlockEntry[] | string | null;
+  actions?: StatBlockEntry[] | string | null;
+  bonusActions?: StatBlockEntry[] | string | null;
+  reactions?: StatBlockEntry[] | string | null;
+  npcType?: string | null;
+  npcClass?: string | null;
+  npcLevel?: number | null;
+}
+
+export interface Npc extends NpcStatBlock {
   id: string;
   campaignId: string;
   name: string;
@@ -345,7 +374,7 @@ export interface Npc {
   updatedAt: string;
 }
 
-export interface CreateNpc {
+export interface CreateNpc extends NpcStatBlock {
   campaignId: string;
   name: string;
   role?: string;
@@ -511,7 +540,7 @@ export interface CreateFaction {
   authorType?: "user" | "assistant";
 }
 
-export interface UpdateNpc {
+export interface UpdateNpc extends NpcStatBlock {
   name?: string;
   role?: string;
   description?: string;

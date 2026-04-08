@@ -72,7 +72,7 @@ function isValidName(line: string): boolean {
   return true;
 }
 
-interface SrdMonster { name: string; cr: string; type: string; size: string }
+interface SrdMonster { name: string; cr: string; type: string; size: string; source?: "srd" | "phb" }
 
 function extractMonstersFromText(text: string): SrdMonster[] {
   const lines = text.split("\n").map((l) => l.trim());
@@ -114,6 +114,192 @@ function extractMonstersFromText(text: string): SrdMonster[] {
   }
 
   return Array.from(monstersMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// ─── PHB 2024 Criaturas parser ───────────────────────────────────────────────
+
+const PHB_SIZES_ES = ["Gargantuesca", "Enorme", "Grande", "Mediana", "Mediano", "Pequeña", "Pequeño", "Diminuta", "Diminuto"];
+
+function parseAbilityEs(line: string, abbr: string): number | null {
+  const m = line.match(new RegExp(abbr + "\\s+(\\d+)"));
+  return m ? parseInt(m[1]!, 10) : null;
+}
+
+function extractPhbMonstersFromText(text: string): SrdMonster[] {
+  const monsters: SrdMonster[] = [];
+  const sections = text.split(/^## /m).slice(1);
+
+  for (const section of sections) {
+    const lines = section.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) continue;
+
+    const heading = lines[0]!;
+    if (heading.startsWith("Leyenda")) continue;
+
+    const name = heading.trim(); // Keep bilingual: "Mono (Ape)"
+    const statLine = lines[1] ?? "";
+    const crLine = lines[2] ?? "";
+
+    const typeSizePart = statLine.split("|")[0]?.trim() ?? "";
+    let size = "", type = "";
+    for (const s of PHB_SIZES_ES) {
+      if (typeSizePart.includes(s)) {
+        size = s;
+        type = typeSizePart.slice(0, typeSizePart.indexOf(s)).trim();
+        break;
+      }
+    }
+
+    const cr = crLine.match(/CR ([\d\/]+)/)?.[1] ?? "0";
+    monsters.push({ name, cr, type, size, source: "phb" });
+  }
+
+  return monsters.sort((a, b) => a.name.localeCompare(b.name, "es"));
+}
+
+function extractPhbMonsterStatBlock(text: string, targetName: string): MonsterDetail | null {
+  const target = targetName.toLowerCase().trim();
+  const sections = text.split(/^## /m).slice(1);
+
+  const section = sections.find((s) => {
+    const heading = (s.split("\n")[0] ?? "").trim().toLowerCase();
+    const spanishName = heading.replace(/\s*\([^)]+\)$/, "").trim();
+    const englishMatch = heading.match(/\(([^)]+)\)$/);
+    const englishName = englishMatch?.[1] ?? "";
+    return heading === target || spanishName === target ||
+      englishName.toLowerCase() === target || heading.includes("(" + target + ")");
+  });
+  if (!section) return null;
+
+  const lines = section.split("\n").map((l) => l.trim()).filter(Boolean);
+  const heading = lines[0]!;
+  const statLine = lines[1] ?? "";
+  const crLine = lines[2] ?? "";
+
+  const name = heading.replace(/\s*\([^)]+\)$/, "").trim();
+
+  // Size + type + alignment
+  const statParts = statLine.split("|").map((p) => p.trim());
+  const typeSizePart = statParts[0] ?? "";
+  let size = "", type = "", alignment = "";
+  for (const s of PHB_SIZES_ES) {
+    if (typeSizePart.includes(s)) {
+      size = s;
+      type = typeSizePart.slice(0, typeSizePart.indexOf(s)).trim();
+      break;
+    }
+  }
+  // Alignment: second segment if it's not a stat field
+  const seg2 = statParts[1] ?? "";
+  if (seg2 && !seg2.startsWith("CA") && !seg2.startsWith("PG") && !seg2.startsWith("Vel")) {
+    alignment = seg2;
+  }
+
+  const ac = statLine.match(/CA (\d+)/)?.[1] ?? "";
+  const hp = statLine.match(/PG (\d+(?:\s*\([^)]+\))?)/)?.[1]?.trim() ?? "";
+  const speed = statLine.match(/Vel\s+([^|]+?)(?:\s*\||$)/)?.[1]?.trim() ?? "";
+
+  const str  = parseAbilityEs(crLine, "FUE");
+  const dex  = parseAbilityEs(crLine, "DES");
+  const con  = parseAbilityEs(crLine, "CON");
+  const intel = parseAbilityEs(crLine, "INT");
+  const wis  = parseAbilityEs(crLine, "SAB");
+  const cha  = parseAbilityEs(crLine, "CAR");
+  const cr   = crLine.match(/CR ([\d\/]+)/)?.[1] ?? "";
+  const xpRaw = crLine.match(/\((\d+(?:[.\s]\d+)*)\s*PX\)/)?.[1] ?? "";
+  const xp   = xpRaw ? xpRaw.replace(/[.\s]/g, "") + " XP" : "";
+
+  const rest = lines.slice(3);
+  let skills = "", resistances = "", immunities = "", conditionImmunities = "";
+  let vulnerabilities = "", senses = "", languages = "";
+  const traits: { name: string; description: string }[] = [];
+  const actions: { name: string; description: string }[] = [];
+  const bonusActions: { name: string; description: string }[] = [];
+  const reactions: { name: string; description: string }[] = [];
+
+  for (const line of rest) {
+    // Bonus actions
+    if (/^Acciones? Adicionales?|^Acc\. Adicional/.test(line)) {
+      const m = line.match(/[—:]\s*(.+?):\s*(.+)/);
+      if (m) bonusActions.push({ name: m[1]!.trim(), description: m[2]!.trim() });
+      else bonusActions.push({ name: "Acción Adicional", description: line.replace(/^Acc(?:iones?)?\. ?Adicionales?\s*[—:]\s*/, "").trim() });
+      continue;
+    }
+    // Reactions
+    if (/^Reacción/.test(line)) {
+      const m = line.match(/—\s*(.+?):\s*(.+)/);
+      if (m) reactions.push({ name: m[1]!.trim(), description: m[2]!.trim() });
+      else reactions.push({ name: "Reacción", description: line.replace(/^Reacción\s*[—:]\s*/, "").trim() });
+      continue;
+    }
+    // Skills: "Comp: Atletismo +5, Percepción +3"
+    if (line.startsWith("Comp:")) { skills = line.slice(5).trim(); continue; }
+    // Resistances (senses after "|")
+    if (line.startsWith("Resistencias:")) {
+      const parts = line.slice(13).split("|");
+      resistances = parts[0]?.trim() ?? "";
+      if (parts[1]) senses = (senses ? senses + " | " : "") + parts[1].trim();
+      continue;
+    }
+    // Immunities (conditions after ";")
+    if (line.startsWith("Inmunidades:")) {
+      const parts = line.slice(12).split(";");
+      immunities = parts[0]?.trim() ?? "";
+      if (parts[1]) conditionImmunities = parts[1].trim();
+      continue;
+    }
+    // Vulnerabilities
+    if (/^Vulnerabilidad/.test(line)) { vulnerabilities = line.split(":")[1]?.trim() ?? ""; continue; }
+    // Senses starting with Visión
+    if (/^Visión|^Sentidos/.test(line)) { senses = (senses ? senses + " | " : "") + line; continue; }
+    // Languages
+    if (/^Entiende|^Idiomas:/.test(line)) { languages = line.replace(/^Idiomas:\s*/, ""); continue; }
+    // Named traits
+    if (/^Rasgo[s]?:/.test(line)) { traits.push({ name: "Rasgo", description: line.replace(/^Rasgos?:\s*/, "") }); continue; }
+    // Equipment (treat as trait)
+    if (line.startsWith("Equipo:")) { traits.push({ name: "Equipo", description: line.slice(7).trim() }); continue; }
+    // Mixed skills + senses: "Percepción +5, Sigilo +4 | Visión Oscura 60 pies"
+    if (line.includes("|")) {
+      const parts = line.split("|").map((p) => p.trim());
+      const sensePart = parts.find((p) => /^Visión|^Sentidos|^Anfibio/.test(p));
+      const skillPart = parts.find((p) => p !== sensePart && /\+\d+/.test(p));
+      const otherParts = parts.filter((p) => p !== sensePart && p !== skillPart && p);
+      if (skillPart && !skills) skills = skillPart;
+      if (sensePart) senses = (senses ? senses + " | " : "") + sensePart;
+      for (const p of otherParts) if (p) traits.push({ name: "Descripción", description: p });
+      continue;
+    }
+    // Action detection: has damage pattern "+X, N (dice)" or "+X alcance/rango"
+    const isAttack = /\+\d+[, ]\s*\d+\s*\(/.test(line) ||
+      /\+\d+\s+(alcance|rango|distancia)/i.test(line) ||
+      /^Multiatacar/.test(line);
+    if (isAttack) {
+      const colonM = line.match(/^([^:+]{1,35}):\s+(.+)/);
+      const plusM = line.match(/^([^+]{1,30})\+/);
+      if (colonM) actions.push({ name: colonM[1]!.trim(), description: colonM[2]!.trim() });
+      else if (plusM && plusM[1]!.trim()) actions.push({ name: plusM[1]!.trim(), description: line.slice(plusM[1]!.length).trim() });
+      else actions.push({ name: "Ataque", description: line });
+      continue;
+    }
+    // Everything else: trait
+    const colonIdx = line.indexOf(":");
+    if (colonIdx > 0 && colonIdx < 40) {
+      traits.push({ name: line.slice(0, colonIdx).trim(), description: line.slice(colonIdx + 1).trim() });
+    } else if (line.length < 80 && line.endsWith(".") && !line.includes(". ")) {
+      traits.push({ name: line.replace(/\.$/, "").trim(), description: "" });
+    } else {
+      traits.push({ name: "Descripción", description: line });
+    }
+  }
+
+  return {
+    name, size, type, alignment, ac, hp, speed, initiative: "",
+    str, dex, con, int: intel, wis, cha,
+    savingThrows: "", skills, resistances, immunities, conditionImmunities,
+    vulnerabilities, senses, languages, cr, xp, profBonus: "",
+    traits, actions, bonusActions, reactions, legendaryActions: [],
+    rawText: lines.join("\n"),
+  };
 }
 
 // ─── Monster stat block extraction ───────────────────────────────────────────
@@ -465,52 +651,76 @@ export const srdRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{ Querystring: { q?: string } }>("/monsters", async (req, reply) => {
     const { q } = req.query;
 
-    // Leer el fichero del documento SRD de monstruos directamente
-    // (los chunks tienen solapamiento que confunde la extracción por regex)
-    const doc = await prisma.document.findFirst({
+    // Load SRD monsters
+    const srdDoc = await prisma.document.findFirst({
       where: { sourceType: "srd", title: { contains: "Monster" } },
       select: { path: true },
     });
-
-    if (!doc) {
-      return reply.send({ success: true, data: [] });
+    let srdMonsters: SrdMonster[] = [];
+    if (srdDoc) {
+      try {
+        const text = await readFile(join(env.DOCUMENTS_DIR, srdDoc.path), "utf-8");
+        srdMonsters = extractMonstersFromText(text).map((m) => ({ ...m, source: "srd" as const }));
+      } catch { /* doc not found on disk */ }
     }
 
-    let text: string;
-    try {
-      text = await readFile(join(env.DOCUMENTS_DIR, doc.path), "utf-8");
-    } catch {
-      return reply.send({ success: true, data: [] });
+    // Load PHB criaturas monsters
+    const phbDoc = await prisma.document.findFirst({
+      where: { sourceType: "official", title: { contains: "Criaturas" } },
+      select: { path: true },
+    });
+    let phbMonsters: SrdMonster[] = [];
+    if (phbDoc) {
+      try {
+        const text = await readFile(join(env.DOCUMENTS_DIR, phbDoc.path), "utf-8");
+        phbMonsters = extractPhbMonstersFromText(text);
+      } catch { /* doc not found on disk */ }
     }
 
-    let monsters = extractMonstersFromText(text);
+    // Merge, deduplicate by name (SRD wins)
+    const srdNames = new Set(srdMonsters.map((m) => m.name.toLowerCase()));
+    const merged = [
+      ...srdMonsters,
+      ...phbMonsters.filter((m) => !srdNames.has(m.name.toLowerCase())),
+    ].sort((a, b) => a.name.localeCompare(b.name));
 
-    if (q) {
-      const lower = q.toLowerCase();
-      monsters = monsters.filter((m) => m.name.toLowerCase().includes(lower));
-    }
+    const result = q
+      ? merged.filter((m) => m.name.toLowerCase().includes(q.toLowerCase()))
+      : merged;
 
-    return reply.send({ success: true, data: monsters });
+    return reply.send({ success: true, data: result });
   });
 
   fastify.get<{ Params: { name: string } }>("/monsters/:name", async (req, reply) => {
     const { name } = req.params;
 
-    const doc = await prisma.document.findFirst({
+    // 1. Try SRD first
+    const srdDoc = await prisma.document.findFirst({
       where: { sourceType: "srd", title: { contains: "Monster" } },
       select: { path: true },
     });
-    if (!doc) return reply.send({ success: true, data: null });
+    if (srdDoc) {
+      try {
+        const text = await readFile(join(env.DOCUMENTS_DIR, srdDoc.path), "utf-8");
+        const detail = extractMonsterStatBlock(text, name);
+        if (detail) return reply.send({ success: true, data: detail });
+      } catch { /* fall through to PHB */ }
+    }
 
-    let text: string;
+    // 2. Fallback: PHB criaturas
+    const phbDoc = await prisma.document.findFirst({
+      where: { sourceType: "official", title: { contains: "Criaturas" } },
+      select: { path: true },
+    });
+    if (!phbDoc) return reply.send({ success: true, data: null });
+
     try {
-      text = await readFile(join(env.DOCUMENTS_DIR, doc.path), "utf-8");
+      const text = await readFile(join(env.DOCUMENTS_DIR, phbDoc.path), "utf-8");
+      const detail = extractPhbMonsterStatBlock(text, name);
+      return reply.send({ success: true, data: detail });
     } catch {
       return reply.send({ success: true, data: null });
     }
-
-    const detail = extractMonsterStatBlock(text, name);
-    return reply.send({ success: true, data: detail });
   });
 
   fastify.get("/custom-rules", async (_req, reply) => {
