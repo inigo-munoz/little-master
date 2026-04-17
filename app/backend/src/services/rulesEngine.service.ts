@@ -14,6 +14,7 @@
 
 import { prisma } from "../db/prisma.js";
 import { issueService } from "./issue.service.js";
+import { parseCR } from "@dnd/domain";
 
 // Authority ordering — lower index = higher authority
 const AUTHORITY_ORDER = ["high", "medium", "low"] as const;
@@ -70,7 +71,7 @@ function monsterMultiplier(monsterCount: number, partySize: number): number {
 
 export interface Monster {
   name: string;
-  cr: number; // 0, 0.125, 0.25, 0.5, 1, 2, ...
+  cr: string | number; // acepta "1/2", "1/4", "1/8" o número — usa parseCR() para calcular
   count?: number;
 }
 
@@ -134,9 +135,10 @@ export const rulesEngine = {
 
     // Calculate monster XP
     const totalXp = monsters.reduce((sum, m) => {
-      const xp = XP_BY_CR[(m as any).cr] ?? 0;
-      const count = (m as any).count ?? 1;
-      if (!XP_BY_CR[(m as any).cr]) {
+      const crNum = parseCR(m.cr);
+      const xp = XP_BY_CR[crNum] ?? 0;
+      const count = m.count ?? 1;
+      if (!XP_BY_CR[crNum]) {
         warnings.push(`Unknown CR ${m.cr} for ${m.name} — XP set to 0`);
       }
       return sum + xp * count;
@@ -170,7 +172,7 @@ export const rulesEngine = {
       warnings.push("Very large number of monsters — consider action economy carefully.");
     }
 
-    if (monsters.some((m: any) => m.cr >= party.averageLevel + 5)) {
+    if (monsters.some((m) => parseCR(m.cr) >= party.averageLevel + 5)) {
       warnings.push("One or more monsters have CR significantly above party level — legendary actions/resistances may be overwhelming.");
     }
 
@@ -210,10 +212,10 @@ export const rulesEngine = {
 
         // Extract significant keywords (nouns > 4 chars)
         const keywordsA = new Set(
-          ruleA.title.toLowerCase().split(/\W+/).filter((w: any) => w.length > 4)
+          ruleA.title.toLowerCase().split(/\W+/).filter((w: string) => w.length > 4)
         );
         const keywordsB = new Set(
-          ruleB.title.toLowerCase().split(/\W+/).filter((w: any) => w.length > 4)
+          ruleB.title.toLowerCase().split(/\W+/).filter((w: string) => w.length > 4)
         );
 
         const shared = [...keywordsA].filter((k) => keywordsB.has(k));
