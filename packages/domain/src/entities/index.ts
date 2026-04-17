@@ -316,3 +316,29 @@ export const DocumentChunkSchema = z.object({
   createdAt: timestamp(),
 });
 export type DocumentChunk = z.infer<typeof DocumentChunkSchema>;
+
+// ─── Entity Relation ──────────────────────────────────────────────────────────
+export const EntityRelationSchema = z.object({
+  id: id(),
+  campaignId: z.string().cuid2(),
+  fromType: z.enum(["npc", "faction", "location"]),
+  fromId: z.string(),
+  toType: z.enum(["npc", "faction", "location"]),
+  toId: z.string(),
+  relationType: z.string().min(1),
+  notes: z.string().max(500).optional().nullable(),
+  createdAt: timestamp(),
+  updatedAt: timestamp(),
+});
+export type EntityRelation = z.infer<typeof EntityRelationSchema>;
+
+export const CreateEntityRelationSchema = EntityRelationSchema.pick({
+  campaignId: true,
+  fromType: true,
+  fromId: true,
+  toType: true,
+  toId: true,
+  relationType: true,
+  notes: true,
+});
+export type CreateEntityRelation = z.infer<typeof CreateEntityRelationSchema>;
