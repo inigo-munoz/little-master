@@ -11,19 +11,40 @@ interface WikiMarkdownProps {
 }
 
 function preprocessWikiLinks(text: string): string {
-  return text.replace(/\[\[([^\]]+)\]\]/g, (_, name: string) =>
+  return text.replace(/\[\[(.+?)\]\]/g, (_, name: string) =>
     `[${name}](wiki://${encodeURIComponent(name)})`
   );
 }
 
+/**
+ * Validador de URLs para ReactMarkdown.
+ * Permite solo protocolos seguros y rutas relativas.
+ * Bloquea javascript:, vbscript:, data: y cualquier otro esquema no autorizado.
+ */
+function safeUrlTransform(url: string): string {
+  // Permite enlaces wiki internos (gestionados por el componente `a`)
+  if (url.startsWith("wiki://")) return url;
+  // Permite protocolos web estándar
+  if (url.startsWith("https://") || url.startsWith("http://")) return url;
+  // Permite rutas relativas y anclas
+  if (url.startsWith("/") || url.startsWith("#") || url.startsWith("?")) return url;
+  // Bloquea todo lo demás (javascript:, vbscript:, data:, etc.)
+  return "";
+}
+
 export function WikiMarkdown({ children, campaignId }: WikiMarkdownProps) {
+  if (!children) return null;
   const processed = preprocessWikiLinks(children);
 
   const components: Components = {
     a: ({ href, children: linkChildren }) => {
-      if (href?.startsWith("wiki://") && campaignId) {
+      if (href?.startsWith("wiki://")) {
         const name = decodeURIComponent(href.slice(7));
-        return <WikiLink name={name} campaignId={campaignId} />;
+        if (campaignId) {
+          return <WikiLink name={name} campaignId={campaignId} />;
+        }
+        // campaignId no disponible — renderizar como texto plano
+        return <span className="text-amber-400 decoration-dotted underline">{name}</span>;
       }
       return (
         <a href={href} target="_blank" rel="noopener noreferrer">
@@ -34,7 +55,7 @@ export function WikiMarkdown({ children, campaignId }: WikiMarkdownProps) {
   };
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components} urlTransform={safeUrlTransform}>
       {processed}
     </ReactMarkdown>
   );
