@@ -1,5 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { resolve, join, dirname, sep } from "node:path";
+import { homedir } from "node:os";
+import { promises as fs } from "node:fs";
 import {
   verifyVault,
   importFromVault,
@@ -7,6 +10,46 @@ import {
   saveVaultPath,
 } from "../services/obsidian.service.js";
 import { prisma } from "../db/prisma.js";
+import { AppError, ErrorCode } from "@dnd/shared";
+
+const isWindows = process.platform === "win32";
+
+/**
+ * Verifica que una ruta esté dentro de los directorios permitidos para la
+ * navegación del vault: home del usuario y puntos de montaje del sistema.
+ * Previene path traversal (CWE-22) resolviendo la ruta y comprobando el prefijo.
+ * Retorna la ruta resuelta (absoluta y normalizada).
+ */
+function validateVaultPath(dirPath: string): string {
+  const resolved = resolve(dirPath);
+
+  const allowedBases: string[] = [homedir()];
+
+  if (process.platform === "linux") {
+    allowedBases.push("/media", "/mnt");
+  } else if (process.platform === "darwin") {
+    allowedBases.push("/Volumes");
+  } else if (process.platform === "win32") {
+    // Permite cualquier raíz de unidad: C:\, D:\, etc.
+    for (const letter of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
+      allowedBases.push(`${letter}:\\`);
+    }
+  }
+
+  const isAllowed = allowedBases.some(
+    (base) => resolved === base || resolved.startsWith(base + sep)
+  );
+
+  if (!isAllowed) {
+    throw new AppError(
+      ErrorCode.VALIDATION_ERROR,
+      "Path is outside the allowed scope",
+      400
+    );
+  }
+
+  return resolved;
+}
 
 export const obsidianRoutes: FastifyPluginAsync = async (server) => {
   // -- Browse filesystem (cross-platform) ------------------------------------
@@ -15,19 +58,10 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
       .object({ path: z.string().optional() })
       .parse(request.query);
 
-    const { promises: fs } = await import("node:fs");
-    const nodePath = await import("node:path");
-    const os = await import("node:os");
-    const isWindows = process.platform === "win32";
-
-    // Determine starting path
-    let targetPath: string;
-    if (dirPath) {
-      targetPath = dirPath;
-    } else {
-      // Default to home directory on all platforms
-      targetPath = os.default.homedir();
-    }
+    // Valida y resuelve la ruta antes de cualquier operación de filesystem (CWE-22).
+    // Si dirPath está fuera del scope permitido, validateVaultPath lanza AppError 400
+    // que escapa del try/catch y es manejado por el errorHandler global de Fastify.
+    const targetPath = dirPath ? validateVaultPath(dirPath) : homedir();
 
     try {
       const entries = await fs.readdir(targetPath, { withFileTypes: true });
@@ -41,12 +75,14 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
           .filter(e => e.isDirectory() && e.name !== ".obsidian")
           .filter(e => !["$Recycle.Bin", "System Volume Information", "pagefile.sys"].includes(e.name))
           .map(async (e) => {
-            const subPath = nodePath.default.join(targetPath, e.name);
+            const subPath = join(targetPath, e.name);
             let subIsVault = false;
             try {
               const subEntries = await fs.readdir(subPath);
               subIsVault = subEntries.includes(".obsidian");
-            } catch {}
+            } catch (err) {
+              request.log.warn({ path: subPath, err }, "Cannot read subdirectory during vault detection — skipping");
+            }
             return {
               name: e.name,
               path: subPath,
@@ -66,7 +102,6 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
       });
 
       // Build breadcrumb
-      const sep = nodePath.default.sep;
       const parts = targetPath.split(sep).filter(Boolean);
       const breadcrumb = [];
 
@@ -84,7 +119,7 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
 
       // Common quick-access locations
       const quickAccess: { name: string; path: string }[] = [
-        { name: " Home", path: os.default.homedir() },
+        { name: " Home", path: homedir() },
       ];
 
       // On Linux, add common mount points
@@ -93,19 +128,21 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
           const mediaEntries = await fs.readdir("/media", { withFileTypes: true });
           for (const e of mediaEntries) {
             if (e.isDirectory()) {
-              const userMedia = nodePath.default.join("/media", e.name);
+              const userMedia = join("/media", e.name);
               const userEntries = await fs.readdir(userMedia, { withFileTypes: true }).catch(() => []);
               for (const drive of userEntries) {
                 if (drive.isDirectory()) {
                   quickAccess.push({
                     name: `[Drive] ${drive.name}`,
-                    path: nodePath.default.join(userMedia, drive.name),
+                    path: join(userMedia, drive.name),
                   });
                 }
               }
             }
           }
-        } catch {}
+        } catch (err) {
+          request.log.warn({ err }, "Cannot enumerate /media mount points — skipping Linux drive detection");
+        }
       }
 
       // On Windows, list drive letters
@@ -115,7 +152,9 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
           try {
             await fs.access(drivePath);
             quickAccess.push({ name: `[Drive] ${letter}:`, path: drivePath });
-          } catch {}
+          } catch {
+            // Drive letter does not exist — expected when probing all letters
+          }
         }
       }
 
@@ -128,14 +167,16 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
               quickAccess.push({ name: `[Drive] ${v.name}`, path: `/Volumes/${v.name}` });
             }
           }
-        } catch {}
+        } catch (err) {
+          request.log.warn({ err }, "Cannot enumerate /Volumes mount points — skipping macOS volume detection");
+        }
       }
 
       return {
         success: true,
         data: {
           current: targetPath,
-          parent: nodePath.default.dirname(targetPath),
+          parent: dirname(targetPath),
           isVault,
           dirs: subDirs,
           breadcrumb,
