@@ -376,7 +376,7 @@ function PlayerCard({ player, onClick }: { player: Player; onClick: () => void }
 function PlayersContent() {
   const searchParams = useSearchParams();
   const campaignId = searchParams.get("campaignId") ?? undefined;
-  const { activeCampaign } = useAppStore();
+  const { activeCampaign, _hasHydrated } = useAppStore();
   const effectiveCampaignId = campaignId ?? activeCampaign?.id;
 
   const [selected, setSelected] = useState<ModalEntity | null>(null);
@@ -389,6 +389,8 @@ function PlayersContent() {
 
   const active = players?.filter((p) => p.status === "active") ?? [];
   const inactive = players?.filter((p) => p.status !== "active") ?? [];
+
+  if (!_hasHydrated && !campaignId) return null;
 
   return (
     <AppShell>

@@ -162,7 +162,7 @@ function IssueRow({ issue, onAction }: { issue: Issue; onAction: () => void }) {
 function IssuesContent() {
   const searchParams = useSearchParams();
   const campaignId = searchParams.get("campaignId") ?? undefined;
-  const { activeCampaign } = useAppStore();
+  const { activeCampaign, _hasHydrated } = useAppStore();
   const effectiveCampaignId = campaignId ?? activeCampaign?.id;
 
   const [statusFilter, setStatusFilter] = useState<string>("open");
@@ -173,6 +173,8 @@ function IssuesContent() {
   );
 
   const refresh = () => mutate(`/issues/${effectiveCampaignId}/${statusFilter}`);
+
+  if (!_hasHydrated && !campaignId) return null;
 
   return (
     <AppShell>

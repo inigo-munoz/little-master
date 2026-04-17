@@ -20,12 +20,11 @@ import {
   Download,
 } from "lucide-react";
 import { clsx } from "clsx";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { api } from "../../../lib/api";
 import type { Campaign, Session, Npc, Document, Issue } from "../../../lib/api";
 import { AppShell } from "../../../components/layout/AppShell";
 import { DetailModal, type ModalEntity } from "../../../components/ui/DetailModal";
+import { WikiMarkdown } from "../../../components/ui/WikiMarkdown";
 import { StatusBadge, SeverityBadge, SourceBadge, AuthorityBadge } from "../../../components/ui/Badge";
 import { useAppStore } from "../../../store/app.store";
 import Link from "next/link";
@@ -174,11 +173,11 @@ function SessionForm({
 }
 
 // ─── Session Card ─────────────────────────────────────────────────────────────
-function SessionCard({ session, onEdit }: { session: Session; onEdit: () => void }) {
+function SessionCard({ session, campaignId, onEdit }: { session: Session; campaignId: string; onEdit: () => void }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="border border-stone-800 bg-stone-900 rounded-lg overflow-hidden">
+    <div className="border border-stone-800 bg-stone-900 rounded-lg">
       <div
         className="flex items-center gap-3 p-4 cursor-pointer hover:bg-stone-800/50 transition-colors"
         onClick={() => setExpanded((e) => !e)}
@@ -221,7 +220,7 @@ function SessionCard({ session, onEdit }: { session: Session; onEdit: () => void
       {expanded && session.notes && (
         <div className="border-t border-stone-800 p-4">
           <div className="prose-dnd text-sm">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{session.notes}</ReactMarkdown>
+            <WikiMarkdown campaignId={campaignId}>{session.notes}</WikiMarkdown>
           </div>
         </div>
       )}
@@ -267,11 +266,7 @@ export default function CampaignDetailPage() {
 
   const { data: players } = useSWR(
     campaign ? `/players/${campaign.id}` : null,
-    async () => {
-      const res = await fetch(`http://localhost:3001/api/players?campaignId=${campaign!.id}`);
-      const json = await res.json() as any;
-      return (json.data ?? []) as { id: string; name: string; class?: string | null; race?: string | null; level: number; hp?: number | null; ac?: number | null; status: string }[];
-    }
+    () => api.players.list(campaign!.id)
   );
 
   const { data: npcs } = useSWR(
@@ -403,6 +398,7 @@ export default function CampaignDetailPage() {
                   <SessionCard
                     key={s.id}
                     session={s}
+                    campaignId={params.id}
                     onEdit={() => setEditSession(s)}
                   /></div>
                 ))}

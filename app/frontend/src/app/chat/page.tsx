@@ -494,7 +494,7 @@ function MessageBubble({ message, contextChunks, tokensUsed, model, mode, campai
 function ChatInterface() {
   const searchParams = useSearchParams();
   const campaignId = searchParams.get("campaignId") ?? undefined;
-  const { chatMode, setChatMode, activeCampaign, messages, addMessage, clearMessages } = useAppStore();
+  const { chatMode, setChatMode, activeCampaign, messages, addMessage, clearMessages, _hasHydrated } = useAppStore();
   const [input, setInput] = useState("");
   const [entityType, setEntityType] = useState<"npc" | "location" | "faction" | null>(null);
   const [loading, setLoading] = useState(false);
@@ -572,6 +572,8 @@ function ChatInterface() {
       handleSend();
     }
   }
+
+  if (!_hasHydrated && !campaignId) return null;
 
   return (
     <AppShell>

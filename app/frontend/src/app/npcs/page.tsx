@@ -603,7 +603,7 @@ function NpcCard({
 function NpcsContent() {
   const searchParams = useSearchParams();
   const campaignId = searchParams.get("campaignId") ?? undefined;
-  const { activeCampaign } = useAppStore();
+  const { activeCampaign, _hasHydrated } = useAppStore();
   const effectiveCampaignId = campaignId ?? activeCampaign?.id;
 
   const [showForm, setShowForm] = useState(false);
@@ -627,6 +627,8 @@ function NpcsContent() {
     const matchStatus = statusFilter === "all" || n.status === statusFilter;
     return matchSearch && matchStatus;
   });
+
+  if (!_hasHydrated && !campaignId) return null;
 
   return (
     <AppShell>
