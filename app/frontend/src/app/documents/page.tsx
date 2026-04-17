@@ -447,7 +447,7 @@ function DocumentCard({ doc, onAction, onView }: { doc: Document; onAction: () =
 function DocumentsContent() {
   const searchParams = useSearchParams();
   const campaignId = searchParams.get("campaignId") ?? undefined;
-  const { activeCampaign } = useAppStore();
+  const { activeCampaign, _hasHydrated } = useAppStore();
   const effectiveCampaignId = campaignId ?? activeCampaign?.id;
 
   const [showUpload, setShowUpload] = useState(false);
@@ -469,6 +469,8 @@ function DocumentsContent() {
 
   const totalChunks = docs?.reduce((sum, d) => sum + d.chunkCount, 0) ?? 0;
   const indexedDocs = docs?.filter((d) => d.isIndexed).length ?? 0;
+
+  if (!_hasHydrated && !campaignId) return null;
 
   return (
     <AppShell>

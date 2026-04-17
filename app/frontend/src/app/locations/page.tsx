@@ -228,7 +228,7 @@ function LocationCard({
 function LocationsContent() {
   const searchParams = useSearchParams();
   const campaignId = searchParams.get("campaignId") ?? undefined;
-  const { activeCampaign } = useAppStore();
+  const { activeCampaign, _hasHydrated } = useAppStore();
   const effectiveCampaignId = campaignId ?? activeCampaign?.id;
 
   const [showForm, setShowForm] = useState(false);
@@ -246,6 +246,8 @@ function LocationsContent() {
   const filtered = locations?.filter((l) =>
     !search || l.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (!_hasHydrated && !campaignId) return null;
 
   return (
     <AppShell>

@@ -258,7 +258,7 @@ function FactionCard({
 function FactionsContent() {
   const searchParams = useSearchParams();
   const campaignId = searchParams.get("campaignId") ?? undefined;
-  const { activeCampaign } = useAppStore();
+  const { activeCampaign, _hasHydrated } = useAppStore();
   const effectiveCampaignId = campaignId ?? activeCampaign?.id;
 
   const [showForm, setShowForm] = useState(false);
@@ -276,6 +276,8 @@ function FactionsContent() {
   const filtered = factions?.filter((f) =>
     !search || f.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (!_hasHydrated && !campaignId) return null;
 
   return (
     <AppShell>

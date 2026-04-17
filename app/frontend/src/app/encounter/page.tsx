@@ -490,7 +490,7 @@ function SavedEncounterMonsterRow({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function EncounterPage() {
-  const { activeCampaign } = useAppStore();
+  const { activeCampaign, _hasHydrated } = useAppStore();
 
   const encountersSWRKey = activeCampaign ? `/encounters/${activeCampaign.id}` : null;
   const { data: savedEncounters, mutate: mutateEncounters } = useSWR(
@@ -632,6 +632,8 @@ export default function EncounterPage() {
   }
 
   const diff = result ? DIFFICULTY_CONFIG[result.difficulty] : null;
+
+  if (!_hasHydrated) return null;
 
   return (
     <AppShell>

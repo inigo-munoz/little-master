@@ -117,13 +117,15 @@ function ChangeLogEntry({ log }: { log: ChangeLog }) {
 function ChangelogContent() {
   const searchParams = useSearchParams();
   const campaignId = searchParams.get("campaignId") ?? undefined;
-  const { activeCampaign } = useAppStore();
+  const { activeCampaign, _hasHydrated } = useAppStore();
   const effectiveCampaignId = campaignId ?? activeCampaign?.id;
 
   const { data: logs, isLoading } = useSWR(
     effectiveCampaignId ? `/changelog/${effectiveCampaignId}` : null,
     () => api.changelog.byCampaign(effectiveCampaignId!)
   );
+
+  if (!_hasHydrated && !campaignId) return null;
 
   return (
     <AppShell>

@@ -22,6 +22,10 @@ interface AppState {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   toggleSidebar: () => void;
+
+  // Hydration guard — false until localStorage has been rehydrated by persist middleware
+  _hasHydrated: boolean;
+  setHasHydrated: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -43,6 +47,9 @@ export const useAppStore = create<AppState>()(
       sidebarOpen: true,
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+
+      _hasHydrated: false,
+      setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
     {
       name: "dnd-assistant-store",
@@ -51,6 +58,9 @@ export const useAppStore = create<AppState>()(
         activeCampaignId: state.activeCampaignId,
         activeCampaign: state.activeCampaign,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
