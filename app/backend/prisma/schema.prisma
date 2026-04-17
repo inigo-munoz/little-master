@@ -35,17 +35,18 @@ model Campaign {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
-  sessions      Session[]
-  npcs          Npc[]
-  locations     Location[]
-  factions      Faction[]
-  documents     Document[]
-  campaignRules CampaignRule[]
-  changeLogs    ChangeLog[]
-  issues        Issue[]
-  assistantRuns AssistantRun[]
-  players       Player[]
-  encounters    Encounter[]
+  sessions        Session[]
+  npcs            Npc[]
+  locations       Location[]
+  factions        Faction[]
+  documents       Document[]
+  campaignRules   CampaignRule[]
+  changeLogs      ChangeLog[]
+  issues          Issue[]
+  assistantRuns   AssistantRun[]
+  players         Player[]
+  encounters      Encounter[]
+  entityRelations EntityRelation[]
 }
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
@@ -137,6 +138,26 @@ model Faction {
   updatedAt   DateTime @updatedAt
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+// ─── Entity Relations ─────────────────────────────────────────────────────────
+model EntityRelation {
+  id           String   @id @default(cuid())
+  campaignId   String
+  fromType     String   // "npc" | "faction" | "location"
+  fromId       String
+  toType       String   // "npc" | "faction" | "location"
+  toId         String
+  relationType String
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([fromType, fromId])
+  @@index([toType, toId])
 }
 
 // ─── Documents ────────────────────────────────────────────────────────────────
