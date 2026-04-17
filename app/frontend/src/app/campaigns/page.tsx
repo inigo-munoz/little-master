@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
-import { Plus, Swords, Users, BookOpen, AlertTriangle, Zap } from "lucide-react";
+import { Plus, Swords, ChevronRight, Zap } from "lucide-react";
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
 import type { Campaign, Encounter } from "../../lib/api";
@@ -10,6 +10,7 @@ import { AppShell } from "../../components/layout/AppShell";
 import { StatusBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -173,85 +174,57 @@ function CreateCampaignModal({
   );
 }
 
-function CampaignCard({ campaign }: { campaign: Campaign }) {
+function CampaignRow({ campaign }: { campaign: Campaign }) {
   const { setActiveCampaign, activeCampaignId } = useAppStore();
+  const router = useRouter();
   const isActive = campaign.id === activeCampaignId;
+
+  function handleClick() {
+    setActiveCampaign(campaign);
+    router.push(`/campaigns/${campaign.id}`);
+  }
+
+  const counts = [
+    { value: campaign._count?.sessions ?? 0, label: "ses." },
+    { value: campaign._count?.npcs ?? 0, label: "PNJs" },
+    { value: campaign._count?.locations ?? 0, label: "locs." },
+    { value: campaign._count?.factions ?? 0, label: "fac." },
+    { value: campaign._count?.players ?? 0, label: "PJs" },
+  ];
 
   return (
     <div
+      onClick={handleClick}
       className={clsx(
-        "border rounded-xl p-5 transition-all cursor-pointer group",
+        "flex items-center gap-4 border rounded-xl px-4 py-3.5 cursor-pointer transition-colors group",
         isActive
           ? "border-amber-600 bg-amber-950/20"
-          : "border-stone-800 bg-stone-900 hover:border-stone-600"
+          : "border-stone-800 bg-stone-900 hover:border-stone-700"
       )}
-      onClick={() => setActiveCampaign(campaign)}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Swords
-            size={16}
-            className={isActive ? "text-amber-400" : "text-stone-500 group-hover:text-stone-400"}
-          />
-          <h3 className="font-semibold text-stone-100 group-hover:text-white truncate max-w-xs">
-            {campaign.title}
-          </h3>
-        </div>
-        <StatusBadge status={campaign.status} />
+      {/* Nombre + sistema */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-stone-100 truncate group-hover:text-white">
+          {campaign.title}
+        </p>
+        <p className="text-xs text-stone-500 mt-0.5">{campaign.system}</p>
       </div>
 
-      {campaign.description && (
-        <p className="text-sm text-stone-400 line-clamp-2 mb-4">{campaign.description}</p>
-      )}
+      {/* Badge estado */}
+      <StatusBadge status={campaign.status} />
 
-      <div className="flex items-center gap-4 text-xs text-stone-500">
-        <span className="flex items-center gap-1">
-          <BookOpen size={12} />
-          {campaign._count?.sessions ?? 0} sessions
-        </span>
-        <span className="flex items-center gap-1">
-          <Users size={12} />
-          {campaign._count?.npcs ?? 0} NPCs
-        </span>
-        {(campaign._count?.issues ?? 0) > 0 && (
-          <span className="flex items-center gap-1 text-amber-500">
-            <AlertTriangle size={12} />
-            {campaign._count?.issues} open issues
-          </span>
-        )}
-        <span className="ml-auto">{campaign.system}</span>
+      {/* Contadores */}
+      <div className="hidden sm:flex items-center gap-5">
+        {counts.map(({ value, label }) => (
+          <div key={label} className="text-center">
+            <p className="text-sm font-semibold text-amber-400 leading-none">{value}</p>
+            <p className="text-xs text-stone-500 mt-0.5">{label}</p>
+          </div>
+        ))}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-stone-800/50 flex gap-3">
-        <Link
-          href={`/campaigns/${campaign.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="text-xs text-amber-400 hover:text-amber-300 transition-colors"
-        >
-          Open Campaign →
-        </Link>
-        <Link
-          href={`/chat?campaignId=${campaign.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="text-xs text-stone-500 hover:text-stone-300 transition-colors"
-        >
-          Assistant
-        </Link>
-        <Link
-          href={`/issues?campaignId=${campaign.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="text-xs text-stone-500 hover:text-stone-300 transition-colors"
-        >
-          Issues
-        </Link>
-        <Link
-          href={`/changelog?campaignId=${campaign.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="text-xs text-stone-500 hover:text-stone-300 transition-colors"
-        >
-          Changelog
-        </Link>
-      </div>
+      {/* Chevron */}
+      <ChevronRight size={16} className="text-stone-600 group-hover:text-stone-400 shrink-0" />
     </div>
   );
 }
@@ -281,9 +254,9 @@ export default function CampaignsPage() {
         </div>
 
         {isLoading && (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 bg-stone-900 rounded-xl animate-pulse border border-stone-800" />
+              <div key={i} className="h-14 bg-stone-900 rounded-xl animate-pulse border border-stone-800" />
             ))}
           </div>
         )}
@@ -303,7 +276,7 @@ export default function CampaignsPage() {
         )}
 
         <div className="space-y-4">
-          {campaigns?.map((c) => <CampaignCard key={c.id} campaign={c} />)}
+          {campaigns?.map((c) => <CampaignRow key={c.id} campaign={c} />)}
         </div>
 
         {activeCampaignId && <EncuentrosRecientes campaignId={activeCampaignId} />}
