@@ -71,5 +71,6 @@ describe("GET /api/campaigns — _count", () => {
     expect(campaign._count.factions).toBe(2);
     expect(campaign._count.players).toBe(1);
     expect(campaign._count.sessions).toBe(0);
+    expect(campaign._count.issues).toBe(0);
   });
 });
