@@ -354,7 +354,14 @@ export interface Campaign {
   status: "active" | "paused" | "completed" | "archived";
   createdAt: string;
   updatedAt: string;
-  _count?: { sessions: number; npcs: number; issues: number };
+  _count?: {
+    sessions: number;
+    npcs: number;
+    issues: number;
+    locations: number;
+    factions: number;
+    players: number;
+  };
 }
 
 export interface Session {
