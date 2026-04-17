@@ -18,12 +18,12 @@ import { api } from "../../lib/api";
 import type { Session } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
 import { useAppStore } from "../../store/app.store";
+import { WikiMarkdown } from "../../components/ui/WikiMarkdown";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 // ─── Inline Edit Row ──────────────────────────────────────────────────────────
 
-function SessionRow({ session, onUpdated }: { session: Session; onUpdated: () => void }) {
+function SessionRow({ session, campaignId, onUpdated }: { session: Session; campaignId: string; onUpdated: () => void }) {
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [form, setForm] = useState({
@@ -71,9 +71,7 @@ function SessionRow({ session, onUpdated }: { session: Session; onUpdated: () =>
   async function handleDownloadPdf() {
     setDownloadingPdf(true);
     try {
-      const res = await fetch(`${BACKEND}/api/pdf/session/${session.id}`);
-      if (!res.ok) throw new Error("Error generating PDF");
-      const blob = await res.blob();
+      const blob = await api.pdf.sessionPdf(session.id);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -94,7 +92,7 @@ function SessionRow({ session, onUpdated }: { session: Session; onUpdated: () =>
     : null;
 
   return (
-    <div className="border border-stone-800 bg-stone-900 rounded-xl overflow-hidden">
+    <div className="border border-stone-800 bg-stone-900 rounded-xl">
       {/* Cabecera */}
       <div className="flex items-center gap-3 p-4">
         <button
@@ -200,7 +198,9 @@ function SessionRow({ session, onUpdated }: { session: Session; onUpdated: () =>
                   placeholder="Notas privadas del DM..."
                 />
               ) : (
-                <p className="text-stone-400 text-sm whitespace-pre-wrap">{session.notes}</p>
+                <div className="text-stone-400 text-sm prose-dnd">
+                  <WikiMarkdown campaignId={campaignId}>{session.notes ?? ""}</WikiMarkdown>
+                </div>
               )}
             </div>
           )}
@@ -319,7 +319,7 @@ function NewSessionModal({
 // ─── Main Content ──────────────────────────────────────────────────────────────
 
 function SessionsContent() {
-  const { activeCampaign } = useAppStore();
+  const { activeCampaign, _hasHydrated } = useAppStore();
   const [showNewSession, setShowNewSession] = useState(false);
 
   const swrKey = activeCampaign ? `/sessions/${activeCampaign.id}` : null;
@@ -330,6 +330,9 @@ function SessionsContent() {
   const refresh = () => mutate(swrKey ?? "");
 
   const nextNumber = sessions ? (Math.max(0, ...sessions.map((s) => s.sessionNumber)) + 1) : 1;
+
+  // Evita mostrar "No hay campaña activa" antes de que persist rehidrate localStorage
+  if (!_hasHydrated) return null;
 
   return (
     <AppShell>
@@ -389,7 +392,7 @@ function SessionsContent() {
               {sessions.length} sesión{sessions.length !== 1 ? "es" : ""} · ordenadas por número descendente
             </p>
             {sessions.map((session) => (
-              <SessionRow key={session.id} session={session} onUpdated={refresh} />
+              <SessionRow key={session.id} session={session} campaignId={activeCampaign!.id} onUpdated={refresh} />
             ))}
           </div>
         )}
