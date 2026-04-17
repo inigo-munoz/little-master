@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { Shield, Heart, Star, Zap, ChevronLeft, Save, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
 import { AppShell } from "../../../components/layout/AppShell";
+import { api } from "../../../lib/api";
 import {
   DND_CLASSES,
   DND_SPECIES,
@@ -14,7 +15,6 @@ import {
   DND_ALIGNMENTS,
 } from "../../../lib/dnd-2024-data";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 const ABILITIES = [
   { key: "strength", label: "FUE", full: "Fuerza" },
@@ -160,11 +160,7 @@ function CharacterSheetContent() {
 
   const { data: player, mutate } = useSWR(
     params.id ? `/player/${params.id}` : null,
-    async () => {
-      const res = await fetch(`${BACKEND}/api/players/${params.id}`);
-      const json = await res.json();
-      return json.data;
-    }
+    () => api.players.get(params.id)
   );
 
   const [form, setForm] = useState<Record<string, any>>({});
@@ -189,11 +185,7 @@ function CharacterSheetContent() {
   async function handleSave() {
     setSaving(true);
     try {
-      await fetch(`${BACKEND}/api/players/${params.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+      await api.players.update(params.id, form);
       await mutate();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);

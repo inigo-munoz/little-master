@@ -58,6 +58,12 @@ const post = <T>(path: string, body: unknown) => request<T>("POST", path, body);
 const patch = <T>(path: string, body: unknown) => request<T>("PATCH", path, body);
 const del = (path: string) => request<void>("DELETE", path);
 
+async function requestBlob(path: string): Promise<Blob> {
+  const res = await fetch(`${BASE}${path}`);
+  if (!res.ok) throw new ApiError("UNKNOWN", "Request failed", res.status);
+  return res.blob();
+}
+
 // ─── Campaigns ────────────────────────────────────────────────────────────────
 export const api = {
   campaigns: {
@@ -302,6 +308,11 @@ export const api = {
       get<Array<{ type: string; id: string; name: string; summary: string }>>(
         `/api/campaigns/${campaignId}/wiki/${encodeURIComponent(name)}`
       ),
+  },
+
+  pdf: {
+    sessionPdf: (sessionId: string) =>
+      requestBlob(`/api/pdf/session/${sessionId}`),
   },
 
 };
