@@ -54,6 +54,7 @@ export const SessionSchema = z.object({
   notes: z.string().max(50000).optional().nullable(),
   sessionNumber: z.number().int().positive(),
   playedAt: timestamp().optional().nullable(),
+  sourceType: SourceTypeSchema.default("campaign"),
   createdAt: timestamp(),
   updatedAt: timestamp(),
 });
@@ -66,7 +67,7 @@ export const CreateSessionSchema = SessionSchema.pick({
   notes: true,
   sessionNumber: true,
   playedAt: true,
-});
+}).extend({ sourceType: SourceTypeSchema.optional().default("campaign") });
 export type CreateSession = z.infer<typeof CreateSessionSchema>;
 
 // ─── NPC ──────────────────────────────────────────────────────────────────────
@@ -77,6 +78,7 @@ export const NpcSchema = z.object({
   role: z.string().max(200).optional().nullable(),
   description: z.string().max(10000).optional().nullable(),
   status: NpcStatusSchema,
+  sourceType: SourceTypeSchema.default("campaign"),
   tags: z.array(z.string()).default([]),
   createdAt: timestamp(),
   updatedAt: timestamp(),
@@ -91,6 +93,7 @@ export const CreateNpcSchema = z.object({
   role: z.string().max(200).optional().nullable(),
   description: z.string().max(10000).optional().nullable(),
   status: NpcStatusSchema.default("alive"),
+  sourceType: SourceTypeSchema.optional().default("campaign"),
   tags: z.array(z.string()).default([]),
   // Stat block de combate — todos opcionales
   armorClass: z.number().int().optional().nullable(),
@@ -126,6 +129,7 @@ export const LocationSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(10000).optional().nullable(),
   parentLocationId: z.string().cuid2().optional().nullable(),
+  sourceType: SourceTypeSchema.default("campaign"),
   tags: z.array(z.string()).default([]),
   createdAt: timestamp(),
   updatedAt: timestamp(),
@@ -140,6 +144,7 @@ export const FactionSchema = z.object({
   description: z.string().max(10000).optional().nullable(),
   alignment: z.string().max(50).optional().nullable(),
   disposition: z.enum(["allied", "neutral", "hostile", "unknown"]).default("unknown"),
+  sourceType: SourceTypeSchema.default("campaign"),
   tags: z.array(z.string()).default([]),
   createdAt: timestamp(),
   updatedAt: timestamp(),
