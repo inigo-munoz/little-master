@@ -8,7 +8,10 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import pino from "pino";
 import { prisma } from "../db/prisma.js";
+
+const log = pino({ name: "obsidian-service" });
 
 // ─── Frontmatter parser ───────────────────────────────────────────────────────
 export function parseFrontmatter(content: string): { fm: Record<string, any>; body: string } {
@@ -129,7 +132,9 @@ async function findMarkdownFiles(dir: string, maxDepth = 6): Promise<string[]> {
         results.push(fullPath);
       }
     }
-  } catch {}
+  } catch (err) {
+    log.warn({ dir, err }, "Cannot read directory during vault scan — skipping");
+  }
   return results;
 }
 
