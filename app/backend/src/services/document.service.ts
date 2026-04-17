@@ -105,6 +105,17 @@ export const documentService = {
 
     // Delete file (best-effort)
     await fs.unlink(fullPath).catch(() => {});
+
+    await changeLogService.log({
+      campaignId: doc.campaignId ?? null,
+      entityType: "document",
+      entityId: id,
+      beforeJson: JSON.stringify({ id: doc.id, title: doc.title, sourceType: doc.sourceType }),
+      afterJson: null,
+      reason: "Document deleted",
+      source: "user",
+      authorType: "user",
+    });
   },
 
   async indexAndEmbed(documentId: string, content: string) {

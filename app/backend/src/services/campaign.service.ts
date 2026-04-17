@@ -97,7 +97,18 @@ export const campaignService = {
   },
 
   async delete(id: string, userId: string) {
-    await this.getById(id, userId); // verifies ownership
+    const existing = await this.getById(id, userId);
     await prisma.campaign.delete({ where: { id } });
+
+    await changeLogService.log({
+      campaignId: id,
+      entityType: "campaign",
+      entityId: id,
+      beforeJson: JSON.stringify(existing),
+      afterJson: null,
+      reason: "Campaign deleted",
+      source: "user",
+      authorType: "user",
+    });
   },
 };
