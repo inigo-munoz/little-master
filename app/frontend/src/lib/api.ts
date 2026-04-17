@@ -315,9 +315,37 @@ export const api = {
       requestBlob(`/api/pdf/session/${sessionId}`),
   },
 
+  relations: {
+    list: (campaignId: string, entityType: string, entityId: string) =>
+      get<RelationItem[]>(
+        `/api/relations?campaignId=${campaignId}&entityType=${entityType}&entityId=${entityId}`
+      ),
+    create: (data: CreateEntityRelationPayload) =>
+      post<{ id: string; relationType: string }>("/api/relations", data),
+    delete: (id: string) => del(`/api/relations/${id}`),
+  },
+
 };
 
 // ─── Types (mirrors backend domain) ─────────────────────────────────────────
+export interface RelationItem {
+  id: string;
+  relationType: string;
+  notes: string | null;
+  direction: "from" | "to";
+  entity: { type: "npc" | "faction" | "location"; id: string; name: string };
+}
+
+export interface CreateEntityRelationPayload {
+  campaignId: string;
+  fromType: "npc" | "faction" | "location";
+  fromId: string;
+  toType: "npc" | "faction" | "location";
+  toId: string;
+  relationType: string;
+  notes?: string | null;
+}
+
 export interface Campaign {
   id: string;
   title: string;
