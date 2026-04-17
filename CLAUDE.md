@@ -24,8 +24,8 @@ pnpm typecheck
 pnpm lint               # Frontend only
 
 # Tests
-cd app/frontend && pnpm test   # Vitest — tests unitarios del frontend
-cd app/backend  && pnpm test   # Vitest — tests unitarios del backend
+cd app/frontend && pnpm test   # Vitest — 46 tests unitarios del frontend
+cd app/backend  && pnpm test   # Vitest — 106 tests unitarios del backend
 
 # Database
 pnpm db:migrate         # Run Prisma migrations
@@ -163,4 +163,23 @@ Para reimportar forzando (borra y recrea): `cd app/backend && pnpm phb:import:fo
 
 ## TypeScript config
 
-Strict mode throughout. Base config at `tsconfig.base.json` (ES2022 target, ESNext modules, bundler resolution). All packages reference the base. The frontend `next.config.mjs` uses `transpilePackages` to handle shared monorepo packages.
+Strict mode throughout. Base config at `tsconfig.base.json` (ES2022 target, ESNext modules, bundler resolution). All packages reference the base. The frontend `next.config.mjs` uses `transpilePackages` to handle shared monorepo packages. `packages/domain` y `packages/shared` tienen su propio `tsconfig.json` para resolver referencias TypeScript dentro del monorepo.
+
+## Estado del proyecto
+
+### Sprint 7 — completado
+
+- **`rulesEngine.service.ts`** — `parseCR`: eliminados tipos `any`, cálculos de XP corregidos para CRs fraccionarios y enteros
+- **Hidratación Zustand** — `onRehydrateStorage` + guards defensivos en 10 páginas; resuelve la pérdida de campaña activa entre recargas
+- **`obsidian.ts` / `obsidian.service.ts`** — `catch {}` vacíos reemplazados por logs con contexto
+- **`packages/domain` / `packages/shared`** — `tsconfig.json` añadido para resolver referencias TypeScript del monorepo
+- **`WikiMarkdown.tsx`** (CN-019) — XSS corregido: `urlTransform={(url) => url}` reemplazado por `safeUrlTransform` (lista blanca de protocolos: `https://`, `http://`, rutas relativas, `wiki://`)
+- **`encryption.ts`** (CN-018) — KDF mejorado: SHA-256 sin sal sustituido por PBKDF2-SHA256 con sal aleatoria por registro (100 000 iteraciones). Nuevo formato `v2:salt:iv:authTag:encrypted`. `decrypt()` detecta automáticamente formato v1 (legacy) y v2; migración transparente sin tocar la BD
+- **`obsidian.ts`** (CN-001) — Path traversal corregido: `validateVaultPath()` resuelve con `path.resolve()` y verifica prefijo contra `homedir()` + puntos de montaje permitidos por plataforma antes de cualquier `fs.readdir()`
+
+### Pendientes conocidos
+
+- ~~**CN-005**~~ — ✅ Resuelto: Next.js actualizado a 15.5.15
+- ~~**CN-006**~~ — ✅ Resuelto: Fastify actualizado a 5.8.5 (cors 10, helmet 12, multipart 9, sensible 6)
+- **Trazabilidad de entidades** — Añadir campo `sourceType` a `Npc`, `Session`, `Location`, `Faction`; actualmente solo `Document` tiene trazabilidad de origen
+- **`MVP_USER_ID` hardcodeado** — Multi-user auth aplazado; aceptable en esta fase de uso local
