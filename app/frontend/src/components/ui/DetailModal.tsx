@@ -5,6 +5,7 @@ import { X, Shield, Heart, Star, Users, MapPin, Swords, ScrollText } from "lucid
 import { clsx } from "clsx";
 import { StatusBadge, SourceBadge } from "./Badge";
 import { WikiMarkdown } from "./WikiMarkdown";
+import { RelationsPanel } from "./RelationsPanel";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type ModalEntity =
@@ -410,6 +411,14 @@ function NpcDetail({ data, campaignId }: { data: NpcData; campaignId?: string })
 
       {/* Stat block */}
       <NpcStatBlockDisplay data={data} />
+
+      {campaignId && (
+        <RelationsPanel
+          campaignId={campaignId}
+          entityType="npc"
+          entityId={data.id}
+        />
+      )}
     </div>
   );
 }
@@ -468,6 +477,14 @@ function LocationDetail({ data, campaignId }: { data: LocationData; campaignId?:
       ) : (
         <p className="text-stone-600 text-sm italic">Sin descripción.</p>
       )}
+
+      {campaignId && (
+        <RelationsPanel
+          campaignId={campaignId}
+          entityType="location"
+          entityId={data.id}
+        />
+      )}
     </div>
   );
 }
@@ -499,6 +516,14 @@ function FactionDetail({ data, campaignId }: { data: FactionData; campaignId?: s
         </div>
       ) : (
         <p className="text-stone-600 text-sm italic">Sin descripción.</p>
+      )}
+
+      {campaignId && (
+        <RelationsPanel
+          campaignId={campaignId}
+          entityType="faction"
+          entityId={data.id}
+        />
       )}
     </div>
   );
