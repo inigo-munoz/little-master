@@ -30,6 +30,9 @@ export function getRelationPairKey(
   typeA: string,
   typeB: string
 ): EntityRelationKind | null {
-  const key = [typeA, typeB].sort().join("-") as EntityRelationKind;
-  return key in RELATION_TYPES ? key : null;
+  const direct = `${typeA}-${typeB}` as EntityRelationKind;
+  if (direct in RELATION_TYPES) return direct;
+  const reversed = `${typeB}-${typeA}` as EntityRelationKind;
+  if (reversed in RELATION_TYPES) return reversed;
+  return null;
 }

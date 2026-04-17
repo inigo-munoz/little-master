@@ -46,6 +46,7 @@ export const EntityTypeSchema = z.enum([
   "rule_source",
   "campaign_rule",
   "llm_config",
+  "relation",
 ]);
 export type EntityType = z.infer<typeof EntityTypeSchema>;
 
