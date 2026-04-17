@@ -133,7 +133,7 @@ export function DetailModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {entity.type === "player" && <PlayerDetail data={entity.data} campaignId={campaignId} />}
-          {entity.type === "npc" && <NpcDetail data={entity.data} />}
+          {entity.type === "npc" && <NpcDetail data={entity.data} campaignId={campaignId} />}
           {entity.type === "session" && <SessionDetail data={entity.data} campaignId={campaignId} />}
           {entity.type === "location" && <LocationDetail data={entity.data} campaignId={campaignId} />}
           {entity.type === "faction" && <FactionDetail data={entity.data} campaignId={campaignId} />}
@@ -233,25 +233,7 @@ function cleanNpcDescription(description: string | null): string {
     if (!skip) for (const s of skipContains) if (t.includes(s)) { skip = true; break; }
     if (skip) continue;
 
-    // Remove **bold** keeping text
-    let cleaned = line;
-    while (cleaned.includes("**")) {
-      const a = cleaned.indexOf("**");
-      const b = cleaned.indexOf("**", a + 2);
-      if (b === -1) break;
-      cleaned = cleaned.slice(0, a) + cleaned.slice(a + 2, b) + cleaned.slice(b + 2);
-    }
-
-    // Convert headings to section dividers
-    if (cleaned.trim().startsWith("#")) {
-      const text = cleaned.trim().replace(/^#+\s*/, "");
-      if (text && !["General", "Statblock", "Connections", "Relationships"].includes(text)) {
-        result.push("\u2014 " + text + " \u2014");
-      }
-      continue;
-    }
-
-    result.push(cleaned);
+    result.push(line);
   }
 
   return result.join("\n").trim();
@@ -369,7 +351,7 @@ function NpcStatBlockDisplay({ data }: { data: NpcData }) {
   );
 }
 
-function NpcDetail({ data }: { data: NpcData }) {
+function NpcDetail({ data, campaignId }: { data: NpcData; campaignId?: string }) {
   let tags: string[] = [];
   try { tags = JSON.parse(data.tags); } catch {}
 
@@ -387,8 +369,8 @@ function NpcDetail({ data }: { data: NpcData }) {
 
       {/* Description */}
       {cleanDesc ? (
-        <div className="text-sm text-stone-300 leading-relaxed bg-stone-950 rounded-lg p-4 whitespace-pre-wrap">
-          {cleanDesc}
+        <div className="prose-dnd text-sm bg-stone-950 rounded-lg p-4">
+          <WikiMarkdown campaignId={campaignId}>{cleanDesc}</WikiMarkdown>
         </div>
       ) : (
         <p className="text-stone-600 text-sm italic">Sin descripción.</p>
