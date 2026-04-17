@@ -275,7 +275,7 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {campaigns?.map((c) => <CampaignRow key={c.id} campaign={c} />)}
         </div>
 
