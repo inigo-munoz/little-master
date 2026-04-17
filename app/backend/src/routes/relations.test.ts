@@ -52,6 +52,7 @@ afterAll(async () => {
   await prisma.npc.deleteMany({ where: { campaignId } });
   await prisma.faction.deleteMany({ where: { campaignId } });
   await prisma.location.deleteMany({ where: { campaignId } });
+  await prisma.changeLog.deleteMany({ where: { campaignId } });
   await prisma.campaign.delete({ where: { id: campaignId } });
   await prisma.user.delete({ where: { id: "test-user-relations" } });
   await prisma.$disconnect();
@@ -72,6 +73,7 @@ describe("POST /api/relations", () => {
         relationType: "miembro",
       },
     });
+    await app.close();
     expect(res.statusCode).toBe(201);
     const body = JSON.parse(res.body);
     expect(body.success).toBe(true);
@@ -92,6 +94,7 @@ describe("POST /api/relations", () => {
         relationType: "frontera con",
       },
     });
+    await app.close();
     expect(res.statusCode).toBe(400);
   });
 
@@ -109,6 +112,7 @@ describe("POST /api/relations", () => {
         relationType: "aliado",
       },
     });
+    await app.close();
     expect(res.statusCode).toBe(400);
   });
 });
@@ -132,15 +136,17 @@ describe("GET /api/relations", () => {
       method: "GET",
       url: `/api/relations?campaignId=${campaignId}&entityType=npc&entityId=${npcId}`,
     });
+    const resFaction = await app.inject({
+      method: "GET",
+      url: `/api/relations?campaignId=${campaignId}&entityType=faction&entityId=${factionId}`,
+    });
+    await app.close();
+
     expect(resNpc.statusCode).toBe(200);
     const npcBody = JSON.parse(resNpc.body);
     expect(npcBody.data.length).toBeGreaterThanOrEqual(1);
     expect(npcBody.data.some((r: any) => r.entity.id === factionId)).toBe(true);
 
-    const resFaction = await app.inject({
-      method: "GET",
-      url: `/api/relations?campaignId=${campaignId}&entityType=faction&entityId=${factionId}`,
-    });
     expect(resFaction.statusCode).toBe(200);
     const factionBody = JSON.parse(resFaction.body);
     expect(factionBody.data.some((r: any) => r.entity.id === npcId)).toBe(true);
@@ -166,6 +172,8 @@ describe("DELETE /api/relations/:id", () => {
       method: "DELETE",
       url: `/api/relations/${rel.id}`,
     });
+    await app.close();
+
     expect(res.statusCode).toBe(204);
 
     const found = await prisma.entityRelation.findUnique({ where: { id: rel.id } });
@@ -178,6 +186,7 @@ describe("DELETE /api/relations/:id", () => {
       method: "DELETE",
       url: "/api/relations/no-existe-id",
     });
+    await app.close();
     expect(res.statusCode).toBe(404);
   });
 });
