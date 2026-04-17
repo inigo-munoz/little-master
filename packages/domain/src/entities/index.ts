@@ -250,10 +250,19 @@ export type LlmConfigPublic = z.infer<typeof LlmConfigPublicSchema>;
 
 // ─── Assistant Run ────────────────────────────────────────────────────────────
 // Every AI-assisted operation must be logged. No invisible AI actions.
+export const AssistantModeSchema = z.enum([
+  "archivista",
+  "designer",
+  "rule_reviewer",
+  "auditor",
+  "session_director",
+]);
+export type AssistantMode = z.infer<typeof AssistantModeSchema>;
+
 export const AssistantRunSchema = z.object({
   id: id(),
   campaignId: z.string().cuid2().optional().nullable(),
-  mode: z.string(), // "archivista" | "designer" | "rule_reviewer" | "auditor" | "session_director"
+  mode: AssistantModeSchema,
   prompt: z.string(),
   response: z.string().optional().nullable(),
   contextChunks: z.array(z.string()).default([]), // IDs of chunks used as context
@@ -263,6 +272,31 @@ export const AssistantRunSchema = z.object({
   createdAt: timestamp(),
 });
 export type AssistantRun = z.infer<typeof AssistantRunSchema>;
+
+// ─── Encounter / Monster ──────────────────────────────────────────────────────
+
+/**
+ * CR puede ser string fraccional ("1/2", "1/4", "1/8") o número entero/decimal.
+ * Convierte siempre a número para los cálculos de XP.
+ */
+export function parseCR(cr: string | number): number {
+  if (typeof cr === "number") return cr;
+  const fractions: Record<string, number> = {
+    "1/8": 0.125,
+    "1/4": 0.25,
+    "1/2": 0.5,
+  };
+  if (cr in fractions) return fractions[cr]!;
+  const n = parseFloat(cr);
+  return isNaN(n) ? 0 : n;
+}
+
+export const MonsterStatBlockSchema = z.object({
+  name: z.string().min(1),
+  cr: z.union([z.string(), z.number()]),
+  count: z.number().int().positive().optional(),
+});
+export type MonsterStatBlock = z.infer<typeof MonsterStatBlockSchema>;
 
 // ─── Document Chunk (for semantic search) ────────────────────────────────────
 export const DocumentChunkSchema = z.object({
