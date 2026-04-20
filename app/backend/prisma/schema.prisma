@@ -367,6 +367,12 @@ model Player {
   magicItems   String @default("[]") // JSON [{name, description, attuned}] — max 3 attuned
   currency     String @default("{}") // JSON: {cp,sp,ep,gp,pp}
 
+  // Clase y multiclase (D&D 2024)
+  classes       String  @default("[]")  // JSON: [{class, level, subclass}]
+  hpRolls       String  @default("[]")  // JSON: [{level, value, rolled}]
+  equippedArmor String?                 // clave de ARMOR_LIST, ej: "scaleMail"
+  hpUseAverage  Boolean @default(true)  // true=media, false=dado manual
+
   // Features, traits & dons
   features      String @default("[]") // JSON array of {name, description, source}
   speciesTraits String @default("[]") // JSON — rasgos de especie (D&D 2024)
