@@ -13,7 +13,16 @@ import {
   DND_SPECIES_VARIANTS,
   DND_BACKGROUNDS,
   DND_ALIGNMENTS,
+  SPELLCASTING_ABILITY_BY_CLASS,
 } from "../../../lib/dnd-2024-data";
+import {
+  abilityModifier,
+  proficiencyBonus,
+  calcPassivePerception,
+  calcSpellSaveDC,
+  calcSpellAttackBonus,
+  calcHpMaxSuggestion,
+} from "../../../lib/player-calcs";
 
 
 const ABILITIES = [
@@ -47,13 +56,12 @@ const SKILLS = [
 ] as const;
 
 function mod(score: number | null | undefined): string {
-  if (!score) return "+0";
-  const m = Math.floor((score - 10) / 2);
+  const m = abilityModifier(score ?? 10);
   return m >= 0 ? `+${m}` : `${m}`;
 }
 
 function profBonus(level: number): number {
-  return Math.ceil(level / 4) + 1;
+  return proficiencyBonus(level);
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -199,6 +207,25 @@ function CharacterSheetContent() {
   const skillExpert: string[] = parseJson(form.skillExpertise ?? "[]", []);
   const saveProfs: string[] = parseJson(form.savingThrows ?? "[]", []);
 
+  // ── Valores calculados ──────────────────────────────────────────────────────
+  const hasPerceptionProf = skillProfs.includes("Perception");
+  const hasPerceptionExp  = skillExpert.includes("Perception");
+  const calcPassivePerc = calcPassivePerception(
+    form.wisdom ?? 10, form.level ?? 1, hasPerceptionProf, hasPerceptionExp
+  );
+
+  const spellAbilityKey = form.spellcastingAbility as "wisdom" | "intelligence" | "charisma" | "" | null;
+  const spellAbilityScore =
+    spellAbilityKey === "wisdom"       ? (form.wisdom       ?? 10) :
+    spellAbilityKey === "intelligence" ? (form.intelligence ?? 10) :
+    spellAbilityKey === "charisma"     ? (form.charisma     ?? 10) :
+    null;
+  const calcDC     = spellAbilityScore !== null ? calcSpellSaveDC(spellAbilityScore, form.level ?? 1)     : null;
+  const calcAttack = spellAbilityScore !== null ? calcSpellAttackBonus(spellAbilityScore, form.level ?? 1) : null;
+
+  const hpMaxSug      = form.class ? calcHpMaxSuggestion(form.class, form.constitution ?? 10, form.level ?? 1) : null;
+  const initiativeSug = abilityModifier(form.dexterity ?? 10);
+
   // Especie + linaje: se almacenan como "Especie (Variante)" o simplemente "Especie"
   const raceStr: string = form.race ?? "";
   const raceMatch = raceStr.match(/^(.+?) \((.+)\)$/);
@@ -225,6 +252,16 @@ function CharacterSheetContent() {
   const availableSubclasses = DND_CLASSES[currentClass] ?? [];
   // Subclase solo visible cuando hay clase Y nivel >= 3
   const showSubclass = !!currentClass && (form.level ?? 1) >= 3;
+
+  function handleClassChange(newClass: string) {
+    set("class", newClass);
+    set("subclass", "");
+    // Auto-sugerir característica de conjuración si el campo está vacío
+    const suggested = SPELLCASTING_ABILITY_BY_CLASS[newClass] ?? null;
+    if (!form.spellcastingAbility && suggested) {
+      set("spellcastingAbility", suggested);
+    }
+  }
 
   // Label del subtipo varía según la especie
   const SPECIES_VARIANT_LABEL: Record<string, string> = {
@@ -332,7 +369,7 @@ function CharacterSheetContent() {
               <Field label="Clase">
                 <Select
                   value={currentClass}
-                  onChange={v => { set("class", v); set("subclass", ""); }}
+                  onChange={v => handleClassChange(v)}
                   options={Object.keys(DND_CLASSES).sort()}
                   placeholder="Selecciona clase..."
                 />
@@ -427,21 +464,62 @@ function CharacterSheetContent() {
 
             <SectionTitle>Combate</SectionTitle>
             <div className="grid grid-cols-4 gap-4">
-              <Field label="HP máx"><NumberInput value={form.hpMax} onChange={v => set("hpMax", v)} /></Field>
+              <Field label="HP máx">
+                <NumberInput value={form.hpMax} onChange={v => set("hpMax", v)} />
+                {hpMaxSug !== null && (
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Sugerido: {hpMaxSug} ({form.class}, nv. {form.level ?? 1})
+                  </p>
+                )}
+              </Field>
               <Field label="HP actual"><NumberInput value={form.hp} onChange={v => set("hp", v)} /></Field>
               <Field label="HP temporal"><NumberInput value={form.hpTemp} onChange={v => set("hpTemp", v)} /></Field>
               <Field label="CA"><NumberInput value={form.ac} onChange={v => set("ac", v)} /></Field>
               <Field label="Velocidad"><NumberInput value={form.speed} onChange={v => set("speed", v)} /></Field>
-              <Field label="Iniciativa"><NumberInput value={form.initiative} onChange={v => set("initiative", v)} /></Field>
+              <Field label="Iniciativa">
+                <NumberInput value={form.initiative} onChange={v => set("initiative", v)} />
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Base DES: {initiativeSug >= 0 ? `+${initiativeSug}` : initiativeSug}
+                </p>
+              </Field>
               <Field label="Dados de vida"><Input value={form.hitDice} onChange={v => set("hitDice", v)} placeholder="6d8" /></Field>
-              <Field label="Percepción pasiva"><NumberInput value={form.passivePerception} onChange={v => set("passivePerception", v)} /></Field>
+              <Field label="Percepción pasiva">
+                <NumberInput value={form.passivePerception} onChange={v => set("passivePerception", v)} />
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Calculado: {calcPassivePerc}
+                  {hasPerceptionExp ? " (SAB + exp.)" : hasPerceptionProf ? " (SAB + comp.)" : " (10 + SAB)"}
+                </p>
+              </Field>
             </div>
 
             <SectionTitle>Conjuros</SectionTitle>
             <div className="grid grid-cols-3 gap-4">
-              <Field label="Característica de conjuro"><Input value={form.spellcastingAbility} onChange={v => set("spellcastingAbility", v)} placeholder="SAB / INT / CAR" /></Field>
-              <Field label="CD de salvación"><NumberInput value={form.spellSaveDC} onChange={v => set("spellSaveDC", v)} /></Field>
-              <Field label="Bonif. de ataque"><NumberInput value={form.spellAttackBonus} onChange={v => set("spellAttackBonus", v)} /></Field>
+              <Field label="Característica de conjuro">
+                <select
+                  className="w-full bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-sm text-stone-100"
+                  value={form.spellcastingAbility ?? ""}
+                  onChange={e => set("spellcastingAbility", e.target.value)}
+                >
+                  <option value="">— Sin magia —</option>
+                  <option value="wisdom">SAB (Sabiduría)</option>
+                  <option value="intelligence">INT (Inteligencia)</option>
+                  <option value="charisma">CAR (Carisma)</option>
+                </select>
+              </Field>
+              <Field label="CD de salvación">
+                <NumberInput value={form.spellSaveDC} onChange={v => set("spellSaveDC", v)} />
+                {calcDC !== null && (
+                  <p className="text-xs text-stone-500 mt-0.5">Calculado: {calcDC} (8 + mod + comp.)</p>
+                )}
+              </Field>
+              <Field label="Bonif. de ataque">
+                <NumberInput value={form.spellAttackBonus} onChange={v => set("spellAttackBonus", v)} />
+                {calcAttack !== null && (
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Calculado: {calcAttack >= 0 ? `+${calcAttack}` : calcAttack} (mod + comp.)
+                  </p>
+                )}
+              </Field>
             </div>
 
             <SectionTitle>Competencias</SectionTitle>
