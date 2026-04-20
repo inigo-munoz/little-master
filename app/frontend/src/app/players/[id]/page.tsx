@@ -14,6 +14,7 @@ import {
   DND_BACKGROUNDS,
   DND_ALIGNMENTS,
   SPELLCASTING_ABILITY_BY_CLASS,
+  HIT_DIE_BY_CLASS,
 } from "../../../lib/dnd-2024-data";
 import {
   abilityModifier,
@@ -21,8 +22,17 @@ import {
   calcPassivePerception,
   calcSpellSaveDC,
   calcSpellAttackBonus,
-  calcHpMaxSuggestion,
+  totalLevel,
+  finalAbilityScore,
+  calcHpMaxFromRolls,
+  calcAC,
+  type PlayerClassEntry,
+  type HpRollEntry,
+  type FeatEntry,
 } from "../../../lib/player-calcs";
+import { ClassesPanel } from "./ClassesPanel";
+import { HpRollsPanel } from "./HpRollsPanel";
+import { FeatsPanel } from "./FeatsPanel";
 
 
 const ABILITIES = [
@@ -55,14 +65,6 @@ const SKILLS = [
   { key: "Survival", label: "Supervivencia", ability: "wisdom" },
 ] as const;
 
-function mod(score: number | null | undefined): string {
-  const m = abilityModifier(score ?? 10);
-  return m >= 0 ? `+${m}` : `${m}`;
-}
-
-function profBonus(level: number): number {
-  return proficiencyBonus(level);
-}
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -138,15 +140,20 @@ function NumberInput({ value, onChange, min, max }: {
   );
 }
 
-function AbilityBox({ ability, value, onChange }: {
+function AbilityBox({ ability, value, featBonus = 0, onChange }: {
   ability: typeof ABILITIES[number];
   value: number | null | undefined;
+  featBonus?: number;
   onChange: (v: number | null) => void;
 }) {
+  const baseScore = value ?? 10;
+  const finalScore = Math.min(30, Math.max(1, baseScore + featBonus));
+  const m = abilityModifier(finalScore);
+  const modStr = m >= 0 ? `+${m}` : `${m}`;
   return (
     <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 text-center">
       <p className="text-xs text-amber-500 font-bold uppercase mb-1">{ability.label}</p>
-      <p className="text-2xl font-bold text-stone-100 mb-1">{mod(value)}</p>
+      <p className="text-2xl font-bold text-stone-100 mb-1">{modStr}</p>
       <input
         type="number"
         value={value ?? ""}
@@ -155,6 +162,9 @@ function AbilityBox({ ability, value, onChange }: {
         className="w-full bg-stone-900 border border-stone-600 rounded px-1 py-0.5 text-stone-300 text-sm text-center focus:outline-none focus:border-amber-500"
         placeholder="—"
       />
+      {featBonus !== 0 && (
+        <p className="text-xs text-stone-500 mt-0.5">{baseScore} + {featBonus} = {finalScore}</p>
+      )}
     </div>
   );
 }
@@ -193,7 +203,34 @@ function CharacterSheetContent() {
   async function handleSave() {
     setSaving(true);
     try {
-      await api.players.update(params.id, form);
+      // Recalcular valores derivados antes de guardar
+      const cls: PlayerClassEntry[] = parseJson(form.classes ?? "[]", []);
+      const rolls: HpRollEntry[]    = parseJson(form.hpRolls ?? "[]", []);
+      const fts: FeatEntry[]        = parseJson(form.feats ?? "[]", []);
+
+      const fDex = finalAbilityScore(form.dexterity    ?? 10, "dexterity",    fts);
+      const fCon = finalAbilityScore(form.constitution ?? 10, "constitution", fts);
+      const fWis = finalAbilityScore(form.wisdom        ?? 10, "wisdom",       fts);
+
+      const ac    = calcAC(form.equippedArmor ?? null, fDex, form.shield ?? false, fCon, fWis);
+      const hpMax = calcHpMaxFromRolls(rolls, cls, fCon, form.hpUseAverage ?? true);
+      const lvl   = totalLevel(cls) || 1;
+      const pb    = proficiencyBonus(lvl);
+      const hitDice = cls.map(c => `${c.level}d${HIT_DIE_BY_CLASS[c.class] ?? 8}`).join(" + ");
+
+      // Mantener class/level/subclass legacy sincronizados con la primera clase
+      const firstClass = cls[0];
+
+      await api.players.update(params.id, {
+        ...form,
+        ac,
+        hpMax,
+        level:            lvl,
+        proficiencyBonus: pb,
+        hitDice:          hitDice || undefined,
+        class:            firstClass?.class   ?? undefined,
+        subclass:         firstClass?.subclass ?? undefined,
+      } as any);
       await mutate();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -202,31 +239,65 @@ function CharacterSheetContent() {
     }
   }
 
-  const pb = profBonus(form.level ?? 1);
+  // ── Parsear campos JSON ──────────────────────────────────────────────────────
+  const classes: PlayerClassEntry[] = parseJson(form.classes ?? "[]", []);
+  const hpRolls: HpRollEntry[]      = parseJson(form.hpRolls ?? "[]", []);
+  const feats: FeatEntry[]          = parseJson(form.feats ?? "[]", []);
+
+  // Nivel total y proficiency bonus desde clases
+  const level = totalLevel(classes) || 1;
+  const pb = proficiencyBonus(level);
+
+  // Puntuaciones finales de característica (base + bonos de dotes)
+  const finalStr = finalAbilityScore(form.strength    ?? 10, "strength",     feats);
+  const finalDex = finalAbilityScore(form.dexterity   ?? 10, "dexterity",    feats);
+  const finalCon = finalAbilityScore(form.constitution ?? 10, "constitution", feats);
+  const finalInt = finalAbilityScore(form.intelligence ?? 10, "intelligence", feats);
+  const finalWis = finalAbilityScore(form.wisdom       ?? 10, "wisdom",       feats);
+  const finalCha = finalAbilityScore(form.charisma     ?? 10, "charisma",     feats);
+
+  // Feat bonuses por stat (para pasarlos a AbilityBox)
+  const featBonuses: Record<string, number> = {
+    strength:     finalStr - (form.strength     ?? 10),
+    dexterity:    finalDex - (form.dexterity    ?? 10),
+    constitution: finalCon - (form.constitution ?? 10),
+    intelligence: finalInt - (form.intelligence ?? 10),
+    wisdom:       finalWis - (form.wisdom        ?? 10),
+    charisma:     finalCha - (form.charisma      ?? 10),
+  };
+
+  // CA automática
+  const calcedAC = calcAC(
+    form.equippedArmor ?? null,
+    finalDex,
+    form.shield ?? false,
+    finalCon,
+    finalWis,
+  );
+
+  // HP Máx automático
+  const calcedHpMax = calcHpMaxFromRolls(hpRolls, classes, finalCon, form.hpUseAverage ?? true);
+
   const skillProfs: string[] = parseJson(form.skillProficiencies ?? "[]", []);
   const skillExpert: string[] = parseJson(form.skillExpertise ?? "[]", []);
   const saveProfs: string[] = parseJson(form.savingThrows ?? "[]", []);
 
-  // ── Valores calculados ──────────────────────────────────────────────────────
   const hasPerceptionProf = skillProfs.includes("Perception");
   const hasPerceptionExp  = skillExpert.includes("Perception");
-  const calcPassivePerc = calcPassivePerception(
-    form.wisdom ?? 10, form.level ?? 1, hasPerceptionProf, hasPerceptionExp
-  );
+  const calcPassivePerc = calcPassivePerception(finalWis, level, hasPerceptionProf, hasPerceptionExp);
 
   const spellAbilityKey = form.spellcastingAbility as "wisdom" | "intelligence" | "charisma" | "" | null;
   const spellAbilityScore =
-    spellAbilityKey === "wisdom"       ? (form.wisdom       ?? 10) :
-    spellAbilityKey === "intelligence" ? (form.intelligence ?? 10) :
-    spellAbilityKey === "charisma"     ? (form.charisma     ?? 10) :
+    spellAbilityKey === "wisdom"       ? finalWis :
+    spellAbilityKey === "intelligence" ? finalInt :
+    spellAbilityKey === "charisma"     ? finalCha :
     null;
-  const calcDC     = spellAbilityScore !== null ? calcSpellSaveDC(spellAbilityScore, form.level ?? 1)     : null;
-  const calcAttack = spellAbilityScore !== null ? calcSpellAttackBonus(spellAbilityScore, form.level ?? 1) : null;
+  const calcDC     = spellAbilityScore !== null ? calcSpellSaveDC(spellAbilityScore, level)     : null;
+  const calcAttack = spellAbilityScore !== null ? calcSpellAttackBonus(spellAbilityScore, level) : null;
 
-  const hpMaxSug      = form.class ? calcHpMaxSuggestion(form.class, form.constitution ?? 10, form.level ?? 1) : null;
-  const initiativeSug = abilityModifier(form.dexterity ?? 10);
+  const initiativeSug = abilityModifier(finalDex);
 
-  // Especie + linaje: se almacenan como "Especie (Variante)" o simplemente "Especie"
+  // Especie + linaje
   const raceStr: string = form.race ?? "";
   const raceMatch = raceStr.match(/^(.+?) \((.+)\)$/);
   const currentSpecies = raceMatch ? raceMatch[1] : raceStr;
@@ -235,32 +306,9 @@ function CharacterSheetContent() {
     ? DND_SPECIES_VARIANTS[currentSpecies] ?? []
     : [];
 
-  function setSpecies(species: string) {
-    // Al cambiar especie, se limpia la variante
-    set("race", species);
-  }
+  function setSpecies(species: string) { set("race", species); }
   function setVariant(variant: string) {
-    if (!variant) {
-      set("race", currentSpecies);
-    } else {
-      set("race", `${currentSpecies} (${variant})`);
-    }
-  }
-
-  // Subclases disponibles según la clase seleccionada
-  const currentClass: string = form.class ?? "";
-  const availableSubclasses = DND_CLASSES[currentClass] ?? [];
-  // Subclase solo visible cuando hay clase Y nivel >= 3
-  const showSubclass = !!currentClass && (form.level ?? 1) >= 3;
-
-  function handleClassChange(newClass: string) {
-    set("class", newClass);
-    set("subclass", "");
-    // Auto-sugerir característica de conjuración si el campo está vacío
-    const suggested = SPELLCASTING_ABILITY_BY_CLASS[newClass] ?? null;
-    if (!form.spellcastingAbility && suggested) {
-      set("spellcastingAbility", suggested);
-    }
+    set("race", variant ? `${currentSpecies} (${variant})` : currentSpecies);
   }
 
   // Label del subtipo varía según la especie
@@ -304,7 +352,9 @@ function CharacterSheetContent() {
             <div>
               <h1 className="text-xl font-bold text-stone-100">{form.name}</h1>
               <p className="text-xs text-stone-500">
-                {form.class} {form.subclass ? `(${form.subclass})` : ""} · Nivel {form.level} · {form.race}
+                {classes.length > 0
+                  ? classes.map(c => `${c.class} ${c.level}`).join(" / ")
+                  : (form.class ?? "Sin clase")} · Nivel {level} · {form.race}
               </p>
             </div>
           </div>
@@ -326,9 +376,9 @@ function CharacterSheetContent() {
         {/* Quick stats bar */}
         <div className="grid grid-cols-4 gap-3 mb-6">
           {[
-            { icon: <Heart size={14} className="text-red-400" />, label: "HP", value: `${form.hp ?? "—"}/${form.hpMax ?? "—"}`, sub: form.hpTemp ? `+${form.hpTemp} temp` : null },
-            { icon: <Shield size={14} className="text-blue-400" />, label: "CA", value: form.ac ?? "—" },
-            { icon: <Zap size={14} className="text-yellow-400" />, label: "Iniciativa", value: form.initiative != null ? (form.initiative >= 0 ? `+${form.initiative}` : form.initiative) : mod(form.dexterity) },
+            { icon: <Heart size={14} className="text-red-400" />, label: "HP", value: `${form.hp ?? "—"}/${calcedHpMax}`, sub: form.hpTemp ? `+${form.hpTemp} temp` : null },
+            { icon: <Shield size={14} className="text-blue-400" />, label: "CA", value: calcedAC },
+            { icon: <Zap size={14} className="text-yellow-400" />, label: "Iniciativa", value: form.initiative != null ? (form.initiative >= 0 ? `+${form.initiative}` : form.initiative) : (initiativeSug >= 0 ? `+${initiativeSug}` : initiativeSug) },
             { icon: <Star size={14} className="text-amber-400" />, label: "Prof. Bonus", value: `+${pb}` },
           ].map(s => (
             <div key={s.label} className="bg-stone-900 border border-stone-800 rounded-xl p-3 text-center">
@@ -360,121 +410,113 @@ function CharacterSheetContent() {
         {/* Tab content */}
         {activeTab === "core" && (
           <div className="space-y-6">
+            <SectionTitle>Clases</SectionTitle>
+            <ClassesPanel
+              classes={classes.length > 0 ? classes : [{ class: form.class ?? "Guerrero", level: form.level ?? 1, subclass: form.subclass ?? "" }]}
+              onChange={updated => {
+                set("classes", JSON.stringify(updated));
+                if (updated.length === 1 && !form.spellcastingAbility && updated[0]) {
+                  const suggested = SPELLCASTING_ABILITY_BY_CLASS[updated[0].class] ?? null;
+                  if (suggested) set("spellcastingAbility", suggested);
+                }
+              }}
+            />
+
             <SectionTitle>Información básica</SectionTitle>
             <div className="grid grid-cols-2 gap-4">
               <Field label="Nombre"><Input value={form.name} onChange={v => set("name", v)} /></Field>
               <Field label="Jugador"><Input value={form.playerName} onChange={v => set("playerName", v)} /></Field>
-
-              {/* Clase — ordenada alfabéticamente */}
-              <Field label="Clase">
-                <Select
-                  value={currentClass}
-                  onChange={v => handleClassChange(v)}
-                  options={Object.keys(DND_CLASSES).sort()}
-                  placeholder="Selecciona clase..."
-                />
-              </Field>
-
-              {/* Nivel — junto a Clase para que el condicional de subclase tenga contexto visual */}
-              <Field label="Nivel">
-                <NumberInput
-                  value={form.level}
-                  onChange={v => {
-                    set("level", v);
-                    if ((v ?? 1) < 3) set("subclass", "");
-                  }}
-                  min={1}
-                  max={20}
-                />
-              </Field>
-
-              {/* Subclase — solo visible con clase seleccionada Y nivel ≥ 3 */}
-              <Field label="Subclase">
-                {showSubclass ? (
-                  <Select
-                    value={form.subclass}
-                    onChange={v => set("subclass", v)}
-                    options={[...availableSubclasses, "Homebrew / Otra"]}
-                    placeholder="Selecciona subclase..."
-                  />
-                ) : currentClass ? (
-                  <p className="text-xs text-stone-500 italic py-1.5 px-1">
-                    La subclase se elige al nivel 3
-                  </p>
-                ) : (
-                  <select disabled className="w-full bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-500 text-sm opacity-40 cursor-not-allowed">
-                    <option>Selecciona clase primero</option>
-                  </select>
-                )}
-              </Field>
-
-              {/* Especie */}
               <Field label="Especie">
-                <Select
-                  value={currentSpecies}
-                  onChange={setSpecies}
-                  options={[...DND_SPECIES, "Otra (homebrew)"]}
-                  placeholder="Selecciona especie..."
-                />
+                <Select value={currentSpecies} onChange={setSpecies} options={[...DND_SPECIES, "Otra (homebrew)"]} placeholder="Selecciona especie..." />
               </Field>
-
-              {/* Subtipo de especie — label específico por especie; ocupa el slot de Trasfondo si no hay variante */}
               {speciesVariants.length > 0 ? (
-                <Field label={variantLabel}>
-                  <Select
-                    value={currentVariant}
-                    onChange={setVariant}
-                    options={speciesVariants}
-                    placeholder={`Selecciona ${variantLabel.toLowerCase()}...`}
-                  />
+                <Field label={(currentSpecies ? SPECIES_VARIANT_LABEL[currentSpecies] : undefined) ?? "Linaje"}>
+                  <Select value={currentVariant} onChange={setVariant} options={speciesVariants} placeholder={`Selecciona...`} />
                 </Field>
               ) : (
                 <Field label="Trasfondo">
-                  <Select
-                    value={form.background}
-                    onChange={v => set("background", v)}
-                    options={[...DND_BACKGROUNDS, "Otro (homebrew)"]}
-                    placeholder="Selecciona trasfondo..."
-                  />
+                  <Select value={form.background} onChange={v => set("background", v)} options={[...DND_BACKGROUNDS, "Otro (homebrew)"]} placeholder="Selecciona trasfondo..." />
                 </Field>
               )}
-
-              {/* Trasfondo siempre visible cuando la especie ya ocupa su slot con el subtipo */}
               {speciesVariants.length > 0 && (
                 <Field label="Trasfondo">
-                  <Select
-                    value={form.background}
-                    onChange={v => set("background", v)}
-                    options={[...DND_BACKGROUNDS, "Otro (homebrew)"]}
-                    placeholder="Selecciona trasfondo..."
-                  />
+                  <Select value={form.background} onChange={v => set("background", v)} options={[...DND_BACKGROUNDS, "Otro (homebrew)"]} placeholder="Selecciona trasfondo..." />
                 </Field>
               )}
-
               <Field label="Alineamiento">
-                <Select
-                  value={form.alignment}
-                  onChange={v => set("alignment", v)}
-                  options={DND_ALIGNMENTS}
-                  placeholder="Selecciona alineamiento..."
-                />
+                <Select value={form.alignment} onChange={v => set("alignment", v)} options={DND_ALIGNMENTS} placeholder="Selecciona alineamiento..." />
               </Field>
-              <Field label="Puntos de experiencia"><NumberInput value={form.experiencePoints} onChange={v => set("experiencePoints", v)} min={0} /></Field>
+              <Field label="Puntos de experiencia">
+                <NumberInput value={form.experiencePoints} onChange={v => set("experiencePoints", v)} min={0} />
+              </Field>
+            </div>
+
+            <SectionTitle>HP por nivel</SectionTitle>
+            <HpRollsPanel
+              hpRolls={hpRolls}
+              classes={classes}
+              conScore={form.constitution ?? 10}
+              useAverage={form.hpUseAverage ?? true}
+              onRollsChange={rolls => set("hpRolls", JSON.stringify(rolls))}
+              onMethodChange={useAvg => set("hpUseAverage", useAvg)}
+            />
+
+            <SectionTitle>Clase de armadura</SectionTitle>
+            <div className="space-y-3">
+              <select
+                value={form.equippedArmor ?? "none"}
+                onChange={e => set("equippedArmor", e.target.value)}
+                className="w-full bg-stone-800 border border-stone-700 rounded px-2 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+              >
+                <optgroup label="SIN ARMADURA">
+                  <option value="none">Sin armadura (10 + DES)</option>
+                  <option value="unarmoredBarbarian">Defensa sin armadura — Bárbaro (10+DES+CON)</option>
+                  <option value="unarmoredMonk">Defensa sin armadura — Monje (10+DES+SAB)</option>
+                </optgroup>
+                <optgroup label="LIGERA">
+                  <option value="leather">Cuero (CA 11 + DES)</option>
+                  <option value="studdedLeather">Cuero tachonado (CA 12 + DES)</option>
+                </optgroup>
+                <optgroup label="MEDIA">
+                  <option value="hide">Pieles (CA 12 + DES máx.+2)</option>
+                  <option value="chainShirt">Cota de mallas ligera (CA 13 + DES máx.+2)</option>
+                  <option value="scaleMail">Cota de escamas (CA 14 + DES máx.+2)</option>
+                  <option value="breastplate">Coraza (CA 14 + DES máx.+2)</option>
+                  <option value="halfPlate">Medio arnés (CA 15 + DES máx.+2)</option>
+                </optgroup>
+                <optgroup label="PESADA">
+                  <option value="ringMail">Cota de anillas (CA 14)</option>
+                  <option value="chainMail">Cota de mallas (CA 16)</option>
+                  <option value="splint">Armadura de bandas (CA 17)</option>
+                  <option value="plate">Armadura de placas (CA 18)</option>
+                </optgroup>
+              </select>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm text-stone-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.shield ?? false}
+                    onChange={e => set("shield", e.target.checked)}
+                    className="accent-amber-500 w-4 h-4"
+                  />
+                  Escudo equipado <span className="text-emerald-400 text-xs">(+2 CA)</span>
+                </label>
+                <div className="text-center bg-stone-900 border border-stone-800 rounded-lg px-5 py-2">
+                  <p className="text-xs text-stone-500 mb-0.5">CA</p>
+                  <p className="text-2xl font-bold text-amber-400">{calcedAC}</p>
+                </div>
+              </div>
             </div>
 
             <SectionTitle>Combate</SectionTitle>
             <div className="grid grid-cols-4 gap-4">
-              <Field label="HP máx">
-                <NumberInput value={form.hpMax} onChange={v => set("hpMax", v)} />
-                {hpMaxSug !== null && (
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    Sugerido: {hpMaxSug} ({form.class}, nv. {form.level ?? 1})
-                  </p>
-                )}
+              <Field label="HP máx (calculado)">
+                <div className="bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-amber-400 font-bold text-center">
+                  {calcedHpMax}
+                </div>
               </Field>
               <Field label="HP actual"><NumberInput value={form.hp} onChange={v => set("hp", v)} /></Field>
               <Field label="HP temporal"><NumberInput value={form.hpTemp} onChange={v => set("hpTemp", v)} /></Field>
-              <Field label="CA"><NumberInput value={form.ac} onChange={v => set("ac", v)} /></Field>
               <Field label="Velocidad"><NumberInput value={form.speed} onChange={v => set("speed", v)} /></Field>
               <Field label="Iniciativa">
                 <NumberInput value={form.initiative} onChange={v => set("initiative", v)} />
@@ -482,7 +524,6 @@ function CharacterSheetContent() {
                   Base DES: {initiativeSug >= 0 ? `+${initiativeSug}` : initiativeSug}
                 </p>
               </Field>
-              <Field label="Dados de vida"><Input value={form.hitDice} onChange={v => set("hitDice", v)} placeholder="6d8" /></Field>
               <Field label="Percepción pasiva">
                 <NumberInput value={form.passivePerception} onChange={v => set("passivePerception", v)} />
                 <p className="text-xs text-stone-500 mt-0.5">
@@ -490,7 +531,19 @@ function CharacterSheetContent() {
                   {hasPerceptionExp ? " (SAB + exp.)" : hasPerceptionProf ? " (SAB + comp.)" : " (10 + SAB)"}
                 </p>
               </Field>
+              <Field label="Dados de vida (auto)">
+                <div className="bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-stone-400 text-sm text-center">
+                  {classes.map(c => `${c.level}d${HIT_DIE_BY_CLASS[c.class] ?? 8}`).join(" + ") || "—"}
+                </div>
+              </Field>
             </div>
+
+            <SectionTitle>Dotes y mejoras de característica</SectionTitle>
+            <FeatsPanel
+              feats={feats}
+              classes={classes}
+              onChange={updated => set("feats", JSON.stringify(updated))}
+            />
 
             <SectionTitle>Conjuros</SectionTitle>
             <div className="grid grid-cols-3 gap-4">
@@ -535,13 +588,14 @@ function CharacterSheetContent() {
         {activeTab === "abilities" && (
           <div className="space-y-6">
             <SectionTitle>Puntuaciones de característica</SectionTitle>
-            <div className="grid grid-cols-6 gap-3">
-              {ABILITIES.map(a => (
+            <div className="grid grid-cols-3 gap-3">
+              {ABILITIES.map(ability => (
                 <AbilityBox
-                  key={a.key}
-                  ability={a}
-                  value={form[a.key]}
-                  onChange={v => set(a.key, v)}
+                  key={ability.key}
+                  ability={ability}
+                  value={form[ability.key]}
+                  featBonus={featBonuses[ability.key] ?? 0}
+                  onChange={v => set(ability.key, v)}
                 />
               ))}
             </div>
