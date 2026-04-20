@@ -94,3 +94,34 @@ export const SPELLCASTING_ABILITY_BY_CLASS: Record<string, "wisdom" | "intellige
   "Brujo":      "charisma",
   "Mago":       "intelligence",
 };
+
+// Armaduras PHB 2024
+export const ARMOR_LIST = {
+  none:               { label: "Sin armadura (10 + DES)",                     baseAC: 10, type: "none",    desMax: null as number | null },
+  leather:            { label: "Cuero (CA 11 + DES)",                          baseAC: 11, type: "light",   desMax: null as number | null },
+  studdedLeather:     { label: "Cuero tachonado (CA 12 + DES)",                baseAC: 12, type: "light",   desMax: null as number | null },
+  hide:               { label: "Pieles (CA 12 + DES máx.+2)",                  baseAC: 12, type: "medium",  desMax: 2 as number | null },
+  chainShirt:         { label: "Cota de mallas ligera (CA 13 + DES máx.+2)",   baseAC: 13, type: "medium",  desMax: 2 as number | null },
+  scaleMail:          { label: "Cota de escamas (CA 14 + DES máx.+2)",         baseAC: 14, type: "medium",  desMax: 2 as number | null },
+  breastplate:        { label: "Coraza (CA 14 + DES máx.+2)",                  baseAC: 14, type: "medium",  desMax: 2 as number | null },
+  halfPlate:          { label: "Medio arnés (CA 15 + DES máx.+2)",             baseAC: 15, type: "medium",  desMax: 2 as number | null },
+  ringMail:           { label: "Cota de anillas (CA 14)",                       baseAC: 14, type: "heavy",   desMax: 0 as number | null },
+  chainMail:          { label: "Cota de mallas (CA 16)",                        baseAC: 16, type: "heavy",   desMax: 0 as number | null },
+  splint:             { label: "Armadura de bandas (CA 17)",                    baseAC: 17, type: "heavy",   desMax: 0 as number | null },
+  plate:              { label: "Armadura de placas (CA 18)",                    baseAC: 18, type: "heavy",   desMax: 0 as number | null },
+  unarmoredBarbarian: { label: "Defensa sin armadura — Bárbaro (10+DES+CON)",  baseAC: 10, type: "special", desMax: null as number | null },
+  unarmoredMonk:      { label: "Defensa sin armadura — Monje (10+DES+SAB)",    baseAC: 10, type: "special", desMax: null as number | null },
+} as const;
+
+export type ArmorKey = keyof typeof ARMOR_LIST;
+
+// Niveles con ASI/dote por clase (PHB 2024)
+export const ASI_LEVELS_BY_CLASS: Record<string, number[]> = {
+  "Guerrero": [4, 6, 8, 12, 14, 16, 19],
+  "Pícaro":   [4, 8, 10, 12, 16, 19],
+};
+const DEFAULT_ASI_LEVELS = [4, 8, 12, 16, 19];
+
+export function asiLevelsForClass(className: string): number[] {
+  return ASI_LEVELS_BY_CLASS[className] ?? DEFAULT_ASI_LEVELS;
+}
