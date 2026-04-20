@@ -315,7 +315,7 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
         const buffer = Buffer.concat(chunks);
         reply
           .header("Content-Type", "application/pdf")
-          .header("Content-Disposition", `attachment; filename="campaign-${campaign.id}.pdf"`)
+          .header("Content-Disposition", `attachment; filename="campaign-${campaign.title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}.pdf"`)
           .send(buffer);
         resolve();
       });
