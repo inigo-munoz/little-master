@@ -68,6 +68,46 @@ const HpRollEntrySchema = z.object({
 
 `PlayerSchema` usará estos sub-esquemas. Los campos JSON se almacenan como `String` en Prisma y se parsean/serializan en el service.
 
+### 1.4 Dotes y mejoras de característica (feats / ASI)
+
+El campo `feats String @default("[]")` ya existe en Prisma. En Sprint A se formaliza su estructura:
+
+```ts
+const FeatStatBonusSchema = z.object({
+  stat: z.enum(["strength","dexterity","constitution","intelligence","wisdom","charisma"]),
+  value: z.number().int().min(1).max(2),  // +1 la mayoría; +2 si es ASI completo
+});
+
+const FeatEntrySchema = z.object({
+  name: z.string(),            // ej: "Ability Score Improvement", "Alert", "Tough"
+  classIndex: z.number().int().min(0),  // índice en classes[] que otorga la dote
+  level: z.number().int().min(1),       // nivel al que se eligió (4, 8, 12, 16, 19…)
+  statBonuses: z.array(FeatStatBonusSchema).default([]),
+});
+```
+
+**Regla de ASI:**
+- "Ability Score Improvement" es una dote estándar: da +2 a un stat (un `FeatStatBonus` con `value:2`) o +1/+1 a dos stats distintos.
+- El resto de dotes dan opcionalmente `statBonuses` (típicamente un +1 a un stat específico).
+
+**Niveles de ASI por clase (PHB 2024):**
+
+| Clase | Niveles con ASI/dote |
+|---|---|
+| Guerrero | 4, 6, 8, 12, 14, 16, 19 |
+| Pícaro | 4, 8, 10, 12, 16, 19 |
+| Resto de clases | 4, 8, 12, 16, 19 |
+
+Esta tabla se añade como constante `ASI_LEVELS_BY_CLASS` en `dnd-2024-data.ts`.
+
+**Puntuación final de característica:**
+
+```
+finalAbilityScore(stat) = baseScore[stat] + Σ(featEntry.statBonuses donde stat coincide)
+```
+
+Todos los cálculos derivados (modificadores, HP, CA, iniciativa, DC de conjuro) usan `finalAbilityScore`, no el valor base.
+
 ---
 
 ## 2. Datos PHB 2024 — constantes nuevas en `dnd-2024-data.ts`
@@ -92,6 +132,19 @@ export const ARMOR_LIST = {
 } as const;
 
 export type ArmorKey = keyof typeof ARMOR_LIST;
+
+// Niveles con ASI/dote por clase (PHB 2024)
+export const ASI_LEVELS_BY_CLASS: Record<string, number[]> = {
+  "Guerrero": [4, 6, 8, 12, 14, 16, 19],
+  "Pícaro":   [4, 8, 10, 12, 16, 19],
+  // todas las demás clases:
+  default:    [4, 8, 12, 16, 19],
+} as const;
+
+// Helper: niveles ASI para una clase dada
+export function asiLevelsForClass(className: string): number[] {
+  return ASI_LEVELS_BY_CLASS[className] ?? ASI_LEVELS_BY_CLASS["default"];
+}
 ```
 
 ---
@@ -103,6 +156,14 @@ Nuevas funciones puras (sin efectos secundarios, 100% testables):
 ```ts
 // Nivel total sumando todas las clases
 export function totalLevel(classes: PlayerClassEntry[]): number
+
+// Puntuación final de característica = base + bonos de dotes
+// TODOS los cálculos downstream deben usar esta función, no el valor base directamente.
+export function finalAbilityScore(
+  baseStat: number,
+  stat: string,       // "strength" | "dexterity" | etc.
+  feats: FeatEntry[],
+): number             // min 1, max 30
 
 // Proficiency Bonus basado en nivel total
 // ya existe proficiencyBonus(level) — se reutiliza con totalLevel()
@@ -181,7 +242,35 @@ interface HpRollsPanelProps {
 - Dado por nivel: corresponde al dado de la clase a la que pertenece ese nivel (orden de adquisición)
 - HP Máx total mostrado al pie
 
-### 4.3 Bloque CA en `page.tsx` (inline, no componente separado)
+### 4.3 `FeatsPanel.tsx` (nuevo)
+
+Ubicación: `app/frontend/src/app/players/[id]/FeatsPanel.tsx`
+
+**Props:**
+```ts
+interface FeatsPanelProps {
+  feats: FeatEntry[];
+  classes: PlayerClassEntry[];   // para calcular qué niveles tienen ASI disponible
+  onChange: (feats: FeatEntry[]) => void;
+}
+```
+
+**Comportamiento:**
+- Lista las dotes disponibles calculando todos los niveles ASI de todas las clases activas.
+  - Ej: Fighter 5 / Rogue 3 → Fighter tiene ASI en nv.4; Rogue tiene ASI en nv.4 (aunque aún no alcanzado a nv.3). Se muestran solo los niveles ya alcanzados.
+- Por cada slot ASI alcanzado muestra una fila:
+  - `[Clase · Nv.X] [Input nombre dote] [Stat ▾] [+1/+2]`
+  - Si el slot no tiene dote elegida, aparece como "— Sin elegir —"
+- Stat bonus: select con las 6 características + valor (normalmente +1, o +2 si es ASI pura)
+- Una dote puede tener 0, 1 o 2 bonos de stat (ej: ASI pura puede dar +1/+1 a dos stats distintos)
+- Botón ✕ para eliminar el bono de stat de una dote (la dote permanece pero sin bono)
+- Los slots sin dote elegida no generan `FeatEntry` (no guardar entradas vacías)
+
+**Integración con características:**
+- `page.tsx` muestra bajo cada input de característica: `Base 15 + Dotes +1 = 16`
+- Los valores finales (base + feats) se usan en todos los hints de cálculo existentes
+
+### 4.4 Bloque CA en `page.tsx` (inline, no componente separado)
 
 El bloque CA se integra directamente en la página existente. No justifica un componente propio por su simplicidad.
 
@@ -196,10 +285,12 @@ El bloque CA se integra directamente en la página existente. No justifica un co
 ## 5. Flujo de guardado
 
 El `PATCH /api/players/:id` existente recibe el objeto `Player` completo. El frontend:
-1. Serializa `classes` y `hpRolls` como JSON strings
-2. Calcula `armorClass` final con `calcAC()` y lo incluye en el payload
+1. Serializa `classes`, `hpRolls` y `feats` como JSON strings
+2. Calcula `armorClass` final con `calcAC(finalAbilityScore("dexterity", feats), ...)` y lo incluye en el payload
 3. El backend persiste los strings JSON directamente (sin parsear en el service — Prisma los trata como `String`)
 4. El dominio Zod parsea/valida en los endpoints
+
+**Nota:** `finalAbilityScore` se aplica siempre antes de pasarlo a `calcAC`, `calcHpMaxFromRolls`, `calcPassivePerception`, `calcSpellSaveDC` y `calcSpellAttackBonus`.
 
 ---
 
@@ -207,8 +298,16 @@ El `PATCH /api/players/:id` existente recibe el objeto `Player` completo. El fro
 
 ### `player-calcs.test.ts` — funciones nuevas
 - `totalLevel`: nivel total sumando clases
-- `calcHpMaxFromRolls`: nivel 1 + CON, niveles 2+ con dado/media + CON por nivel
-- `calcAC`: sin armadura (10+DES), ligera (base+DES), media (base+DES máx+2), pesada (base), escudo +2, Bárbaro (10+DES+CON)
+- `finalAbilityScore`: base sin dotes, base + dote +1, base + dos dotes, máx 30
+- `calcHpMaxFromRolls`: nivel 1 + CON (ajustado por feats), niveles 2+ con dado/media + CON
+- `calcAC`: sin armadura (10+DES), ligera (base+DES), media (base+DES máx+2), pesada (base), escudo +2, Bárbaro (10+DES+CON) — todos usando `finalAbilityScore`
+
+### `FeatsPanel.test.tsx`
+- Muestra una fila por slot ASI alcanzado (no más)
+- Nivel no alcanzado no genera fila
+- Añadir stat bonus a una dote
+- Dote sin bono no genera `FeatEntry.statBonuses`
+- Multiclase: combina slots ASI de ambas clases correctamente
 
 ### `ClassesPanel.test.tsx`
 - Renderiza una fila por clase
@@ -242,3 +341,5 @@ El `PATCH /api/players/:id` existente recibe el objeto `Player` completo. El fro
 | Multiclase | B — panel expandible | Soporta cualquier número de clases |
 | Proficiencias | B — lista por filas | Más legible con listas largas (Sprint B) |
 | JSON en Prisma | String (no JsonValue) | SQLite no tiene tipo JSON nativo; consistente con campos existentes |
+| Feats en Sprint A | UI simple (nombre + stat bonus manual) | No se necesita un buscador de dotes completo; el jugador conoce su dote |
+| finalAbilityScore | Calculado en frontend | No se almacena; se deriva siempre de base + feats al vuelo |
