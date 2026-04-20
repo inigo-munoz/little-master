@@ -6,6 +6,13 @@ import {
   calcSpellSaveDC,
   calcSpellAttackBonus,
   calcHpMaxSuggestion,
+  totalLevel,
+  finalAbilityScore,
+  calcHpMaxFromRolls,
+  calcAC,
+  type PlayerClassEntry,
+  type HpRollEntry,
+  type FeatEntry,
 } from "./player-calcs";
 
 describe("abilityModifier", () => {
@@ -95,4 +102,102 @@ describe("calcHpMaxSuggestion", () => {
   it("HP mínimo 1 por nivel aunque CON sea muy negativa", () =>
     // CON 1 → mod=-5. Mago nivel 1: max(6-5,1)=1
     expect(calcHpMaxSuggestion("Mago", 1, 1)).toBe(1));
+});
+
+describe("totalLevel", () => {
+  it("una sola clase → su nivel", () =>
+    expect(totalLevel([{ class: "Guerrero", level: 5, subclass: "" }])).toBe(5));
+  it("multiclase → suma", () =>
+    expect(totalLevel([
+      { class: "Guerrero", level: 5, subclass: "" },
+      { class: "Pícaro", level: 3, subclass: "" },
+    ])).toBe(8));
+  it("vacío → 0", () =>
+    expect(totalLevel([])).toBe(0));
+});
+
+describe("finalAbilityScore", () => {
+  it("sin dotes → valor base", () =>
+    expect(finalAbilityScore(15, "strength", [])).toBe(15));
+  it("dote con +1 al stat correcto → base + 1", () =>
+    expect(finalAbilityScore(15, "strength", [
+      { name: "Alert", classIndex: 0, level: 4, statBonuses: [{ stat: "strength", value: 1 }] },
+    ])).toBe(16));
+  it("dote con stat distinto → sin cambio", () =>
+    expect(finalAbilityScore(15, "strength", [
+      { name: "Tough", classIndex: 0, level: 4, statBonuses: [{ stat: "constitution", value: 1 }] },
+    ])).toBe(15));
+  it("dos dotes con mismo stat → suma", () =>
+    expect(finalAbilityScore(14, "dexterity", [
+      { name: "Feat A", classIndex: 0, level: 4, statBonuses: [{ stat: "dexterity", value: 1 }] },
+      { name: "Feat B", classIndex: 0, level: 8, statBonuses: [{ stat: "dexterity", value: 1 }] },
+    ])).toBe(16));
+  it("no supera 30", () =>
+    expect(finalAbilityScore(29, "strength", [
+      { name: "ASI", classIndex: 0, level: 4, statBonuses: [{ stat: "strength", value: 2 }] },
+    ])).toBe(30));
+  it("no baja de 1", () =>
+    expect(finalAbilityScore(1, "strength", [])).toBe(1));
+});
+
+describe("calcHpMaxFromRolls", () => {
+  it("una clase, nivel 1, CON 10 → máximo dado", () => {
+    const classes = [{ class: "Guerrero", level: 1, subclass: "" }];
+    const hpRolls = [{ level: 1, value: 10, rolled: false }];
+    expect(calcHpMaxFromRolls(hpRolls, classes, 10, true)).toBe(10);
+  });
+  it("Guerrero nivel 2, CON 16 (+3), media → 22", () => {
+    const classes = [{ class: "Guerrero", level: 2, subclass: "" }];
+    const hpRolls = [{ level: 1, value: 10, rolled: false }];
+    expect(calcHpMaxFromRolls(hpRolls, classes, 16, true)).toBe(22);
+  });
+  it("multiclase Fighter5/Rogue3, CON 10, media → 49", () => {
+    const classes = [
+      { class: "Guerrero", level: 5, subclass: "" },
+      { class: "Pícaro", level: 3, subclass: "" },
+    ];
+    const hpRolls = [{ level: 1, value: 10, rolled: false }];
+    expect(calcHpMaxFromRolls(hpRolls, classes, 10, true)).toBe(49);
+  });
+  it("useAverage=false usa rolls guardados", () => {
+    const classes = [{ class: "Guerrero", level: 2, subclass: "" }];
+    const hpRolls = [
+      { level: 1, value: 10, rolled: false },
+      { level: 2, value: 8, rolled: true },
+    ];
+    expect(calcHpMaxFromRolls(hpRolls, classes, 10, false)).toBe(18);
+  });
+  it("sin roll guardado y useAverage=false usa fallback de media", () => {
+    const classes = [{ class: "Guerrero", level: 2, subclass: "" }];
+    const hpRolls = [{ level: 1, value: 10, rolled: false }];
+    expect(calcHpMaxFromRolls(hpRolls, classes, 10, false)).toBe(16);
+  });
+  it("HP mínimo 1 por nivel con CON muy negativa", () => {
+    const classes = [{ class: "Mago", level: 1, subclass: "" }];
+    const hpRolls = [{ level: 1, value: 6, rolled: false }];
+    expect(calcHpMaxFromRolls(hpRolls, classes, 1, true)).toBe(1);
+  });
+  it("clases vacías → 0", () =>
+    expect(calcHpMaxFromRolls([], [], 10, true)).toBe(0));
+});
+
+describe("calcAC", () => {
+  it("sin armadura: 10 + mod DES", () =>
+    expect(calcAC("none", 14, false)).toBe(12));
+  it("sin armadura + escudo: +2", () =>
+    expect(calcAC("none", 14, true)).toBe(14));
+  it("armadura ligera: base + DES completo", () =>
+    expect(calcAC("studdedLeather", 18, false)).toBe(16));
+  it("armadura media: base + DES máx +2", () =>
+    expect(calcAC("scaleMail", 18, false)).toBe(16));
+  it("armadura media: DES menor que 2 → DES real", () =>
+    expect(calcAC("scaleMail", 12, false)).toBe(15));
+  it("armadura pesada: base sin DES", () =>
+    expect(calcAC("plate", 20, false)).toBe(18));
+  it("armadura pesada + escudo", () =>
+    expect(calcAC("plate", 20, true)).toBe(20));
+  it("Defensa bárbaro: 10 + DES + CON", () =>
+    expect(calcAC("unarmoredBarbarian", 14, false, 16)).toBe(15));
+  it("armorKey null → 10 + DES (igual que none)", () =>
+    expect(calcAC(null, 12, false)).toBe(11));
 });
