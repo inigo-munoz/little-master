@@ -230,7 +230,7 @@ function CharacterSheetContent() {
         hitDice:          hitDice || undefined,
         class:            firstClass?.class   ?? undefined,
         subclass:         firstClass?.subclass ?? undefined,
-      } as any);
+      });
       await mutate();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);

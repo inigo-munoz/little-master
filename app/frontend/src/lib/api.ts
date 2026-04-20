@@ -645,14 +645,7 @@ export interface CreatePlayer {
   notes?: string;
 }
 
-export interface UpdatePlayer {
-  name?: string;
-  class?: string;
-  race?: string;
-  level?: number;
-  status?: "active" | "inactive" | "dead" | "retired";
-  notes?: string;
-}
+export type UpdatePlayer = Record<string, string | number | boolean | null | undefined>;
 
 export interface MonsterDetail {
   name: string;

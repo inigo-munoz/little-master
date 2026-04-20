@@ -24,6 +24,7 @@ function buildAsiSlots(classes: PlayerClassEntry[]): AsiSlot[] {
   const slots: AsiSlot[] = [];
   for (let ci = 0; ci < classes.length; ci++) {
     const cls = classes[ci];
+    if (!cls) continue;
     const asiLevels = asiLevelsForClass(cls.class);
     for (const asiLvl of asiLevels) {
       if (asiLvl <= cls.level) {
