@@ -61,3 +61,36 @@ export const DND_ALIGNMENTS = [
   "Legal Neutral", "Neutral Verdadero", "Caótico Neutral",
   "Legal Malvado", "Neutral Malvado", "Caótico Malvado",
 ] as const;
+
+// Dado de golpe por clase (PHB 2024)
+export const HIT_DIE_BY_CLASS: Record<string, number> = {
+  "Bárbaro":    12,
+  "Guerrero":   10,
+  "Paladín":    10,
+  "Explorador": 10,
+  "Bardo":       8,
+  "Clérigo":     8,
+  "Druida":      8,
+  "Monje":       8,
+  "Pícaro":      8,
+  "Brujo":       8,
+  "Hechicero":   6,
+  "Mago":        6,
+};
+
+// Característica de conjuración por clase (PHB 2024)
+// null = clase sin magia (Bárbaro, Guerrero base, Pícaro base)
+export const SPELLCASTING_ABILITY_BY_CLASS: Record<string, "wisdom" | "intelligence" | "charisma" | null> = {
+  "Bárbaro":    null,
+  "Bardo":      "charisma",
+  "Clérigo":    "wisdom",
+  "Druida":     "wisdom",
+  "Guerrero":   null,
+  "Monje":      "wisdom",
+  "Paladín":    "charisma",
+  "Explorador": "wisdom",
+  "Pícaro":     null,
+  "Hechicero":  "charisma",
+  "Brujo":      "charisma",
+  "Mago":       "intelligence",
+};
