@@ -45,7 +45,7 @@ export function ClassesPanel({ classes, onChange }: ClassesPanelProps) {
 
         return (
           <div
-            key={i}
+            key={`${cls.class}-${i}`}
             className="grid gap-2 items-center"
             style={{ gridTemplateColumns: "1fr 64px 160px 24px" }}
           >
