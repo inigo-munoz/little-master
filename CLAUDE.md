@@ -25,7 +25,7 @@ pnpm lint               # Frontend only
 
 # Tests
 cd app/frontend && pnpm test   # Vitest — 46 tests unitarios del frontend
-cd app/backend  && pnpm test   # Vitest — 106 tests unitarios del backend
+cd app/backend  && pnpm test   # Vitest — 123 tests unitarios del backend
 
 # Database
 pnpm db:migrate         # Run Prisma migrations
@@ -58,8 +58,8 @@ Monorepo (pnpm workspaces) with three apps and three shared packages:
 
 ```
 app/
-  backend/      Fastify 4 + Prisma 5 + SQLite API (port 3001)
-  frontend/     Next.js 14 App Router (port 3000)
+  backend/      Fastify 5 + Prisma 5 + SQLite API (port 3001)
+  frontend/     Next.js 15 App Router (port 3000)
   mcp-server/   MCP tools server via Fastify (port 3002)
 packages/
   domain/       Zod entity schemas for all models
@@ -177,9 +177,20 @@ Strict mode throughout. Base config at `tsconfig.base.json` (ES2022 target, ESNe
 - **`encryption.ts`** (CN-018) — KDF mejorado: SHA-256 sin sal sustituido por PBKDF2-SHA256 con sal aleatoria por registro (100 000 iteraciones). Nuevo formato `v2:salt:iv:authTag:encrypted`. `decrypt()` detecta automáticamente formato v1 (legacy) y v2; migración transparente sin tocar la BD
 - **`obsidian.ts`** (CN-001) — Path traversal corregido: `validateVaultPath()` resuelve con `path.resolve()` y verifica prefijo contra `homedir()` + puntos de montaje permitidos por plataforma antes de cualquier `fs.readdir()`
 
+### Sprint 8 — completado
+
+- **CN-005** — Next.js 14 → 15.5.15 ✅
+- **CN-006** — Fastify 4 → 5.8.5 (cors 10, helmet 12, multipart 9, sensible 6) ✅
+- **`AssistantRun.mode`** — Tipado como enum `AssistantModeSchema` exportado desde `@dnd/domain` ✅
+- **Fetch centralizado** — `api.pdf.sessionPdf()`, `api.players.get/update` (eliminados 3 `fetch()` directos) ✅
+- **ChangeLog en DELETE** — Registro de baja en eliminación de campaigns y documents ✅
+- **`sourceType` en entidades** — Campo añadido a `Npc`, `Session`, `Location`, `Faction` (schema.prisma + domain) ✅
+
+### Sprint 9 — completado
+
+- **Dashboard de campañas** — `/campaigns` rediseñado como lista compacta con 5 métricas por campaña (ses., PNJs, locs., fac., PJs); navegación directa al hacer clic en la fila ✅
+- **`campaign.service.list()`** — `_count` ampliado con `locations`, `factions`, `players` ✅
+
 ### Pendientes conocidos
 
-- ~~**CN-005**~~ — ✅ Resuelto: Next.js actualizado a 15.5.15
-- ~~**CN-006**~~ — ✅ Resuelto: Fastify actualizado a 5.8.5 (cors 10, helmet 12, multipart 9, sensible 6)
-- **Trazabilidad de entidades** — Añadir campo `sourceType` a `Npc`, `Session`, `Location`, `Faction`; actualmente solo `Document` tiene trazabilidad de origen
 - **`MVP_USER_ID` hardcodeado** — Multi-user auth aplazado; aceptable en esta fase de uso local
