@@ -351,14 +351,23 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
 
         // Cabecera de tabla
         const colW: [number, number, number, number, number] = [PAGE_WIDTH * 0.35, PAGE_WIDTH * 0.30, PAGE_WIDTH * 0.15, PAGE_WIDTH * 0.10, PAGE_WIDTH * 0.10];
-        const colX: [number, number, number, number, number] = [MARGIN, MARGIN + colW[0], MARGIN + colW[0] + colW[1], MARGIN + colW[0] + colW[1] + colW[2], MARGIN + colW[0] + colW[1] + colW[2] + colW[3]];
+        const colX: [number, number, number, number, number] = [
+          MARGIN,
+          MARGIN + colW[0],
+          MARGIN + colW[0] + colW[1],
+          MARGIN + colW[0] + colW[1] + colW[2],
+          MARGIN + colW[0] + colW[1] + colW[2] + colW[3],
+        ];
 
         doc.font(FONT_BOLD).fontSize(9).fillColor("#888888");
+        const headerY = doc.y;
         const headers = ["Personaje", "Clase / Raza", "Nivel", "HP", "CA"];
         headers.forEach((h, i) => {
-          doc.text(h, colX[i], doc.y, { width: colW[i], lineBreak: false });
+          doc.text(h, colX[i], headerY, { width: colW[i], lineBreak: false });
         });
-        doc.moveDown(0.5);
+        // Avanzar manualmente y restablecer x tras los lineBreak:false
+        doc.y = headerY + 14;
+        doc.x = MARGIN;
 
         // Línea separadora de cabecera
         const lineY = doc.y;
@@ -376,7 +385,13 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
           doc.text(String(p.level ?? "—"), colX[2], rowY, { width: colW[2], lineBreak: false });
           doc.text(p.hp != null ? String(p.hp) : "—", colX[3], rowY, { width: colW[3], lineBreak: false });
           doc.text(p.ac != null ? String(p.ac) : "—", colX[4], rowY, { width: colW[4], lineBreak: false });
-          doc.moveDown(0.8);
+          // Calcular altura real de la fila (la celda más alta puede envolver texto)
+          const rowHeight = Math.max(
+            doc.heightOfString(p.name, { width: colW[0] }),
+            doc.heightOfString(classRace || "—", { width: colW[1] })
+          );
+          doc.y = rowY + rowHeight + 6;
+          doc.x = MARGIN;
         }
 
         doc.moveDown(0.5);
