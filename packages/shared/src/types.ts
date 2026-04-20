@@ -40,6 +40,7 @@ export const EntityTypeSchema = z.enum([
   "campaign",
   "session",
   "npc",
+  "player",
   "location",
   "faction",
   "document",

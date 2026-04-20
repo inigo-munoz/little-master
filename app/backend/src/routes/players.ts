@@ -55,7 +55,7 @@ export const playerRoutes: FastifyPluginAsync = async (server) => {
 
     await changeLogService.log({
       campaignId: data.campaignId,
-      entityType: "npc",
+      entityType: "player",
       entityId: player.id,
       beforeJson: null,
       afterJson: JSON.stringify(player),
@@ -151,7 +151,7 @@ export const playerRoutes: FastifyPluginAsync = async (server) => {
 
     await changeLogService.log({
       campaignId: existing.campaignId,
-      entityType: "npc",
+      entityType: "player",
       entityId: existing.id,
       beforeJson: JSON.stringify(existing),
       afterJson: JSON.stringify(updated),
