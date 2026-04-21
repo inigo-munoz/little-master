@@ -227,6 +227,23 @@ function CharacterSheetContent() {
       const calcedSpeedSave = calcSpeed(currentSpecies, cls, fts);
       const speed = form.speed != null ? (form.speed as number) : calcedSpeedSave;
 
+      const fInt = finalAbilityScore(form.intelligence ?? 10, "intelligence", fts);
+      const fCha = finalAbilityScore(form.charisma     ?? 10, "charisma",     fts);
+      const spellClsSave     = cls.filter(c => SPELLCASTING_ABILITY_BY_CLASS[c.class] !== null);
+      const primarySpellSave = spellClsSave.length > 0
+        ? spellClsSave.reduce((a, b) => a.level >= b.level ? a : b)
+        : null;
+      const detectedAbilitySave = primarySpellSave
+        ? (SPELLCASTING_ABILITY_BY_CLASS[primarySpellSave.class] ?? null)
+        : null;
+      const resolvedAbilitySave = ((form.spellcastingAbility || detectedAbilitySave) ?? null) as "wisdom" | "intelligence" | "charisma" | null;
+      const spellScoreSave =
+        resolvedAbilitySave === "wisdom"       ? fWis :
+        resolvedAbilitySave === "intelligence" ? fInt :
+        resolvedAbilitySave === "charisma"     ? fCha : null;
+      const spellSaveDC      = spellScoreSave !== null ? calcSpellSaveDC(spellScoreSave, lvl)      : undefined;
+      const spellAttackBonus = spellScoreSave !== null ? calcSpellAttackBonus(spellScoreSave, lvl) : undefined;
+
       const skillProfsForSave: string[]  = parseJson(form.skillProficiencies ?? "[]", []);
       const skillExpertForSave: string[] = parseJson(form.skillExpertise     ?? "[]", []);
       const passivePerception = calcPassivePerception(
@@ -246,6 +263,8 @@ function CharacterSheetContent() {
         initiative,
         speed,
         passivePerception,
+        spellSaveDC,
+        spellAttackBonus,
         level:            lvl,
         proficiencyBonus: pb,
         hitDice:          hitDice || undefined,
@@ -307,7 +326,16 @@ function CharacterSheetContent() {
   const hasPerceptionExp  = skillExpert.includes("Perception");
   const calcPassivePerc = calcPassivePerception(finalWis, level, hasPerceptionProf, hasPerceptionExp);
 
-  const spellAbilityKey = form.spellcastingAbility as "wisdom" | "intelligence" | "charisma" | "" | null;
+  const spellcastingClasses = classes.filter(c => SPELLCASTING_ABILITY_BY_CLASS[c.class] !== null);
+  const hasSpellcasting     = spellcastingClasses.length > 0;
+  const primarySpellClass   = hasSpellcasting
+    ? spellcastingClasses.reduce((a, b) => a.level >= b.level ? a : b)
+    : null;
+  const detectedSpellAbility = primarySpellClass
+    ? (SPELLCASTING_ABILITY_BY_CLASS[primarySpellClass.class] ?? null)
+    : null;
+
+  const spellAbilityKey = ((form.spellcastingAbility || detectedSpellAbility) ?? null) as "wisdom" | "intelligence" | "charisma" | null;
   const spellAbilityScore =
     spellAbilityKey === "wisdom"       ? finalWis :
     spellAbilityKey === "intelligence" ? finalInt :
@@ -459,9 +487,15 @@ function CharacterSheetContent() {
               classes={classes.length > 0 ? classes : [{ class: form.class ?? "Guerrero", level: form.level ?? 1, subclass: form.subclass ?? "" }]}
               onChange={updated => {
                 set("classes", JSON.stringify(updated));
-                if (updated.length === 1 && !form.spellcastingAbility && updated[0]) {
-                  const suggested = SPELLCASTING_ABILITY_BY_CLASS[updated[0].class] ?? null;
-                  if (suggested) set("spellcastingAbility", suggested);
+                if (!form.spellcastingAbility) {
+                  const spellClasses = updated.filter(c => SPELLCASTING_ABILITY_BY_CLASS[c.class] !== null);
+                  if (spellClasses.length > 0) {
+                    const primary  = spellClasses.reduce((a, b) => a.level >= b.level ? a : b);
+                    const ability  = SPELLCASTING_ABILITY_BY_CLASS[primary.class];
+                    if (ability) set("spellcastingAbility", ability);
+                  } else {
+                    set("spellcastingAbility", null);
+                  }
                 }
               }}
             />
@@ -641,35 +675,47 @@ function CharacterSheetContent() {
               onChange={updated => set("feats", JSON.stringify(updated))}
             />
 
-            <SectionTitle>Conjuros</SectionTitle>
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="Característica de conjuro">
-                <select
-                  className="w-full bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-sm text-stone-100"
-                  value={form.spellcastingAbility ?? ""}
-                  onChange={e => set("spellcastingAbility", e.target.value)}
-                >
-                  <option value="">— Sin magia —</option>
-                  <option value="wisdom">SAB (Sabiduría)</option>
-                  <option value="intelligence">INT (Inteligencia)</option>
-                  <option value="charisma">CAR (Carisma)</option>
-                </select>
-              </Field>
-              <Field label="CD de salvación">
-                <NumberInput value={form.spellSaveDC} onChange={v => set("spellSaveDC", v)} />
-                {calcDC !== null && (
-                  <p className="text-xs text-stone-500 mt-0.5">Calculado: {calcDC} (8 + mod + comp.)</p>
-                )}
-              </Field>
-              <Field label="Bonif. de ataque">
-                <NumberInput value={form.spellAttackBonus} onChange={v => set("spellAttackBonus", v)} />
-                {calcAttack !== null && (
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    Calculado: {calcAttack >= 0 ? `+${calcAttack}` : calcAttack} (mod + comp.)
-                  </p>
-                )}
-              </Field>
-            </div>
+            {hasSpellcasting && (
+              <>
+                <SectionTitle>Conjuros</SectionTitle>
+                <div className="grid grid-cols-3 gap-4">
+                  <Field label="Característica de conjuro">
+                    <select
+                      className="w-full bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-sm text-stone-100"
+                      value={form.spellcastingAbility ?? ""}
+                      onChange={e => set("spellcastingAbility", e.target.value || null)}
+                    >
+                      <option value="">
+                        — Auto ({detectedSpellAbility === "wisdom" ? "SAB" : detectedSpellAbility === "intelligence" ? "INT" : detectedSpellAbility === "charisma" ? "CAR" : "—"}) —
+                      </option>
+                      <option value="wisdom">SAB (Sabiduría)</option>
+                      <option value="intelligence">INT (Inteligencia)</option>
+                      <option value="charisma">CAR (Carisma)</option>
+                    </select>
+                  </Field>
+                  <Field label="CD de salvación">
+                    <div
+                      className="bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-center"
+                      title={`8 + comp. (+${pb}) + mod (${abilityModifier(spellAbilityScore ?? 10) >= 0 ? "+" : ""}${abilityModifier(spellAbilityScore ?? 10)})`}
+                    >
+                      <span className="text-amber-400 font-bold text-base">{calcDC ?? "—"}</span>
+                    </div>
+                    {calcDC !== null && <p className="text-xs text-stone-500 mt-0.5">8 + comp. + mod = {calcDC}</p>}
+                  </Field>
+                  <Field label="Bonif. de ataque">
+                    <div
+                      className="bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-center"
+                      title={`comp. (+${pb}) + mod (${abilityModifier(spellAbilityScore ?? 10) >= 0 ? "+" : ""}${abilityModifier(spellAbilityScore ?? 10)})`}
+                    >
+                      <span className="text-amber-400 font-bold text-base">
+                        {calcAttack !== null ? (calcAttack >= 0 ? `+${calcAttack}` : calcAttack) : "—"}
+                      </span>
+                    </div>
+                    {calcAttack !== null && <p className="text-xs text-stone-500 mt-0.5">comp. + mod = {calcAttack >= 0 ? `+${calcAttack}` : calcAttack}</p>}
+                  </Field>
+                </div>
+              </>
+            )}
 
             <SectionTitle>Competencias</SectionTitle>
             <div className="space-y-3">
