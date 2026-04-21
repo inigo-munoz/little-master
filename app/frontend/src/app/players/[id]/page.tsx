@@ -487,15 +487,14 @@ function CharacterSheetContent() {
               classes={classes.length > 0 ? classes : [{ class: form.class ?? "Guerrero", level: form.level ?? 1, subclass: form.subclass ?? "" }]}
               onChange={updated => {
                 set("classes", JSON.stringify(updated));
-                if (!form.spellcastingAbility) {
-                  const spellClasses = updated.filter(c => SPELLCASTING_ABILITY_BY_CLASS[c.class] !== null);
-                  if (spellClasses.length > 0) {
-                    const primary  = spellClasses.reduce((a, b) => a.level >= b.level ? a : b);
-                    const ability  = SPELLCASTING_ABILITY_BY_CLASS[primary.class];
-                    if (ability) set("spellcastingAbility", ability);
-                  } else {
-                    set("spellcastingAbility", null);
-                  }
+                const spellClasses = updated.filter(c => SPELLCASTING_ABILITY_BY_CLASS[c.class] !== null);
+                if (!form.spellcastingAbility && spellClasses.length > 0) {
+                  const primary = spellClasses.reduce((a, b) => a.level >= b.level ? a : b);
+                  const ability = SPELLCASTING_ABILITY_BY_CLASS[primary.class];
+                  if (ability) set("spellcastingAbility", ability);
+                }
+                if (spellClasses.length === 0) {
+                  set("spellcastingAbility", null);
                 }
               }}
             />
