@@ -15,6 +15,7 @@ import {
   DND_ALIGNMENTS,
   SPELLCASTING_ABILITY_BY_CLASS,
   HIT_DIE_BY_CLASS,
+  baseSpeedForSpecies,
 } from "../../../lib/dnd-2024-data";
 import {
   abilityModifier,
@@ -26,6 +27,11 @@ import {
   finalAbilityScore,
   calcHpMaxFromRolls,
   calcAC,
+  initiativeBonusFromFeats,
+  calcInitiative,
+  speedBonusFromClasses,
+  speedBonusFromFeats,
+  calcSpeed,
   type PlayerClassEntry,
   type HpRollEntry,
   type FeatEntry,
@@ -217,6 +223,7 @@ function CharacterSheetContent() {
       const lvl   = totalLevel(cls) || 1;
       const pb    = proficiencyBonus(lvl);
       const hitDice = cls.map(c => `${c.level}d${HIT_DIE_BY_CLASS[c.class] ?? 8}`).join(" + ");
+      const initiative = calcInitiative(fDex, fts);
 
       // Mantener class/level/subclass legacy sincronizados con la primera clase
       const firstClass = cls[0];
@@ -225,6 +232,7 @@ function CharacterSheetContent() {
         ...form,
         ac,
         hpMax,
+        initiative,
         level:            lvl,
         proficiencyBonus: pb,
         hitDice:          hitDice || undefined,
@@ -295,7 +303,9 @@ function CharacterSheetContent() {
   const calcDC     = spellAbilityScore !== null ? calcSpellSaveDC(spellAbilityScore, level)     : null;
   const calcAttack = spellAbilityScore !== null ? calcSpellAttackBonus(spellAbilityScore, level) : null;
 
-  const initiativeSug = abilityModifier(finalDex);
+  const initiativeBonus  = initiativeBonusFromFeats(feats);
+  const calcedInitiative = calcInitiative(finalDex, feats);
+  const calcedSpeed      = calcSpeed(currentSpecies, classes, feats);
 
   // Especie + linaje
   const raceStr: string = form.race ?? "";
@@ -378,7 +388,7 @@ function CharacterSheetContent() {
           {[
             { icon: <Heart size={14} className="text-red-400" />, label: "HP", value: `${form.hp ?? "—"}/${calcedHpMax}`, sub: form.hpTemp ? `+${form.hpTemp} temp` : null },
             { icon: <Shield size={14} className="text-blue-400" />, label: "CA", value: calcedAC },
-            { icon: <Zap size={14} className="text-yellow-400" />, label: "Iniciativa", value: form.initiative != null ? (form.initiative >= 0 ? `+${form.initiative}` : form.initiative) : (initiativeSug >= 0 ? `+${initiativeSug}` : initiativeSug) },
+            { icon: <Zap size={14} className="text-yellow-400" />, label: "Iniciativa", value: calcedInitiative >= 0 ? `+${calcedInitiative}` : `${calcedInitiative}` },
             { icon: <Star size={14} className="text-amber-400" />, label: "Prof. Bonus", value: `+${pb}` },
           ].map(s => (
             <div key={s.label} className="bg-stone-900 border border-stone-800 rounded-xl p-3 text-center">
@@ -519,9 +529,17 @@ function CharacterSheetContent() {
               <Field label="HP temporal"><NumberInput value={form.hpTemp} onChange={v => set("hpTemp", v)} /></Field>
               <Field label="Velocidad"><NumberInput value={form.speed} onChange={v => set("speed", v)} /></Field>
               <Field label="Iniciativa">
-                <NumberInput value={form.initiative} onChange={v => set("initiative", v)} />
+                <div
+                  className="bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-center"
+                  title={`DES ${abilityModifier(finalDex) >= 0 ? "+" : ""}${abilityModifier(finalDex)}${initiativeBonus !== 0 ? ` + dotes (${initiativeBonus >= 0 ? "+" : ""}${initiativeBonus})` : ""}`}
+                >
+                  <span className="text-amber-400 font-bold text-base">
+                    {calcedInitiative >= 0 ? `+${calcedInitiative}` : calcedInitiative}
+                  </span>
+                </div>
                 <p className="text-xs text-stone-500 mt-0.5">
-                  Base DES: {initiativeSug >= 0 ? `+${initiativeSug}` : initiativeSug}
+                  DES {abilityModifier(finalDex) >= 0 ? "+" : ""}{abilityModifier(finalDex)}
+                  {initiativeBonus !== 0 && ` + dotes ${initiativeBonus >= 0 ? "+" : ""}${initiativeBonus}`}
                 </p>
               </Field>
               <Field label="Percepción pasiva">
