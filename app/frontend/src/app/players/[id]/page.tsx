@@ -180,6 +180,8 @@ function CharacterSheetContent() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [saveError, setSaveError]             = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"core" | "abilities" | "skills" | "spells" | "inventory" | "backstory">("core");
 
   const { data: player, mutate } = useSWR(
@@ -208,6 +210,7 @@ function CharacterSheetContent() {
 
   async function handleSave() {
     setSaving(true);
+    setSaveError(null);
     try {
       // Recalcular valores derivados antes de guardar
       const cls: PlayerClassEntry[] = parseJson(form.classes ?? "[]", []);
@@ -274,6 +277,9 @@ function CharacterSheetContent() {
       await mutate();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setSaveError("Error al guardar la ficha. Inténtalo de nuevo.");
+      setTimeout(() => setSaveError(null), 5000);
     } finally {
       setSaving(false);
     }
@@ -431,7 +437,7 @@ function CharacterSheetContent() {
             </div>
           </div>
           <button
-            onClick={handleSave}
+            onClick={() => setShowSaveConfirm(true)}
             disabled={saving}
             className={clsx(
               "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
@@ -967,7 +973,7 @@ function CharacterSheetContent() {
         {/* Save button bottom */}
         <div className="mt-8 flex justify-end">
           <button
-            onClick={handleSave}
+            onClick={() => setShowSaveConfirm(true)}
             disabled={saving}
             className="flex items-center gap-2 px-6 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors"
           >
@@ -976,6 +982,38 @@ function CharacterSheetContent() {
           </button>
         </div>
       </div>
+
+        {showSaveConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+              <h3 className="font-bold text-stone-100 text-lg mb-2">Guardar ficha</h3>
+              <p className="text-stone-400 text-sm mb-6">
+                ¿Guardar los cambios en la ficha de{" "}
+                <span className="text-stone-200 font-semibold">{form.name}</span>?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowSaveConfirm(false)}
+                  className="px-4 py-2 text-stone-400 hover:text-stone-200 text-sm transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={async () => { setShowSaveConfirm(false); await handleSave(); }}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-semibold rounded-lg text-sm transition-colors"
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {saveError && (
+          <div className="fixed bottom-4 right-4 z-50 bg-red-900 border border-red-700 text-red-100 px-4 py-3 rounded-lg text-sm shadow-lg">
+            {saveError}
+          </div>
+        )}
     </AppShell>
   );
 }
