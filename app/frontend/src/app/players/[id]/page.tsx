@@ -305,12 +305,12 @@ function CharacterSheetContent() {
 
   const initiativeBonus  = initiativeBonusFromFeats(feats);
   const calcedInitiative = calcInitiative(finalDex, feats);
-  const calcedSpeed      = calcSpeed(currentSpecies, classes, feats);
 
   // Especie + linaje
   const raceStr: string = form.race ?? "";
   const raceMatch = raceStr.match(/^(.+?) \((.+)\)$/);
-  const currentSpecies = raceMatch ? raceMatch[1] : raceStr;
+  const currentSpecies = raceMatch ? (raceMatch[1] ?? raceStr) : raceStr;
+  const calcedSpeed      = calcSpeed(currentSpecies, classes, feats);
   const currentVariant = raceMatch ? raceMatch[2] : "";
   const speciesVariants = currentSpecies && Object.prototype.hasOwnProperty.call(DND_SPECIES_VARIANTS, currentSpecies)
     ? DND_SPECIES_VARIANTS[currentSpecies] ?? []
