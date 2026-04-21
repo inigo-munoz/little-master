@@ -325,6 +325,11 @@ export const api = {
     delete: (id: string) => del(`/api/relations/${id}`),
   },
 
+  spells: {
+    lookup: (name: string) =>
+      get<SpellFullData | null>(`/api/spells/${encodeURIComponent(name)}`),
+  },
+
 };
 
 // ─── Types (mirrors backend domain) ─────────────────────────────────────────
@@ -705,5 +710,28 @@ export interface CreateEncounter {
   adjustedXp: number;
   difficulty: "trivial" | "easy" | "medium" | "hard" | "deadly" | "impossible";
   notes?: string;
+}
+
+export interface SpellComponents {
+  verbal: boolean;
+  somatic: boolean;
+  material: boolean;
+  materialDesc: string;
+  consumed: boolean;
+  hasCost: boolean;
+}
+
+export interface SpellFullData {
+  name: string;
+  level: number;
+  school: string;
+  castingTime: string;
+  range: string;
+  duration: string;
+  components: SpellComponents;
+  concentration: boolean;
+  ritual: boolean;
+  description: string;
+  higherLevels: string | null;
 }
 

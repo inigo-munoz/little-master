@@ -113,6 +113,7 @@ export const playerRoutes: FastifyPluginAsync = async (server) => {
       spellSlots: z.string().optional(),
       spellsPrepared: z.string().optional(),
       cantrips: z.string().optional(),
+      spells: z.string().optional(),
       inventory: z.string().optional(),
       weapons: z.string().optional(),
       magicItems: z.string().optional(),
