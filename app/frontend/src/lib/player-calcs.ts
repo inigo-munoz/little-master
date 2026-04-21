@@ -4,6 +4,11 @@ import {
   INITIATIVE_BONUS_BY_FEAT,
   SPEED_BONUS_BY_FEAT,
   baseSpeedForSpecies,
+  FULL_CASTER_CLASSES,
+  HALF_CASTER_CLASSES,
+  PACT_MAGIC_CLASS,
+  THIRD_CASTER_SUBCLASSES,
+  FULL_CASTER_SLOTS,
   type ArmorKey,
 } from "./dnd-2024-data";
 
@@ -24,6 +29,17 @@ export interface HpRollEntry {
 export interface FeatStatBonus {
   stat: "strength" | "dexterity" | "constitution" | "intelligence" | "wisdom" | "charisma";
   value: number;
+}
+
+export interface WeaponEntry {
+  id: string;
+  weaponKey: string;         // clave en WEAPON_LIST, "" = personalizada
+  customName: string;        // nombre propio opcional
+  ability: "strength" | "dexterity";  // característica elegida (finesse → el jugador elige)
+  magical: boolean;
+  magicBonus: number;        // +0/+1/+2/+3
+  extraDamage: boolean;
+  extraDamageDesc: string;
 }
 
 export interface FeatEntry {
@@ -193,4 +209,62 @@ export function calcSpeed(
   feats: FeatEntry[]
 ): number {
   return baseSpeedForSpecies(species) + speedBonusFromClasses(classes) + speedBonusFromFeats(feats);
+}
+
+// ─── Hechizos ─────────────────────────────────────────────────────────────────
+
+export interface SpellEntry {
+  id: string;
+  name: string;
+  level: number;          // 0 = truco
+  concentration: boolean;
+  ritual: boolean;
+}
+
+// Calcula los espacios de hechizo sugeridos para un personaje dado sus clases.
+// Devuelve un Record<nivel_hechizo, número_de_espacios> para niveles 1–9.
+// Los espacios de Magia de Pacto (Brujo) se calculan por separado con WARLOCK_PACT_MAGIC.
+export function calcSuggestedSpellSlots(classes: PlayerClassEntry[]): Record<number, number> {
+  let effectiveLevel = 0;
+  for (const cls of classes) {
+    if (cls.class === PACT_MAGIC_CLASS) continue;
+    if (FULL_CASTER_CLASSES.has(cls.class)) {
+      effectiveLevel += cls.level;
+    } else if (HALF_CASTER_CLASSES.has(cls.class)) {
+      effectiveLevel += Math.floor(cls.level / 2);
+    } else {
+      const thirdSub = THIRD_CASTER_SUBCLASSES[cls.class];
+      if (thirdSub !== undefined && cls.subclass === thirdSub) {
+        effectiveLevel += Math.floor(cls.level / 3);
+      }
+    }
+  }
+  effectiveLevel = Math.max(0, Math.min(20, effectiveLevel));
+  if (effectiveLevel === 0) return {};
+  const row = FULL_CASTER_SLOTS[effectiveLevel - 1];
+  if (!row) return {};
+  const result: Record<number, number> = {};
+  row.forEach((count, idx) => { if (count > 0) result[idx + 1] = count; });
+  return result;
+}
+
+// ─── Slots de maestría (expertise) según clases y niveles (PHB 2024) ──────────
+// Bardo nv.3: +2 · Pícaro nv.1: +2 · Pícaro nv.6: +2 adicionales
+export function expertiseSlotsFromClasses(classes: PlayerClassEntry[]): number {
+  let slots = 0;
+  for (const cls of classes) {
+    if (cls.class === "Pícaro") {
+      if (cls.level >= 1) slots += 2;
+      if (cls.level >= 6) slots += 2;
+    }
+    if (cls.class === "Bardo") {
+      if (cls.level >= 3) slots += 2;
+    }
+  }
+  return slots;
+}
+
+// Slots de maestría otorgados por dotes (Skill Expert: +1 por dote)
+export function expertiseSlotsFromFeats(feats: FeatEntry[]): number {
+  return feats.filter(f => f.name === "Skill Expert").length;
 }

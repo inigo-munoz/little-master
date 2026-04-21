@@ -357,9 +357,10 @@ model Player {
   spellcastingAbility String?
   spellSaveDC         Int?
   spellAttackBonus    Int?
-  spellSlots          String @default("{}") // JSON: {"1":4,"2":3,...}
-  spellsPrepared      String @default("[]") // JSON array of spell names/objects (renombrado de spellsKnown)
-  cantrips            String @default("[]")
+  spellSlots          String @default("{}") // JSON: {"1":{"max":4,"used":0},...,"pact":{"max":2,"used":0}}
+  spellsPrepared      String @default("[]") // legacy — usar spells
+  cantrips            String @default("[]") // legacy — usar spells con level 0
+  spells              String @default("[]") // JSON: [{id,name,level,concentration,ritual}]
 
   // Equipment & inventory
   inventory    String @default("[]") // JSON array
