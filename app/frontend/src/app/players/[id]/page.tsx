@@ -227,6 +227,15 @@ function CharacterSheetContent() {
       const calcedSpeedSave = calcSpeed(currentSpecies, cls, fts);
       const speed = form.speed != null ? (form.speed as number) : calcedSpeedSave;
 
+      const skillProfsForSave: string[]  = parseJson(form.skillProficiencies ?? "[]", []);
+      const skillExpertForSave: string[] = parseJson(form.skillExpertise     ?? "[]", []);
+      const passivePerception = calcPassivePerception(
+        fWis,
+        lvl,
+        skillProfsForSave.includes("Perception"),
+        skillExpertForSave.includes("Perception"),
+      );
+
       // Mantener class/level/subclass legacy sincronizados con la primera clase
       const firstClass = cls[0];
 
@@ -236,6 +245,7 @@ function CharacterSheetContent() {
         hpMax,
         initiative,
         speed,
+        passivePerception,
         level:            lvl,
         proficiencyBonus: pb,
         hitDice:          hitDice || undefined,
@@ -322,6 +332,27 @@ function CharacterSheetContent() {
   function setSpecies(species: string) { set("race", species); }
   function setVariant(variant: string) {
     set("race", variant ? `${currentSpecies} (${variant})` : currentSpecies);
+  }
+
+  function togglePerceptionProf(checked: boolean) {
+    const next = checked
+      ? [...skillProfs, "Perception"]
+      : skillProfs.filter(k => k !== "Perception");
+    set("skillProficiencies", JSON.stringify(next));
+    if (!checked) {
+      set("skillExpertise", JSON.stringify(skillExpert.filter(k => k !== "Perception")));
+    }
+  }
+
+  function togglePerceptionExp(checked: boolean) {
+    if (checked) {
+      set("skillExpertise", JSON.stringify([...skillExpert, "Perception"]));
+      if (!hasPerceptionProf) {
+        set("skillProficiencies", JSON.stringify([...skillProfs, "Perception"]));
+      }
+    } else {
+      set("skillExpertise", JSON.stringify(skillExpert.filter(k => k !== "Perception")));
+    }
   }
 
   // Label del subtipo varía según la especie
@@ -564,11 +595,37 @@ function CharacterSheetContent() {
                 </p>
               </Field>
               <Field label="Percepción pasiva">
-                <NumberInput value={form.passivePerception} onChange={v => set("passivePerception", v)} />
+                <div
+                  className="bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-center"
+                  title={`10 + SAB (${abilityModifier(finalWis) >= 0 ? "+" : ""}${abilityModifier(finalWis)})${hasPerceptionExp ? ` + maestría (+${pb * 2})` : hasPerceptionProf ? ` + competencia (+${pb})` : ""}`}
+                >
+                  <span className="text-amber-400 font-bold text-base">{calcPassivePerc}</span>
+                </div>
                 <p className="text-xs text-stone-500 mt-0.5">
-                  Calculado: {calcPassivePerc}
-                  {hasPerceptionExp ? " (SAB + exp.)" : hasPerceptionProf ? " (SAB + comp.)" : " (10 + SAB)"}
+                  10 + SAB{hasPerceptionExp ? " + maestría" : hasPerceptionProf ? " + comp." : ""}
                 </p>
+                <div className="flex items-center gap-3 mt-1">
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hasPerceptionProf || hasPerceptionExp}
+                      onChange={e => togglePerceptionProf(e.target.checked)}
+                      className="accent-amber-500 w-3 h-3"
+                    />
+                    <span className="text-xs text-stone-500">Comp.</span>
+                  </label>
+                  {hasPerceptionProf && (
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hasPerceptionExp}
+                        onChange={e => togglePerceptionExp(e.target.checked)}
+                        className="accent-purple-500 w-3 h-3"
+                      />
+                      <span className="text-xs text-stone-500">Maestría</span>
+                    </label>
+                  )}
+                </div>
               </Field>
               <Field label="Dados de vida (auto)">
                 <div className="bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-stone-400 text-sm text-center">
