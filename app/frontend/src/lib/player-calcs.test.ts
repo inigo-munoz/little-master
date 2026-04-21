@@ -10,6 +10,11 @@ import {
   finalAbilityScore,
   calcHpMaxFromRolls,
   calcAC,
+  initiativeBonusFromFeats,
+  calcInitiative,
+  speedBonusFromClasses,
+  speedBonusFromFeats,
+  calcSpeed,
   type PlayerClassEntry,
   type HpRollEntry,
   type FeatEntry,
@@ -200,4 +205,119 @@ describe("calcAC", () => {
     expect(calcAC("unarmoredBarbarian", 14, false, 16)).toBe(15));
   it("armorKey null → 10 + DES (igual que none)", () =>
     expect(calcAC(null, 12, false)).toBe(11));
+});
+
+// ─── initiativeBonusFromFeats ────────────────────────────────────────────────
+
+describe("initiativeBonusFromFeats", () => {
+  it("sin dotes → 0", () =>
+    expect(initiativeBonusFromFeats([])).toBe(0));
+
+  it("dote Alert → +5", () =>
+    expect(initiativeBonusFromFeats([
+      { name: "Alert", classIndex: 0, level: 4, statBonuses: [] },
+    ])).toBe(5));
+
+  it("dote sin bonus de iniciativa → 0", () =>
+    expect(initiativeBonusFromFeats([
+      { name: "Tough", classIndex: 0, level: 4, statBonuses: [] },
+    ])).toBe(0));
+
+  it("dos dotes Alert → suma", () =>
+    expect(initiativeBonusFromFeats([
+      { name: "Alert", classIndex: 0, level: 4, statBonuses: [] },
+      { name: "Alert", classIndex: 0, level: 8, statBonuses: [] },
+    ])).toBe(10));
+});
+
+// ─── calcInitiative ──────────────────────────────────────────────────────────
+
+describe("calcInitiative", () => {
+  it("DES 10, sin dotes → 0", () =>
+    expect(calcInitiative(10, [])).toBe(0));
+
+  it("DES 14 (+2), sin dotes → 2", () =>
+    expect(calcInitiative(14, [])).toBe(2));
+
+  it("DES 8 (-1), sin dotes → -1", () =>
+    expect(calcInitiative(8, [])).toBe(-1));
+
+  it("DES 14 (+2), Alert (+5) → 7", () =>
+    expect(calcInitiative(14, [
+      { name: "Alert", classIndex: 0, level: 4, statBonuses: [] },
+    ])).toBe(7));
+});
+
+// ─── speedBonusFromClasses ───────────────────────────────────────────────────
+
+describe("speedBonusFromClasses", () => {
+  it("sin clases → 0", () =>
+    expect(speedBonusFromClasses([])).toBe(0));
+
+  it("Guerrero nivel 10 → 0 (sin bonus de velocidad)", () =>
+    expect(speedBonusFromClasses([{ class: "Guerrero", level: 10, subclass: "" }])).toBe(0));
+
+  it("Bárbaro nivel 4 → 0 (necesita nv.5)", () =>
+    expect(speedBonusFromClasses([{ class: "Bárbaro", level: 4, subclass: "" }])).toBe(0));
+
+  it("Bárbaro nivel 5 → +10", () =>
+    expect(speedBonusFromClasses([{ class: "Bárbaro", level: 5, subclass: "" }])).toBe(10));
+
+  it("Monje nivel 1 → 0 (necesita nv.2)", () =>
+    expect(speedBonusFromClasses([{ class: "Monje", level: 1, subclass: "" }])).toBe(0));
+
+  it("Monje nivel 2 → +10", () =>
+    expect(speedBonusFromClasses([{ class: "Monje", level: 2, subclass: "" }])).toBe(10));
+
+  it("Bárbaro nv.5 + Monje nv.2 → +20 (se acumulan)", () =>
+    expect(speedBonusFromClasses([
+      { class: "Bárbaro", level: 5, subclass: "" },
+      { class: "Monje",   level: 2, subclass: "" },
+    ])).toBe(20));
+});
+
+// ─── speedBonusFromFeats ─────────────────────────────────────────────────────
+
+describe("speedBonusFromFeats", () => {
+  it("sin dotes → 0", () =>
+    expect(speedBonusFromFeats([])).toBe(0));
+
+  it("dote Mobile → +10", () =>
+    expect(speedBonusFromFeats([
+      { name: "Mobile", classIndex: 0, level: 4, statBonuses: [] },
+    ])).toBe(10));
+
+  it("dote Alert (no da velocidad) → 0", () =>
+    expect(speedBonusFromFeats([
+      { name: "Alert", classIndex: 0, level: 4, statBonuses: [] },
+    ])).toBe(0));
+});
+
+// ─── calcSpeed ───────────────────────────────────────────────────────────────
+
+describe("calcSpeed", () => {
+  it("Humano sin bonificaciones → 30", () =>
+    expect(calcSpeed("Humano", [], [])).toBe(30));
+
+  it("Enano sin bonificaciones → 25", () =>
+    expect(calcSpeed("Enano", [], [])).toBe(25));
+
+  it("Goliath sin bonificaciones → 35", () =>
+    expect(calcSpeed("Goliath", [], [])).toBe(35));
+
+  it("especie desconocida → 30 (default)", () =>
+    expect(calcSpeed("Otra", [], [])).toBe(30));
+
+  it("Humano con Monje nv.2 → 40", () =>
+    expect(calcSpeed("Humano", [{ class: "Monje", level: 2, subclass: "" }], [])).toBe(40));
+
+  it("Enano con Mobile → 35", () =>
+    expect(calcSpeed("Enano", [], [
+      { name: "Mobile", classIndex: 0, level: 4, statBonuses: [] },
+    ])).toBe(35));
+
+  it("Enano, Bárbaro nv.5, Mobile → 45", () =>
+    expect(calcSpeed("Enano", [{ class: "Bárbaro", level: 5, subclass: "" }], [
+      { name: "Mobile", classIndex: 0, level: 4, statBonuses: [] },
+    ])).toBe(45));
 });

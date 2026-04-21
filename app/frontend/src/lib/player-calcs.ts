@@ -1,4 +1,11 @@
-import { HIT_DIE_BY_CLASS, ARMOR_LIST, type ArmorKey } from "./dnd-2024-data";
+import {
+  HIT_DIE_BY_CLASS,
+  ARMOR_LIST,
+  INITIATIVE_BONUS_BY_FEAT,
+  SPEED_BONUS_BY_FEAT,
+  baseSpeedForSpecies,
+  type ArmorKey,
+} from "./dnd-2024-data";
 
 // ─── Tipos exportados ─────────────────────────────────────────────────────────
 
@@ -156,4 +163,34 @@ export function calcAC(
   }
 
   return base + (shieldEquipped ? 2 : 0);
+}
+
+// ─── Sprint B: iniciativa y velocidad calculadas ──────────────────────────────
+
+export function initiativeBonusFromFeats(feats: FeatEntry[]): number {
+  return feats.reduce((sum, feat) => sum + (INITIATIVE_BONUS_BY_FEAT[feat.name] ?? 0), 0);
+}
+
+export function calcInitiative(dexScore: number, feats: FeatEntry[]): number {
+  return abilityModifier(dexScore) + initiativeBonusFromFeats(feats);
+}
+
+export function speedBonusFromClasses(classes: PlayerClassEntry[]): number {
+  return classes.reduce((sum, cls) => {
+    if (cls.class === "Monje"    && cls.level >= 2) return sum + 10;
+    if (cls.class === "Bárbaro" && cls.level >= 5) return sum + 10;
+    return sum;
+  }, 0);
+}
+
+export function speedBonusFromFeats(feats: FeatEntry[]): number {
+  return feats.reduce((sum, feat) => sum + (SPEED_BONUS_BY_FEAT[feat.name] ?? 0), 0);
+}
+
+export function calcSpeed(
+  species: string,
+  classes: PlayerClassEntry[],
+  feats: FeatEntry[]
+): number {
+  return baseSpeedForSpecies(species) + speedBonusFromClasses(classes) + speedBonusFromFeats(feats);
 }
