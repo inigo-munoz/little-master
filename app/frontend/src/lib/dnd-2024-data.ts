@@ -125,3 +125,33 @@ const DEFAULT_ASI_LEVELS = [4, 8, 12, 16, 19];
 export function asiLevelsForClass(className: string): number[] {
   return ASI_LEVELS_BY_CLASS[className] ?? DEFAULT_ASI_LEVELS;
 }
+
+// Velocidad base por especie (PHB 2024)
+export const BASE_SPEED_BY_SPECIES: Record<string, number> = {
+  "Aasimar":   30,
+  "Dracónido": 30,
+  "Enano":     25,
+  "Elfo":      30,
+  "Gnomo":     25,
+  "Goliath":   35,
+  "Mediano":   25,
+  "Humano":    30,
+  "Orco":      30,
+  "Tiefling":  30,
+};
+
+export const DEFAULT_SPEED = 30;
+
+export function baseSpeedForSpecies(species: string): number {
+  return BASE_SPEED_BY_SPECIES[species] ?? DEFAULT_SPEED;
+}
+
+// Dotes que modifican la iniciativa (nombre en inglés → bonus)
+export const INITIATIVE_BONUS_BY_FEAT: Record<string, number> = {
+  "Alert": 5,
+};
+
+// Dotes que modifican la velocidad (nombre en inglés → bonus en ft)
+export const SPEED_BONUS_BY_FEAT: Record<string, number> = {
+  "Mobile": 10,
+};
