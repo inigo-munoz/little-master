@@ -224,6 +224,11 @@ function CharacterSheetContent() {
       const pb    = proficiencyBonus(lvl);
       const hitDice = cls.map(c => `${c.level}d${HIT_DIE_BY_CLASS[c.class] ?? 8}`).join(" + ");
       const initiative = calcInitiative(fDex, fts);
+      const raceStr2        = (form.race as string | null) ?? "";
+      const raceMatch2      = raceStr2.match(/^(.+?) \((.+)\)$/);
+      const speciesSave     = raceMatch2 ? (raceMatch2[1] ?? raceStr2) : raceStr2;
+      const calcedSpeedSave = calcSpeed(speciesSave, cls, fts);
+      const speed = form.speed != null ? (form.speed as number) : calcedSpeedSave;
 
       // Mantener class/level/subclass legacy sincronizados con la primera clase
       const firstClass = cls[0];
@@ -233,6 +238,7 @@ function CharacterSheetContent() {
         ac,
         hpMax,
         initiative,
+        speed,
         level:            lvl,
         proficiencyBonus: pb,
         hitDice:          hitDice || undefined,
@@ -527,7 +533,25 @@ function CharacterSheetContent() {
               </Field>
               <Field label="HP actual"><NumberInput value={form.hp} onChange={v => set("hp", v)} /></Field>
               <Field label="HP temporal"><NumberInput value={form.hpTemp} onChange={v => set("hpTemp", v)} /></Field>
-              <Field label="Velocidad"><NumberInput value={form.speed} onChange={v => set("speed", v)} /></Field>
+              <Field label="Velocidad">
+                <div
+                  className="bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-center"
+                  title={`Base especie: ${baseSpeedForSpecies(currentSpecies)} ft · Clase: +${speedBonusFromClasses(classes)} ft · Dotes: +${speedBonusFromFeats(feats)} ft`}
+                >
+                  <span className="text-amber-400 font-bold text-base">
+                    {form.speed != null ? form.speed : calcedSpeed} ft
+                  </span>
+                </div>
+                <p className="text-xs text-stone-500 mt-0.5">Calculado: {calcedSpeed} ft</p>
+                <input
+                  type="number"
+                  value={form.speed ?? ""}
+                  onChange={e => set("speed", e.target.value === "" ? null : parseInt(e.target.value))}
+                  placeholder="Override (ft)..."
+                  min={0}
+                  className="w-full mt-1 bg-stone-900 border border-stone-600 rounded px-2 py-0.5 text-stone-400 text-xs text-center focus:outline-none focus:border-amber-500"
+                />
+              </Field>
               <Field label="Iniciativa">
                 <div
                   className="bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-center"
