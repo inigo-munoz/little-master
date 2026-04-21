@@ -223,11 +223,8 @@ function CharacterSheetContent() {
       const lvl   = totalLevel(cls) || 1;
       const pb    = proficiencyBonus(lvl);
       const hitDice = cls.map(c => `${c.level}d${HIT_DIE_BY_CLASS[c.class] ?? 8}`).join(" + ");
-      const initiative = calcInitiative(fDex, fts);
-      const raceStr2        = (form.race as string | null) ?? "";
-      const raceMatch2      = raceStr2.match(/^(.+?) \((.+)\)$/);
-      const speciesSave     = raceMatch2 ? (raceMatch2[1] ?? raceStr2) : raceStr2;
-      const calcedSpeedSave = calcSpeed(speciesSave, cls, fts);
+      const initiative      = calcInitiative(fDex, fts);
+      const calcedSpeedSave = calcSpeed(currentSpecies, cls, fts);
       const speed = form.speed != null ? (form.speed as number) : calcedSpeedSave;
 
       // Mantener class/level/subclass legacy sincronizados con la primera clase
