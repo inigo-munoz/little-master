@@ -49,8 +49,8 @@ function LocationForm({ campaignId, initial, onClose, onSaved }: LocationFormPro
         await api.locations.create({ campaignId, name: name.trim(), description, tags });
       }
       onSaved();
-    } catch (err: any) {
-      setError(err.message ?? "Error al guardar la localización");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al guardar la localización");
     } finally {
       setLoading(false);
     }

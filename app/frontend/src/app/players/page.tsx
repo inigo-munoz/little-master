@@ -101,8 +101,8 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
         status,
       });
       onSaved();
-    } catch (err: any) {
-      setError(err.message ?? "Error al guardar el jugador");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al guardar el jugador");
     } finally {
       setLoading(false);
     }

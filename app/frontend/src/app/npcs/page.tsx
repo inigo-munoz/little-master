@@ -109,7 +109,7 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
   const [role, setRole] = useState(initial?.role ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [status, setStatus] = useState<"alive" | "dead" | "unknown" | "missing">(
-    (initial?.status as any) ?? "alive"
+    (initial?.status ?? "alive") as "alive" | "dead" | "unknown" | "missing"
   );
   const [tagInput, setTagInput] = useState(parseTags(initial?.tags ?? "[]").join(", "));
   const [loading, setLoading] = useState(false);
@@ -117,7 +117,7 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
 
   // Stat block
   const [statExpanded, setStatExpanded] = useState(false);
-  const [npcType, setNpcType] = useState<"monster" | "player">((initial?.npcType as any) ?? "monster");
+  const [npcType, setNpcType] = useState<"monster" | "player">((initial?.npcType ?? "monster") as "monster" | "player");
   const [ac, setAc] = useState(initial?.armorClass != null ? String(initial.armorClass) : "");
   const [hp, setHp] = useState(initial?.hitPoints ?? "");
   const [spd, setSpd] = useState(initial?.speed ?? "");
@@ -145,9 +145,9 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
     setName(initial?.name ?? "");
     setRole(initial?.role ?? "");
     setDescription(initial?.description ?? "");
-    setStatus((initial?.status as any) ?? "alive");
+    setStatus((initial?.status ?? "alive") as "alive" | "dead" | "unknown" | "missing");
     setTagInput(parseTags(initial?.tags ?? "[]").join(", "));
-    setNpcType((initial?.npcType as any) ?? "monster");
+    setNpcType((initial?.npcType ?? "monster") as "monster" | "player");
     setAc(initial?.armorClass != null ? String(initial.armorClass) : "");
     setHp(initial?.hitPoints ?? "");
     setSpd(initial?.speed ?? "");
@@ -214,8 +214,8 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
         await api.npcs.create({ campaignId, name: name.trim(), role, description, status, tags, ...statBlockData });
       }
       onSaved();
-    } catch (err: any) {
-      setError(err.message ?? "Failed to save NPC");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to save NPC");
     } finally {
       setLoading(false);
     }
@@ -246,7 +246,7 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
               </div>
               <div>
                 <label className="block text-sm text-stone-400 mb-1">Estado</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value as any)} className={inputCls}>
+                <select value={status} onChange={(e) => setStatus(e.target.value as "alive" | "dead" | "unknown" | "missing")} className={inputCls}>
                   <option value="alive">Vivo</option>
                   <option value="dead">Muerto</option>
                   <option value="unknown">Desconocido</option>

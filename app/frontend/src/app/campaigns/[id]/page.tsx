@@ -71,8 +71,8 @@ function SessionForm({
         await api.sessions.create({ campaignId, ...data });
       }
       onSaved();
-    } catch (err: any) {
-      setError(err.message ?? "Failed to save session");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to save session");
     } finally {
       setLoading(false);
     }
@@ -160,7 +160,7 @@ function SessionForm({
             Cancel
           </button>
           <button
-            onClick={handleSubmit as any}
+            onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
             disabled={loading || !title.trim()}
             className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm"
           >

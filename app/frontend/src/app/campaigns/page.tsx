@@ -105,8 +105,8 @@ function CreateCampaignModal({
     try {
       const campaign = await api.campaigns.create({ title: title.trim(), description, system });
       onCreated(campaign);
-    } catch (err: any) {
-      setError(err.message ?? "Failed to create campaign");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to create campaign");
     } finally {
       setLoading(false);
     }
