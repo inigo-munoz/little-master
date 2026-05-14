@@ -59,9 +59,5 @@ export interface ContextChunk {
 }
 
 // ─── Assistant modes ──────────────────────────────────────────────────────────
-export type AssistantMode =
-  | "archivista"       // saves, labels, summarizes
-  | "designer"         // creates narrative content
-  | "rule_reviewer"    // answers rules questions with source attribution
-  | "auditor"          // detects inconsistencies
-  | "session_director"; // prepares and runs sessions
+// Single source of truth: @dnd/domain — re-exported here for consumer convenience
+export { AssistantModeSchema, type AssistantMode } from "@dnd/domain";

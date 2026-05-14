@@ -21,11 +21,12 @@ pnpm dev:mcp            # MCP server — http://localhost:3002
 # Build & checks
 pnpm build
 pnpm typecheck
-pnpm lint               # Frontend only
+pnpm lint               # Frontend only (ESLint CLI + flat config)
 
 # Tests
-cd app/frontend && pnpm test   # Vitest — 46 tests unitarios del frontend
-cd app/backend  && pnpm test   # Vitest — 123 tests unitarios del backend
+cd app/frontend && pnpm test   # Vitest — ~133 tests unitarios del frontend
+cd app/backend  && pnpm test   # Vitest — ~130 tests unitarios del backend
+# Total: ~263 tests
 
 # Database
 pnpm db:migrate         # Run Prisma migrations
@@ -89,7 +90,7 @@ Routes are registered as Fastify plugins (`FastifyPluginAsync`). All routes use 
 
 ### LLM providers (`packages/llm-providers/`)
 
-Factory pattern: `providers/factory.ts` selects OpenAI or Anthropic at runtime based on stored config. Five assistant modes defined in `prompts.ts`: `archivista`, `designer`, `rule_reviewer`, `auditor`, `session_director`. Temperature is 0.1 for `rule_reviewer`, 0.7 for all others. OpenRouter is aliased to the OpenAI adapter (not yet fully implemented); Ollama is TODO.
+Factory pattern: `providers/factory.ts` selects OpenAI or Anthropic at runtime based on stored config. Five assistant modes defined in `prompts.ts`: `archivista`, `designer`, `rule_reviewer`, `auditor`, `session_director`. Temperature is 0.1 for `rule_reviewer`, 0.7 for all others. `AssistantMode` tiene una sola fuente de verdad: `AssistantModeSchema` (z.enum) en `@dnd/domain`; `@dnd/llm-providers` lo re-exporta. OpenRouter is aliased to the OpenAI adapter (not yet fully implemented); Ollama is TODO.
 
 ### Data flow for AI chat
 
@@ -118,7 +119,25 @@ Endpoints: `GET /api/embeddings/status` (incluye `bySourceType` y `byAuthorityLe
 
 `Player` en Prisma tiene campos completos de D&D 2024: habilidades, tiradas de salvación, habilidades, inventario, magia (`spellsPrepared` — sistema de preparación de hechizos), rasgos de especie (`speciesTraits`), dones (`feats`), armas, objetos mágicos, monedas, etc.
 
-`lib/dnd-2024-data.ts` expone constantes del PHB 2024: `DND_CLASSES` (12 clases con 4 subclases cada una), `DND_SPECIES` (10 especies), `DND_SPECIES_VARIANTS` (linajes para Dracónido/Elfo/Gnomo/Tiefling), `DND_BACKGROUNDS` (16 trasfondos), `DND_ALIGNMENTS` (9 alineamientos). La ficha de personaje (`app/players/[id]/page.tsx`) usa selects dependientes: Especie → Linaje, Clase → Subclase.
+`lib/dnd-2024-data.ts` expone constantes del PHB 2024: `DND_CLASSES` (12 clases con 4 subclases cada una), `DND_SPECIES` (10 especies), `DND_SPECIES_VARIANTS` (linajes para Dracónido/Elfo/Gnomo/Tiefling/Goliath), `DND_BACKGROUNDS` (16 trasfondos), `DND_ALIGNMENTS` (9 alineamientos). La ficha de personaje (`app/players/[id]/page.tsx`) usa selects dependientes: Especie → Linaje, Clase → Subclase.
+
+`lib/player-calcs.ts` contiene funciones puras de cálculo (sin dependencias externas — testeables): `abilityModifier`, `proficiencyBonus`, `calcPassivePerception`, `calcSpellSaveDC`, `calcSpellAttackBonus`, `totalLevel`, `finalAbilityScore`, `calcHpMaxFromRolls`, `calcAC`, `calcInitiative`, `calcSpeed`, `expertiseSlotsFromClasses`, `expertiseSlotsFromFeats`, `calcSuggestedSpellSlots`.
+
+#### Ficha de personaje — funcionalidades implementadas
+
+- **Iniciativa** — DES mod + bonificación de dotes (Alert: +5). Override manual opcional
+- **Velocidad** — base por especie + bonos de clase (Monje nv.2, Bárbaro nv.5) + dotes (Mobile: +10)
+- **Percepción pasiva** — 10 + SAB mod + bono de competencia/maestría. Toggle inline en pestaña Básico
+- **CD de conjuros / ataque mágico** — auto-detección de característica por clase (incluye subclases 1/3 lanzador: Caballero Arcano → INT, Embaucador Arcano → CHA). Override manual
+- **Habilidades** — doble checkbox: competencia (bloqueada si viene de trasfondo/especie) + maestría. Slots de maestría: Bardo nv.2 (+2), Pícaro nv.1 (+2) y nv.6 (+2), Skill Expert (+1). Totales usan `finalAbilityScore` (con bonos de dotes)
+- **Salvaciones** — integradas en cada `AbilityBox`. Badge "C" para salvaciones de clase (auto-detectadas). Recalculo al cambiar clases sin perder salvaciones manuales
+- **Competencias automáticas** — armaduras, armas, herramientas e idiomas se asignan al elegir clase/especie/trasfondo
+- **Idiomas** — fijos por especie (no editables) + selectores adicionales por especie y trasfondo, sin duplicados
+- **Dotes de inicio** — trasfondo (classIndex -1, level 0) + especie/Humano (classIndex -2, level 0)
+- **ASI** — slots en niveles 4/8/12/16/19 (Guerrero: 4/6/8/12/14/16/19, Pícaro: 4/8/10/12/16/19). Permite Mejora de Característica (+1/+2 con select de stat) o cualquier dote
+- **Trasfondo** — confirmación al guardar (modal `showSaveConfirm`). Al cambiar: recalcula habilidades, dote, idiomas, herramientas
+- **Combate** — armas con categoría (simple/marcial, melee/ranged), Finesse (elección DES/FUE), arma mágica (+0/+1/+2/+3), daño extra, maestría con descripción del efecto
+- **Hechizos** — organizado por nivel 0–9. Slots con burbujas interactivas (usar/recuperar). Magia de Pacto del Brujo (burbuja separada, violeta). Modal de búsqueda con filtro por clase. Vista expandida con CD/ataque del personaje, indicadores de concentración (C), ritual (R), acción adicional (AA), reacción (Rx)
 
 ### Designer chat (modo AI)
 
@@ -190,7 +209,36 @@ Strict mode throughout. Base config at `tsconfig.base.json` (ES2022 target, ESNe
 
 - **Dashboard de campañas** — `/campaigns` rediseñado como lista compacta con 5 métricas por campaña (ses., PNJs, locs., fac., PJs); navegación directa al hacer clic en la fila ✅
 - **`campaign.service.list()`** — `_count` ampliado con `locations`, `factions`, `players` ✅
+- **Ficha de personaje completa** — 14 funcionalidades implementadas (ver sección Player model arriba) ✅
+
+### Sprint 10 — completado
+
+- **Bugs de ficha corregidos:**
+  - Habilidades usaban score bruto → ahora usan `finalAbilityScore` con bonos de dotes ✅
+  - `hasSpellcasting` no detectaba subclases 1/3 lanzador (Caballero Arcano, Embaucador Arcano) → unificado con `isClassSpellcaster()` ✅
+  - Monje tenía `["Armadura ligera"]` → corregido a `[]` (PHB 2024: sin armadura) ✅
+  - Bardo expertise nivel 3 → corregido a nivel 2 (PHB 2024) ✅
+  - Variable muerta `variantLabel` y regex duplicado eliminados ✅
+- **`next lint` migrado** — `next lint` (deprecado en Next.js 15) → ESLint CLI con flat config (`eslint.config.mjs` + `FlatCompat`). `<a>` → `<Link>` en campaigns ✅
+- **`AssistantMode` unificado** — de 4 definiciones independientes a 1 fuente de verdad (`AssistantModeSchema` en `@dnd/domain`). `@dnd/llm-providers` re-exporta; `chat.ts` y `chat.service.ts` importan de domain ✅
+- **`encryption.ts`** — tipos corregidos (aserciones explícitas en destructuring de arrays) ✅
 
 ### Pendientes conocidos
 
 - **`MVP_USER_ID` hardcodeado** — Multi-user auth aplazado; aceptable en esta fase de uso local
+- **Lock/confirmación en cambio de trasfondo** — Solo hay confirmación al guardar; falta lock al cambiar
+- **Tests faltantes** — `expertiseSlotsFromClasses`, `expertiseSlotsFromFeats`, `calcSuggestedSpellSlots`, `calcAC` con Monje
+- **55 `any` en frontend** — Degradados a warning en ESLint; pendiente tipar progresivamente
+
+## Ecosistema de desarrollo
+
+Herramientas instaladas globalmente en `~/.claude/`:
+
+- **gentle-ai** (Gentleman-Programming) — skills de Spec-Driven Development (SDD), PR/review/commits
+- **engram** — memoria persistente entre sesiones (MCP server)
+- **context7** — documentación actualizada de librerías (MCP server)
+- **sequential-thinking** — razonamiento paso a paso (MCP server)
+- **cyber-neo** — auditoría de seguridad (skill)
+- **superpowers** (Anthropic) — TDD, brainstorming, debugging, plans (plugin oficial)
+- **ccstatusline** — statusline con modelo, contexto, git, coste de sesión
+- **`bypassPermissions`** activado globalmente (desarrollo local)

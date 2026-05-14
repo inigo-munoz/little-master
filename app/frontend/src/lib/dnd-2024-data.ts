@@ -371,7 +371,7 @@ export const ARMOR_PROFICIENCIES_BY_CLASS: Record<string, string[]> = {
   "Clérigo":    ["Armadura ligera", "Armadura media", "Escudos"],
   "Druida":     ["Armadura ligera", "Armadura media", "Escudos (no metálicos)"],
   "Guerrero":   ["Armadura ligera", "Armadura media", "Armadura pesada", "Escudos"],
-  "Monje":      ["Armadura ligera"],
+  "Monje":      [],
   "Paladín":    ["Armadura ligera", "Armadura media", "Armadura pesada", "Escudos"],
   "Explorador": ["Armadura ligera", "Armadura media", "Escudos"],
   "Pícaro":     ["Armadura ligera"],

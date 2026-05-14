@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { AssistantModeSchema } from "@dnd/domain";
 import { chatService } from "../services/chat.service.js";
 import { prisma } from "../db/prisma.js";
 
@@ -7,13 +8,7 @@ export const chatRoutes: FastifyPluginAsync = async (server) => {
   server.post<{ Body: unknown }>("/", async (request) => {
     const schema = z.object({
       campaignId: z.string().optional(),
-      mode: z.enum([
-        "archivista",
-        "designer",
-        "rule_reviewer",
-        "auditor",
-        "session_director",
-      ]),
+      mode: AssistantModeSchema,
       messages: z
         .array(
           z.object({

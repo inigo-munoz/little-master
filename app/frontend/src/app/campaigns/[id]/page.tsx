@@ -413,9 +413,9 @@ export default function CampaignDetailPage() {
                 <h3 className="text-sm font-semibold text-stone-400 uppercase tracking-wider">
                   Jugadores{players ? ` (${players.length})` : ""}
                 </h3>
-                <a href="/players" className="text-xs text-amber-500 hover:text-amber-400 transition-colors">
+                <Link href="/players" className="text-xs text-amber-500 hover:text-amber-400 transition-colors">
                   Ver todos →
-                </a>
+                </Link>
               </div>
               {!players?.length ? (
                 <p className="text-stone-500 text-sm">No hay jugadores. Importa tu vault de Obsidian para añadirlos.</p>
