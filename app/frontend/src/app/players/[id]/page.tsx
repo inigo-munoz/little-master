@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
-import { Shield, Heart, Star, Zap, ChevronLeft, Save, Loader2 } from "lucide-react";
+import { Shield, Heart, Star, Zap, ChevronLeft, Save, Loader2, Lock, LockOpen } from "lucide-react";
 import { clsx } from "clsx";
 import { AppShell } from "../../../components/layout/AppShell";
 import { api } from "../../../lib/api";
@@ -330,6 +330,8 @@ function CharacterSheetContent() {
   const [spellSearch, setSpellSearch] = useState("");
   const [expandedSpellId, setExpandedSpellId] = useState<string | null>(null);
   const [spellDetailCache, setSpellDetailCache] = useState<Record<string, SpellFullData | null>>({});
+  const [bgConfirmPending, setBgConfirmPending] = useState<string | null>(null);
+  const [bgUnlockConfirm, setBgUnlockConfirm] = useState(false);
 
   const { data: player, mutate } = useSWR(
     params.id ? `/player/${params.id}` : null,
@@ -365,6 +367,31 @@ function CharacterSheetContent() {
 
   function parseJson(v: string, fallback: any) {
     try { return JSON.parse(v); } catch { return fallback; }
+  }
+
+  const bgLocked = form.backgroundLocked === true;
+
+  function handleBgSelect(newBg: string) {
+    if (!newBg || newBg === form.background) return;
+    if (bgLocked) return;
+    setBgConfirmPending(newBg);
+  }
+
+  function confirmBgApply() {
+    if (!bgConfirmPending) return;
+    applyBackground(bgConfirmPending);
+    set("backgroundLocked", true);
+    setBgConfirmPending(null);
+  }
+
+  function requestBgUnlock() {
+    setBgUnlockConfirm(true);
+  }
+
+  function confirmBgUnlock() {
+    applyBackground("");
+    set("backgroundLocked", false);
+    setBgUnlockConfirm(false);
   }
 
   function applyBackground(newBg: string) {
@@ -930,7 +957,23 @@ function CharacterSheetContent() {
                 </Field>
               ) : (
                 <Field label="Trasfondo">
-                  <Select value={form.background} onChange={applyBackground} options={[...DND_BACKGROUNDS, "Otro (homebrew)"]} placeholder="Selecciona trasfondo..." />
+                  {bgLocked ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-300 text-sm flex items-center gap-2">
+                        <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <span>{form.background}</span>
+                      </div>
+                      <button
+                        onClick={requestBgUnlock}
+                        className="px-2 py-1 bg-stone-800 hover:bg-stone-700 border border-stone-700 rounded text-xs text-stone-400 hover:text-stone-200 transition-colors flex items-center gap-1"
+                        title="Cambiar trasfondo"
+                      >
+                        <LockOpen className="w-3 h-3" /> Cambiar
+                      </button>
+                    </div>
+                  ) : (
+                    <Select value={form.background} onChange={handleBgSelect} options={[...DND_BACKGROUNDS, "Otro (homebrew)"]} placeholder="Selecciona trasfondo..." />
+                  )}
                   {bgData && (
                     <p className="text-xs text-stone-500 mt-1">
                       <span className="text-amber-400 font-semibold">Dote:</span> {bgData.feat}
@@ -942,7 +985,23 @@ function CharacterSheetContent() {
               )}
               {speciesVariants.length > 0 && (
                 <Field label="Trasfondo">
-                  <Select value={form.background} onChange={applyBackground} options={[...DND_BACKGROUNDS, "Otro (homebrew)"]} placeholder="Selecciona trasfondo..." />
+                  {bgLocked ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-300 text-sm flex items-center gap-2">
+                        <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <span>{form.background}</span>
+                      </div>
+                      <button
+                        onClick={requestBgUnlock}
+                        className="px-2 py-1 bg-stone-800 hover:bg-stone-700 border border-stone-700 rounded text-xs text-stone-400 hover:text-stone-200 transition-colors flex items-center gap-1"
+                        title="Cambiar trasfondo"
+                      >
+                        <LockOpen className="w-3 h-3" /> Cambiar
+                      </button>
+                    </div>
+                  ) : (
+                    <Select value={form.background} onChange={handleBgSelect} options={[...DND_BACKGROUNDS, "Otro (homebrew)"]} placeholder="Selecciona trasfondo..." />
+                  )}
                   {bgData && (
                     <p className="text-xs text-stone-500 mt-1">
                       <span className="text-amber-400 font-semibold">Dote:</span> {bgData.feat}
@@ -2094,6 +2153,57 @@ function CharacterSheetContent() {
                     Confirmar
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {bgConfirmPending && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+              <h3 className="font-bold text-stone-100 text-lg mb-2">Aplicar trasfondo</h3>
+              <p className="text-stone-400 text-sm mb-6">
+                ¿Aplicar el trasfondo <span className="text-amber-400 font-semibold">{bgConfirmPending}</span>?
+                Las competencias y dote quedarán bloqueadas. Para cambiarlo necesitarás confirmarlo explícitamente.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setBgConfirmPending(null)}
+                  className="px-4 py-2 text-stone-400 hover:text-stone-200 text-sm transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmBgApply}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-semibold rounded-lg text-sm transition-colors"
+                >
+                  Aplicar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {bgUnlockConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+              <h3 className="font-bold text-stone-100 text-lg mb-2">Cambiar trasfondo</h3>
+              <p className="text-stone-400 text-sm mb-6">
+                ¿Cambiar el trasfondo? Se eliminarán las competencias y la dote aplicadas por <span className="text-amber-400 font-semibold">{form.background}</span>.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setBgUnlockConfirm(false)}
+                  className="px-4 py-2 text-stone-400 hover:text-stone-200 text-sm transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmBgUnlock}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-stone-100 font-semibold rounded-lg text-sm transition-colors"
+                >
+                  Cambiar
+                </button>
               </div>
             </div>
           </div>

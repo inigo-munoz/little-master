@@ -15,9 +15,9 @@ import {
   speedBonusFromClasses,
   speedBonusFromFeats,
   calcSpeed,
-  type PlayerClassEntry,
-  type HpRollEntry,
-  type FeatEntry,
+  expertiseSlotsFromClasses,
+  expertiseSlotsFromFeats,
+  calcSuggestedSpellSlots,
 } from "./player-calcs";
 
 describe("abilityModifier", () => {
@@ -320,4 +320,104 @@ describe("calcSpeed", () => {
     expect(calcSpeed("Enano", [{ class: "Bárbaro", level: 5, subclass: "" }], [
       { name: "Mobile", classIndex: 0, level: 4, statBonuses: [] },
     ])).toBe(45));
+});
+
+// ─── expertiseSlotsFromClasses ────────────────────────────────────────────────
+
+describe("expertiseSlotsFromClasses", () => {
+  it("Pícaro nv.1 → 2", () =>
+    expect(expertiseSlotsFromClasses([{ class: "Pícaro", level: 1, subclass: "" }])).toBe(2));
+
+  it("Pícaro nv.6 → 4", () =>
+    expect(expertiseSlotsFromClasses([{ class: "Pícaro", level: 6, subclass: "" }])).toBe(4));
+
+  it("Bardo nv.2 → 2", () =>
+    expect(expertiseSlotsFromClasses([{ class: "Bardo", level: 2, subclass: "" }])).toBe(2));
+
+  it("Bardo nv.1 → 0", () =>
+    expect(expertiseSlotsFromClasses([{ class: "Bardo", level: 1, subclass: "" }])).toBe(0));
+
+  it("Guerrero nv.10 → 0", () =>
+    expect(expertiseSlotsFromClasses([{ class: "Guerrero", level: 10, subclass: "" }])).toBe(0));
+
+  it("multiclase Pícaro 6 + Bardo 2 → 6", () =>
+    expect(expertiseSlotsFromClasses([
+      { class: "Pícaro", level: 6, subclass: "" },
+      { class: "Bardo", level: 2, subclass: "" },
+    ])).toBe(6));
+});
+
+// ─── expertiseSlotsFromFeats ──────────────────────────────────────────────────
+
+describe("expertiseSlotsFromFeats", () => {
+  it("sin dotes → 0", () =>
+    expect(expertiseSlotsFromFeats([])).toBe(0));
+
+  it("1× Skill Expert → 1", () =>
+    expect(expertiseSlotsFromFeats([
+      { name: "Skill Expert", classIndex: 0, level: 4, statBonuses: [] },
+    ])).toBe(1));
+
+  it("2× Skill Expert → 2", () =>
+    expect(expertiseSlotsFromFeats([
+      { name: "Skill Expert", classIndex: 0, level: 4, statBonuses: [] },
+      { name: "Skill Expert", classIndex: 0, level: 8, statBonuses: [] },
+    ])).toBe(2));
+
+  it("dotes sin Skill Expert → 0", () =>
+    expect(expertiseSlotsFromFeats([
+      { name: "Mobile", classIndex: 0, level: 4, statBonuses: [] },
+      { name: "Alert", classIndex: 0, level: 8, statBonuses: [] },
+    ])).toBe(0));
+});
+
+// ─── calcSuggestedSpellSlots ──────────────────────────────────────────────────
+
+describe("calcSuggestedSpellSlots", () => {
+  it("Mago nv.1 → 2 slots nv.1", () =>
+    expect(calcSuggestedSpellSlots([{ class: "Mago", level: 1, subclass: "" }]))
+      .toEqual({ 1: 2 }));
+
+  it("Mago nv.5 → slots nv.1-3", () =>
+    expect(calcSuggestedSpellSlots([{ class: "Mago", level: 5, subclass: "" }]))
+      .toEqual({ 1: 4, 2: 3, 3: 2 }));
+
+  it("Paladín nv.5 (half caster) → effective level 2", () =>
+    expect(calcSuggestedSpellSlots([{ class: "Paladín", level: 5, subclass: "" }]))
+      .toEqual({ 1: 3 }));
+
+  it("Bárbaro → sin slots", () =>
+    expect(calcSuggestedSpellSlots([{ class: "Bárbaro", level: 10, subclass: "" }]))
+      .toEqual({}));
+
+  it("Brujo (Pact Magic) → excluido de calcSuggestedSpellSlots", () =>
+    expect(calcSuggestedSpellSlots([{ class: "Brujo", level: 5, subclass: "" }]))
+      .toEqual({}));
+
+  it("Caballero Arcano nv.3 (1/3 caster) → effective level 1", () =>
+    expect(calcSuggestedSpellSlots([{ class: "Guerrero", level: 3, subclass: "Caballero Arcano" }]))
+      .toEqual({ 1: 2 }));
+
+  it("Guerrero sin subclase mágica → sin slots", () =>
+    expect(calcSuggestedSpellSlots([{ class: "Guerrero", level: 10, subclass: "" }]))
+      .toEqual({}));
+});
+
+// ─── calcAC — Monje ──────────────────────────────────────────────────────────
+
+describe("calcAC — Monje Unarmored Defense", () => {
+  it("unarmoredMonk: 10 + DES(16→+3) + SAB(14→+2) = 15", () =>
+    expect(calcAC("unarmoredMonk", 16, false, undefined, 14)).toBe(15));
+
+  it("unarmoredMonk con escudo: 15 + 2 = 17", () =>
+    expect(calcAC("unarmoredMonk", 16, true, undefined, 14)).toBe(17));
+
+  it("Monje con armadura (leather): AC normal 11 + DES(16→+3) = 14", () =>
+    expect(calcAC("leather", 16, false)).toBe(14));
+
+  it("sin armadura (no monk): 10 + DES(14→+2) = 12", () =>
+    expect(calcAC(null, 14, false)).toBe(12));
+
+  it("unarmoredBarbarian: 10 + DES(14→+2) + CON(16→+3) = 15", () =>
+    expect(calcAC("unarmoredBarbarian", 14, false, 16)).toBe(15));
 });

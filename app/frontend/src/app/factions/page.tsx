@@ -50,8 +50,8 @@ function FactionForm({ campaignId, initial, onClose, onSaved }: FactionFormProps
         await api.factions.create({ campaignId, name: name.trim(), description, alignment, tags });
       }
       onSaved();
-    } catch (err: any) {
-      setError(err.message ?? "Error al guardar la facción");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al guardar la facción");
     } finally {
       setLoading(false);
     }

@@ -17,6 +17,54 @@ import { api } from "../../lib/api";
 import type { LlmConfigPublic } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
 
+interface BrowseResult {
+  current: string;
+  parent: string;
+  isVault: boolean;
+  dirs: { name: string; path: string; isVault: boolean; hidden: boolean }[];
+  breadcrumb: { name: string; path: string }[];
+  quickAccess: { name: string; path: string }[];
+  platform: string;
+}
+
+interface VerifyResult {
+  valid: boolean;
+  hasTemplates: boolean;
+  hasPeople: boolean;
+  hasJournals: boolean;
+  detectedFolders: string[];
+}
+
+interface ScanGroup {
+  type: string;
+  count: number;
+  confidence: string;
+  sampleNames: string[];
+  topFields: string[];
+}
+
+interface ScanResult {
+  totalNotes: number;
+  skipped: number;
+  groups: ScanGroup[];
+}
+
+interface ImportEntityResult {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
+interface ExportEntityResult {
+  exported: number;
+  errors: string[];
+}
+
+type OpResult =
+  | { type: "import"; data: Record<string, ImportEntityResult> }
+  | { type: "export"; data: Record<string, ExportEntityResult> }
+  | { type: "error"; message: string };
+
 const PROVIDERS = [
   { id: "openai", label: "OpenAI", models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"] },
   {
@@ -54,8 +102,8 @@ function ProviderCard({ config }: { config: LlmConfigPublic }) {
         messages: [{ role: "user", content: "ping" }],
       });
       setTestResult("ok");
-    } catch (err: any) {
-      const code = err.code ?? "";
+    } catch (err: unknown) {
+      const code = (err instanceof Error && "code" in err) ? (err as { code: string }).code : "";
       if (code === "INSUFFICIENT_CREDITS") setTestResult("credits");
       else if (code === "INVALID_API_KEY") setTestResult("key");
       else setTestResult("error");
@@ -146,9 +194,9 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
       setValidated(valid);
       if (!valid) setError("Key validation failed — check the key and try again");
       else setError("");
-    } catch (e: any) {
+    } catch (e: unknown) {
       setValidated(false);
-      setError(e.message ?? "Validation failed");
+      setError(e instanceof Error ? e.message : "Validation failed");
     } finally {
       setValidating(false);
     }
@@ -167,8 +215,8 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
       setApiKey("");
       setValidated(null);
       onSaved();
-    } catch (e: any) {
-      setError(e.message ?? "Failed to save");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to save");
     } finally {
       setSaving(false);
     }
@@ -268,7 +316,7 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
 }
 
 function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
-  const [browse, setBrowse] = useState<any>(null);
+  const [browse, setBrowse] = useState<BrowseResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -278,7 +326,7 @@ function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
     try {
       const result = await api.obsidian.browse(path);
       setBrowse(result);
-    } catch (e: any) {
+    } catch {
       setError("No se puede conectar con el backend. Verifica que está corriendo.");
     } finally {
       setLoading(false);
@@ -307,7 +355,7 @@ function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
       {/* Quick access */}
       {browse.quickAccess?.length > 0 && (
         <div className="flex gap-1 px-3 py-2 border-b border-stone-800 overflow-x-auto">
-          {browse.quickAccess.map((qa: any) => (
+          {browse.quickAccess.map((qa) => (
             <button
               key={qa.path}
               onClick={() => navigate(qa.path)}
@@ -321,7 +369,7 @@ function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 px-3 py-2 border-b border-stone-800 overflow-x-auto">
-        {browse.breadcrumb?.map((crumb: any, i: number) => (
+        {browse.breadcrumb?.map((crumb, i) => (
           <span key={crumb.path + i} className="flex items-center gap-1 shrink-0">
             {i > 0 && <span className="text-stone-700">/</span>}
             <button
@@ -364,7 +412,7 @@ function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
           <p className="text-xs text-stone-600 px-3 py-4 text-center">Sin subcarpetas</p>
         )}
 
-        {browse.dirs?.map((dir: any) => (
+        {browse.dirs?.map((dir) => (
           <button
             key={dir.path}
             onClick={() => navigate(dir.path)}
@@ -395,16 +443,16 @@ function ObsidianSync() {
   const { activeCampaign } = useAppStore();
   const [savedPath, setSavedPath] = useState<string | null>(null);
   const [showBrowser, setShowBrowser] = useState(false);
-  const [verifyResult, setVerifyResult] = useState<any>(null);
+  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [scanResult, setScanResult] = useState<any>(null);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [mapping, setMapping] = useState<Record<string, boolean>>({
     npc: true, session: true, faction: true, location: true, quest: true,
   });
-  const [opResult, setOpResult] = useState<any>(null);
+  const [opResult, setOpResult] = useState<OpResult | null>(null);
 
   useEffect(() => {
     api.obsidian.getConfig().then(({ vaultPath }) => {
@@ -435,10 +483,10 @@ function ObsidianSync() {
       setScanResult(result);
       // Pre-check mapping based on detected groups
       const newMapping: Record<string, boolean> = {};
-      result.groups.forEach((g: any) => { newMapping[g.type] = g.confidence !== "low"; });
+      result.groups.forEach((g) => { newMapping[g.type] = g.confidence !== "low"; });
       setMapping(prev => ({ ...prev, ...newMapping }));
-    } catch (e: any) {
-      setOpResult({ type: "error", message: e.message });
+    } catch (e: unknown) {
+      setOpResult({ type: "error", message: e instanceof Error ? e.message : "Error desconocido" });
     } finally {
       setScanning(false);
     }
@@ -452,8 +500,8 @@ function ObsidianSync() {
       const result = await api.obsidian.import(activeCampaign.id, mapping);
       setOpResult({ type: "import", data: result });
       setScanResult(null);
-    } catch (e: any) {
-      setOpResult({ type: "error", message: e.message });
+    } catch (e: unknown) {
+      setOpResult({ type: "error", message: e instanceof Error ? e.message : "Error desconocido" });
     } finally {
       setImporting(false);
     }
@@ -466,8 +514,8 @@ function ObsidianSync() {
     try {
       const result = await api.obsidian.export(activeCampaign.id);
       setOpResult({ type: "export", data: result });
-    } catch (e: any) {
-      setOpResult({ type: "error", message: e.message });
+    } catch (e: unknown) {
+      setOpResult({ type: "error", message: e instanceof Error ? e.message : "Error desconocido" });
     } finally {
       setExporting(false);
     }
@@ -554,7 +602,7 @@ function ObsidianSync() {
                     {scanResult.totalNotes} notas encontradas — selecciona qué importar:
                   </p>
                   <div className="space-y-2">
-                    {scanResult.groups.map((g: any) => (
+                    {scanResult.groups.map((g) => (
                       g.type !== "unknown" && (
                         <label key={g.type} className="flex items-start gap-3 cursor-pointer">
                           <input
@@ -580,7 +628,7 @@ function ObsidianSync() {
                         </label>
                       )
                     ))}
-                    {scanResult.groups.filter((g: any) => g.type === "unknown").map((g: any) => (
+                    {scanResult.groups.filter((g) => g.type === "unknown").map((g) => (
                       <p key="unknown" className="text-xs text-stone-600">
                         {g.count} notas sin clasificar (no se importarán)
                       </p>
@@ -616,13 +664,17 @@ function ObsidianSync() {
             <p className="text-stone-300 font-medium">
               {opResult.type === "import" ? "✓ Importación completada" : "✓ Exportación completada"}
             </p>
-            {Object.entries(opResult.data).map(([entity, res]: [string, any]) => (
-              <p key={entity} className="text-stone-500">
-                {entity}: {(res as any).imported ?? (res as any).exported ?? 0} procesados
-                {(res as any).skipped ? `, ${(res as any).skipped} omitidos` : ""}
-                {(res as any).errors?.length ? `, ${(res as any).errors.length} errores` : ""}
-              </p>
-            ))}
+            {Object.entries(opResult.data).map(([entity, res]) => {
+              const count = "imported" in res ? res.imported : res.exported;
+              const skipped = "skipped" in res ? res.skipped : 0;
+              return (
+                <p key={entity} className="text-stone-500">
+                  {entity}: {count} procesados
+                  {skipped ? `, ${skipped} omitidos` : ""}
+                  {res.errors?.length ? `, ${res.errors.length} errores` : ""}
+                </p>
+              );
+            })}
             <button onClick={() => { setOpResult(null); setScanResult(null); }}
               className="text-stone-600 hover:text-stone-400 text-xs underline mt-1">
               Nueva sincronización

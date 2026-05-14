@@ -104,7 +104,7 @@ export function parseStatBlockFromResponse(content: string): ParsedStatBlock | n
   const match = content.match(/STAT_BLOCK:\s*([\s\S]*?)\s*:END_STAT_BLOCK/);
   if (!match?.[1]) return null;
   try {
-    const raw = JSON.parse(match[1].trim()) as any;
+    const raw = JSON.parse(match[1].trim()) as Record<string, unknown>;
     return {
       ...raw,
       traits: (raw.traits as RawEntry[] | undefined)?.map(normalizeStatEntry),

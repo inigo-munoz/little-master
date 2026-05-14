@@ -310,8 +310,9 @@ model Player {
   class       String?
   subclass    String?
   race        String?
-  background  String?
-  alignment   String?
+  background       String?
+  backgroundLocked Boolean @default(false)
+  alignment        String?
   level       Int      @default(1)
   experiencePoints Int @default(0)
 

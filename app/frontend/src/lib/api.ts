@@ -156,9 +156,20 @@ export const api = {
       campaignId?: string;
       party: { size: number; averageLevel: number; levels?: number[] };
       monsters: { name: string; cr: number; count?: number }[];
-    }) => post<any>("/api/rules/validate-encounter", data),
+    }) => post<{
+      difficulty: "trivial" | "easy" | "medium" | "hard" | "deadly" | "impossible";
+      totalXp: number;
+      adjustedXp: number;
+      thresholds: { easy: number; medium: number; hard: number; deadly: number };
+      recommendation: string;
+      warnings: string[];
+      source: string;
+    }>("/api/rules/validate-encounter", data),
     auditRules: (campaignId: string) =>
-      post<any>("/api/rules/audit-rules", { campaignId }),
+      post<{
+        conflicts: { ruleAId: string; ruleBId: string; type: string; severity: string; description: string }[];
+        issuesCreated: number;
+      }>("/api/rules/audit-rules", { campaignId }),
   },
 
   obsidian: {
@@ -196,9 +207,21 @@ export const api = {
         }[];
       }>("/api/obsidian/scan", { vaultPath }),
     import: (campaignId: string, mapping?: Record<string, boolean>) =>
-      post<any>("/api/obsidian/import", { campaignId, mapping }),
+      post<{
+        players: { imported: number; skipped: number; errors: string[] };
+        npcs: { imported: number; skipped: number; errors: string[] };
+        sessions: { imported: number; skipped: number; errors: string[] };
+        factions: { imported: number; skipped: number; errors: string[] };
+        locations: { imported: number; skipped: number; errors: string[] };
+        quests: { imported: number; skipped: number; errors: string[] };
+      }>("/api/obsidian/import", { campaignId, mapping }),
     export: (campaignId: string) =>
-      post<any>("/api/obsidian/export", { campaignId }),
+      post<{
+        npcs: { exported: number; errors: string[] };
+        sessions: { exported: number; errors: string[] };
+        factions: { exported: number; errors: string[] };
+        locations: { exported: number; errors: string[] };
+      }>("/api/obsidian/export", { campaignId }),
   },
 
   srd: {

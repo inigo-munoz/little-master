@@ -550,8 +550,8 @@ function ChatInterface() {
       };
 
       addMessage(assistantMsg);
-    } catch (err: any) {
-      const code = err.code ?? "";
+    } catch (err: unknown) {
+      const code = err instanceof Error && "code" in err ? (err as Error & { code?: string }).code ?? "" : "";
       if (code === "INSUFFICIENT_CREDITS") {
         setError("💳 Sin crédito en el proveedor de IA. Ve a Settings → recarga tu cuenta.");
       } else if (code === "INVALID_API_KEY") {
@@ -559,7 +559,7 @@ function ChatInterface() {
       } else if (code === "RATE_LIMITED") {
         setError("⏱ Límite de peticiones alcanzado. Espera unos segundos e inténtalo de nuevo.");
       } else {
-        setError(err.message ?? "Error inesperado. Revisa el terminal del backend.");
+        setError(err instanceof Error ? err.message : "Error inesperado. Revisa el terminal del backend.");
       }
     } finally {
       setLoading(false);

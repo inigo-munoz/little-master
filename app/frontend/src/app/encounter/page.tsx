@@ -558,8 +558,8 @@ export default function EncounterPage() {
         })),
       });
       setResult(res);
-    } catch (err: any) {
-      setError(err.message ?? "Validation failed");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Validation failed");
     } finally {
       setLoading(false);
     }
@@ -582,8 +582,8 @@ export default function EncounterPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       await mutateEncounters();
-    } catch (err: any) {
-      setError(err.message ?? "Error al guardar el encuentro");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al guardar el encuentro");
     } finally {
       setSaving(false);
     }
@@ -624,8 +624,8 @@ export default function EncounterPage() {
       await api.encounters.delete(id);
       await mutateEncounters();
       setConfirmDelete(null);
-    } catch (err: any) {
-      setError(err.message ?? "Error al eliminar el encuentro");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al eliminar el encuentro");
     } finally {
       setDeleting(false);
     }
