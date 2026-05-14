@@ -33,6 +33,7 @@ import {
   PACT_MAGIC_CLASS,
   WARLOCK_PACT_MAGIC,
   SPELL_LISTS_BY_CLASS,
+  THIRD_CASTER_SUBCLASSES,
   isClassSpellcaster,
   type SpellListEntry,
 } from "../../../lib/dnd-2024-data";
@@ -424,12 +425,15 @@ function CharacterSheetContent() {
 
       const fInt = finalAbilityScore(form.intelligence ?? 10, "intelligence", fts);
       const fCha = finalAbilityScore(form.charisma     ?? 10, "charisma",     fts);
-      const spellClsSave     = cls.filter(c => SPELLCASTING_ABILITY_BY_CLASS[c.class] !== null);
+      const spellClsSave     = cls.filter(c => isClassSpellcaster(c.class, c.subclass));
       const primarySpellSave = spellClsSave.length > 0
         ? spellClsSave.reduce((a, b) => a.level >= b.level ? a : b)
         : null;
       const detectedAbilitySave = primarySpellSave
-        ? (SPELLCASTING_ABILITY_BY_CLASS[primarySpellSave.class] ?? null)
+        ? (SPELLCASTING_ABILITY_BY_CLASS[primarySpellSave.class]
+           ?? (THIRD_CASTER_SUBCLASSES[primarySpellSave.class] === primarySpellSave.subclass
+               ? (primarySpellSave.class === "Guerrero" ? "intelligence" : "charisma")
+               : null))
         : null;
       const resolvedAbilitySave = ((form.spellcastingAbility || detectedAbilitySave) ?? null) as "wisdom" | "intelligence" | "charisma" | null;
       const spellScoreSave =
@@ -539,13 +543,16 @@ function CharacterSheetContent() {
   const hasPerceptionExp  = skillExpert.includes("Perception");
   const calcPassivePerc = calcPassivePerception(finalWis, level, hasPerceptionProf, hasPerceptionExp);
 
-  const spellcastingClasses = classes.filter(c => SPELLCASTING_ABILITY_BY_CLASS[c.class] !== null);
+  const spellcastingClasses = classes.filter(c => isClassSpellcaster(c.class, c.subclass));
   const hasSpellcasting     = spellcastingClasses.length > 0;
   const primarySpellClass   = hasSpellcasting
     ? spellcastingClasses.reduce((a, b) => a.level >= b.level ? a : b)
     : null;
   const detectedSpellAbility = primarySpellClass
-    ? (SPELLCASTING_ABILITY_BY_CLASS[primarySpellClass.class] ?? null)
+    ? (SPELLCASTING_ABILITY_BY_CLASS[primarySpellClass.class]
+       ?? (THIRD_CASTER_SUBCLASSES[primarySpellClass.class] === primarySpellClass.subclass
+           ? (primarySpellClass.class === "Guerrero" ? "intelligence" : "charisma")
+           : null))
     : null;
 
   const spellAbilityKey = ((form.spellcastingAbility || detectedSpellAbility) ?? null) as "wisdom" | "intelligence" | "charisma" | null;
@@ -652,10 +659,6 @@ function CharacterSheetContent() {
     "Goliath": "Ascendencia",
     "Tiefling": "Legado",
   };
-  const variantLabel = (currentSpecies && Object.prototype.hasOwnProperty.call(SPECIES_VARIANT_LABEL, currentSpecies)
-    ? SPECIES_VARIANT_LABEL[currentSpecies]
-    : undefined) ?? "Linaje";
-
   // Armas
   const weapons: WeaponEntry[] = parseJson(form.weapons ?? "[]", []);
 
@@ -1225,9 +1228,12 @@ function CharacterSheetContent() {
                 const usedSlots   = skillExpert.length;
                 const canAddExp   = hasPro && (hasExp || usedSlots < expertiseSlots);
 
-                const abilKey   = s.ability as keyof typeof form;
-                const abilScore = form[abilKey] as number | undefined;
-                const abilMod   = Math.floor(((abilScore ?? 10) - 10) / 2);
+                const finalScoreMap: Record<string, number> = {
+                  strength: finalStr, dexterity: finalDex, constitution: finalCon,
+                  intelligence: finalInt, wisdom: finalWis, charisma: finalCha,
+                };
+                const abilScore = finalScoreMap[s.ability] ?? 10;
+                const abilMod   = abilityModifier(abilScore);
                 const bonus     = hasExp ? pb * 2 : hasPro ? pb : 0;
                 const total     = abilMod + bonus;
                 const foundAbil = ABILITIES.find(a => a.key === s.ability);
@@ -1706,7 +1712,7 @@ function CharacterSheetContent() {
                                         {detail.ritual && (
                                           <span className="text-[10px] font-bold bg-green-900/70 text-green-300 px-1.5 py-0.5 rounded" title="Ritual">R</span>
                                         )}
-                                        {/Adicional|Adicional/.test(detail.castingTime) && (
+                                        {/Adicional/.test(detail.castingTime) && (
                                           <span className="text-[10px] font-bold bg-orange-900/70 text-orange-300 px-1.5 py-0.5 rounded" title="Acción adicional">AA</span>
                                         )}
                                         {/Reacción|reacción/.test(detail.castingTime) && (

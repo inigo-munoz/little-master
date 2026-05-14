@@ -8,6 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@dnd/domain": "workspace:*",
     "@dnd/shared": "workspace:*",
     "zod": "^3.23.0"
   },

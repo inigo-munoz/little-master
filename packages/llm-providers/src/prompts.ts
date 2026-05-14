@@ -176,4 +176,3 @@ Format your session prep as:
 ## DM Notes [PRIVATE]`,
 } as const;
 
-export type AssistantMode = keyof typeof SYSTEM_PROMPTS;

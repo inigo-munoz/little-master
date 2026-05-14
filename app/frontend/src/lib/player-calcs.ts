@@ -249,7 +249,7 @@ export function calcSuggestedSpellSlots(classes: PlayerClassEntry[]): Record<num
 }
 
 // ─── Slots de maestría (expertise) según clases y niveles (PHB 2024) ──────────
-// Bardo nv.3: +2 · Pícaro nv.1: +2 · Pícaro nv.6: +2 adicionales
+// Bardo nv.2: +2 · Pícaro nv.1: +2 · Pícaro nv.6: +2 adicionales
 export function expertiseSlotsFromClasses(classes: PlayerClassEntry[]): number {
   let slots = 0;
   for (const cls of classes) {
@@ -258,7 +258,7 @@ export function expertiseSlotsFromClasses(classes: PlayerClassEntry[]): number {
       if (cls.level >= 6) slots += 2;
     }
     if (cls.class === "Bardo") {
-      if (cls.level >= 3) slots += 2;
+      if (cls.level >= 2) slots += 2;
     }
   }
   return slots;
