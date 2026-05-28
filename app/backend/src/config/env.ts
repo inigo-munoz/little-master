@@ -1,7 +1,28 @@
 import { z } from "zod";
+import { join } from "node:path";
+import { parseArgs } from "node:util";
 import { config as loadDotenv } from "dotenv";
 
 loadDotenv();
+
+const { values: cliArgs } = parseArgs({
+  options: {
+    "data-dir": { type: "string" },
+    port: { type: "string" },
+  },
+  strict: false,
+});
+
+if (cliArgs["data-dir"]) {
+  const d = cliArgs["data-dir"];
+  process.env.DATA_DIR = d;
+  process.env.DOCUMENTS_DIR = join(d, "documents");
+  process.env.LOGS_DIR = join(d, "logs");
+  process.env.DATABASE_URL = `file:${join(d, "dnd-assistant.db")}`;
+}
+if (cliArgs.port) {
+  process.env.PORT = cliArgs.port;
+}
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
