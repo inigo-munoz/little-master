@@ -18,6 +18,7 @@ import {
   expertiseSlotsFromClasses,
   expertiseSlotsFromFeats,
   calcSuggestedSpellSlots,
+  skillProficiencySlots,
 } from "./player-calcs";
 
 describe("abilityModifier", () => {
@@ -420,4 +421,93 @@ describe("calcAC — Monje Unarmored Defense", () => {
 
   it("unarmoredBarbarian: 10 + DES(14→+2) + CON(16→+3) = 15", () =>
     expect(calcAC("unarmoredBarbarian", 14, false, 16)).toBe(15));
+});
+
+// ─── skillProficiencySlots ──────────────────────────────────────────────────
+
+describe("skillProficiencySlots", () => {
+  const noFeats: { name: string; classIndex: number; level: number; statBonuses: { stat: "strength" | "dexterity" | "constitution" | "intelligence" | "wisdom" | "charisma"; value: number }[] }[] = [];
+
+  it("sin clases → 0", () =>
+    expect(skillProficiencySlots([], noFeats, "Humano")).toBe(0));
+
+  it("Guerrero nv.1 → 2", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Guerrero", level: 1, subclass: "" }], noFeats, "Elfo"
+    )).toBe(2));
+
+  it("Bardo nv.1 → 3", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Bardo", level: 1, subclass: "" }], noFeats, "Elfo"
+    )).toBe(3));
+
+  it("Explorador nv.1 → 3", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Explorador", level: 1, subclass: "" }], noFeats, "Elfo"
+    )).toBe(3));
+
+  it("Pícaro nv.1 → 4", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Pícaro", level: 1, subclass: "" }], noFeats, "Elfo"
+    )).toBe(4));
+
+  it("Bárbaro nv.2 → 2 (sin Primal Knowledge)", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Bárbaro", level: 2, subclass: "" }], noFeats, "Elfo"
+    )).toBe(2));
+
+  it("Bárbaro nv.3 → 3 (Primal Knowledge +1)", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Bárbaro", level: 3, subclass: "" }], noFeats, "Elfo"
+    )).toBe(3));
+
+  it("Humano Guerrero nv.1 → 3 (2 clase + 1 especie)", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Guerrero", level: 1, subclass: "" }], noFeats, "Humano"
+    )).toBe(3));
+
+  it("multiclase Guerrero/Bardo → 2 + 1 = 3", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Guerrero", level: 5, subclass: "" }, { class: "Bardo", level: 1, subclass: "" }],
+      noFeats, "Elfo"
+    )).toBe(3));
+
+  it("multiclase Guerrero/Pícaro → 2 + 1 = 3", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Guerrero", level: 5, subclass: "" }, { class: "Pícaro", level: 1, subclass: "" }],
+      noFeats, "Elfo"
+    )).toBe(3));
+
+  it("multiclase Guerrero/Mago → 2 + 0 = 2 (Mago no da skills en MC)", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Guerrero", level: 5, subclass: "" }, { class: "Mago", level: 1, subclass: "" }],
+      noFeats, "Elfo"
+    )).toBe(2));
+
+  it("multiclase Guerrero/Explorador → 2 + 1 = 3", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Guerrero", level: 5, subclass: "" }, { class: "Explorador", level: 1, subclass: "" }],
+      noFeats, "Elfo"
+    )).toBe(3));
+
+  it("dote Skilled → +3", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Guerrero", level: 1, subclass: "" }],
+      [{ name: "Skilled", classIndex: -1, level: 0, statBonuses: [] }],
+      "Elfo"
+    )).toBe(5));
+
+  it("dote Skill Expert → +1 competencia", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Guerrero", level: 4, subclass: "" }],
+      [{ name: "Skill Expert", classIndex: 0, level: 4, statBonuses: [] }],
+      "Elfo"
+    )).toBe(3));
+
+  it("combinado: Pícaro + Bárbaro nv.3 MC + Skilled + Humano", () =>
+    expect(skillProficiencySlots(
+      [{ class: "Pícaro", level: 5, subclass: "" }, { class: "Bárbaro", level: 3, subclass: "" }],
+      [{ name: "Skilled", classIndex: -1, level: 0, statBonuses: [] }],
+      "Humano"
+    )).toBe(4 + 0 + 1 + 3 + 1));
 });

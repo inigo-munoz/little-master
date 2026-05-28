@@ -137,6 +137,7 @@ export function HpRollsPanel({
                   value={getRoll(row.level)?.value ?? ""}
                   placeholder="—"
                   onChange={e => updateRoll(row.level, e.target.value)}
+                  aria-label={`Tirada de HP nivel ${row.level}`}
                   className="w-14 bg-stone-800 border border-stone-700 rounded px-1 py-0.5 text-stone-100 text-xs text-center focus:outline-none focus:border-amber-500"
                 />
               ) : (

@@ -90,6 +90,7 @@ export function ClassesPanel({ classes, onChange }: ClassesPanelProps) {
                 onClick={() => removeClass(i)}
                 className="text-stone-500 hover:text-red-400 transition-colors text-sm leading-none"
                 title="Eliminar clase"
+                aria-label="Eliminar clase"
               >
                 ✕
               </button>
