@@ -1,22 +1,34 @@
 import { prisma } from "../db/prisma.js";
 import { AppError, ErrorCode } from "@dnd/shared";
-import { encrypt, decrypt, maskKey } from "../crypto/encryption.js";
+import { encrypt, decrypt } from "../crypto/encryption.js";
 import { env } from "../config/env.js";
+import { oauthService } from "./oauth.service.js";
 import type { LlmProvider } from "@dnd/domain";
 
 export const llmConfigService = {
   async list() {
     const configs = await prisma.llmConfig.findMany({
       orderBy: { createdAt: "desc" },
+      include: {
+        assistantRuns: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { createdAt: true },
+        },
+      },
     });
 
-    // Never return encrypted key — return safe representation
-    return configs.map((c: any) => ({
+    return configs.map((c) => ({
       id: c.id,
       provider: c.provider,
       model: c.model,
+      authMethod: c.authMethod,
       isActive: c.isActive,
       hasApiKey: !!c.apiKeyEncrypted,
+      hasOAuth: !!c.oauthAccessToken,
+      keyIsValid: c.keyIsValid,
+      keyValidatedAt: c.keyValidatedAt,
+      lastUsedAt: c.assistantRuns[0]?.createdAt ?? null,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
     }));
@@ -25,26 +37,39 @@ export const llmConfigService = {
   async upsert(provider: LlmProvider, model: string, apiKey?: string) {
     const existing = await prisma.llmConfig.findFirst({ where: { provider } });
 
-    const apiKeyEncrypted = apiKey
-      ? encrypt(apiKey, env.ENCRYPTION_KEY)
-      : existing?.apiKeyEncrypted ?? null;
+    let apiKeyEncrypted = existing?.apiKeyEncrypted ?? null;
+    let keyIsValid: boolean | null = existing?.keyIsValid ?? null;
+    let keyValidatedAt: Date | null = existing?.keyValidatedAt ?? null;
+
+    if (apiKey) {
+      const valid = await this.validateKey(provider, apiKey);
+      if (!valid) {
+        throw new AppError(
+          ErrorCode.LLM_INVALID_API_KEY,
+          `API key validation failed for ${provider}. Check the key and try again.`,
+          422
+        );
+      }
+      apiKeyEncrypted = encrypt(apiKey, env.ENCRYPTION_KEY);
+      keyIsValid = true;
+      keyValidatedAt = new Date();
+    }
 
     if (existing) {
       return prisma.llmConfig.update({
         where: { id: existing.id },
-        data: { model, apiKeyEncrypted },
+        data: { model, apiKeyEncrypted, keyIsValid, keyValidatedAt },
         select: { id: true, provider: true, model: true, isActive: true },
       });
     }
 
     return prisma.llmConfig.create({
-      data: { provider, model, apiKeyEncrypted, isActive: false },
+      data: { provider, model, apiKeyEncrypted, isActive: false, keyIsValid, keyValidatedAt },
       select: { id: true, provider: true, model: true, isActive: true },
     });
   },
 
   async activate(id: string) {
-    // Only one config active at a time
     await prisma.llmConfig.updateMany({ data: { isActive: false } });
     return prisma.llmConfig.update({
       where: { id },
@@ -57,6 +82,11 @@ export const llmConfigService = {
     const config = await prisma.llmConfig.findFirst({ where: { isActive: true } });
     if (!config) throw AppError.notFound(ErrorCode.LLM_CONFIG_NOT_FOUND, "No active LLM config");
 
+    if (config.authMethod === "oauth" && config.oauthAccessToken) {
+      const token = await oauthService.refreshTokenIfNeeded(config.id);
+      return { provider: config.provider, model: config.model, apiKey: token };
+    }
+
     const apiKey = config.apiKeyEncrypted
       ? decrypt(config.apiKeyEncrypted, env.ENCRYPTION_KEY)
       : null;
@@ -65,7 +95,6 @@ export const llmConfigService = {
   },
 
   async validateKey(provider: LlmProvider, apiKey: string): Promise<boolean> {
-    // Each provider has a lightweight validation endpoint
     try {
       if (provider === "openai") {
         const res = await fetch("https://api.openai.com/v1/models", {
@@ -82,7 +111,12 @@ export const llmConfigService = {
         });
         return res.ok;
       }
-      // For ollama (local), just check if server responds
+      if (provider === "openrouter") {
+        const res = await fetch("https://openrouter.ai/api/v1/models", {
+          headers: { Authorization: `Bearer ${apiKey}` },
+        });
+        return res.ok;
+      }
       if (provider === "ollama") {
         const res = await fetch("http://localhost:11434/api/tags");
         return res.ok;

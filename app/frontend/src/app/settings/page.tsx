@@ -66,18 +66,50 @@ type OpResult =
   | { type: "error"; message: string };
 
 const PROVIDERS = [
-  { id: "openai", label: "OpenAI", models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"] },
+  {
+    id: "openai",
+    label: "OpenAI",
+    models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
+    keyUrl: "https://platform.openai.com/api-keys",
+    pricing: "~$2.50/1M input, ~$10/1M output (GPT-4o)",
+  },
   {
     id: "anthropic",
     label: "Anthropic",
     models: ["claude-opus-4-5", "claude-sonnet-4-5", "claude-3-5-haiku-20241022"],
+    keyUrl: "https://console.anthropic.com/settings/keys",
+    pricing: "~$3/1M input, ~$15/1M output (Sonnet)",
   },
-  { id: "openrouter", label: "OpenRouter", models: ["openai/gpt-4o", "anthropic/claude-3.5-sonnet"] },
-  { id: "ollama", label: "Ollama (local)", models: ["llama3", "mistral", "phi3"] },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    models: ["openai/gpt-4o", "anthropic/claude-3.5-sonnet"],
+    keyUrl: "https://openrouter.ai/keys",
+    pricing: "Variable — agrega margen sobre precio del provider",
+  },
+  {
+    id: "ollama",
+    label: "Ollama (local)",
+    models: ["llama3", "mistral", "phi3"],
+    keyUrl: "https://ollama.com/download",
+    pricing: "Gratis — corre en tu hardware",
+  },
 ] as const;
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "hace un momento";
+  if (mins < 60) return `hace ${mins}min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `hace ${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `hace ${days}d`;
+}
 
 function ProviderCard({ config }: { config: LlmConfigPublic }) {
   const [activating, setActivating] = useState(false);
+  const providerInfo = PROVIDERS.find((p) => p.id === config.provider);
 
   async function handleActivate() {
     setActivating(true);
@@ -89,7 +121,6 @@ function ProviderCard({ config }: { config: LlmConfigPublic }) {
     }
   }
 
-  // Test the active provider with a minimal call
   const [testResult, setTestResult] = useState<"ok" | "error" | "credits" | "key" | null>(null);
   const [testing, setTesting] = useState(false);
 
@@ -116,59 +147,89 @@ function ProviderCard({ config }: { config: LlmConfigPublic }) {
   return (
     <div
       className={clsx(
-        "border rounded-lg p-4 flex items-center justify-between",
+        "border rounded-lg p-4",
         config.isActive
           ? "border-amber-600 bg-amber-950/20"
           : "border-stone-800 bg-stone-900"
       )}
     >
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-medium text-stone-200 text-sm">{config.provider}</span>
-          <span className="text-stone-600 text-xs">·</span>
-          <span className="text-stone-400 text-xs">{config.model}</span>
-          {config.isActive && (
-            <span className="text-xs bg-amber-900 text-amber-300 border border-amber-700 px-1.5 py-0.5 rounded">
-              Active
-            </span>
-          )}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-medium text-stone-200 text-sm">{providerInfo?.label ?? config.provider}</span>
+            <span className="text-stone-600 text-xs">·</span>
+            <span className="text-stone-400 text-xs">{config.model}</span>
+            {config.isActive && (
+              <span className="text-xs bg-amber-900 text-amber-300 border border-amber-700 px-1.5 py-0.5 rounded">
+                Active
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            {config.authMethod === "oauth" && config.hasOAuth ? (
+              <span className="flex items-center gap-1 text-emerald-400">
+                <CheckCircle size={11} />OAuth conectado
+              </span>
+            ) : config.hasApiKey ? (
+              config.keyIsValid === true ? (
+                <span className="flex items-center gap-1 text-emerald-400">
+                  <CheckCircle size={11} />Key válida
+                  {config.keyValidatedAt && (
+                    <span className="text-stone-600 ml-1">({timeAgo(config.keyValidatedAt)})</span>
+                  )}
+                </span>
+              ) : config.keyIsValid === false ? (
+                <span className="flex items-center gap-1 text-red-400">
+                  <XCircle size={11} />Key inválida
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-stone-500">
+                  <CheckCircle size={11} />Key guardada
+                </span>
+              )
+            ) : (
+              <span className="flex items-center gap-1 text-stone-600">
+                <XCircle size={11} />Sin key
+              </span>
+            )}
+            {config.lastUsedAt && (
+              <span className="text-stone-600">Último uso: {timeAgo(config.lastUsedAt)}</span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1 text-xs">
-          {config.hasApiKey ? (
-            <><CheckCircle size={11} className="text-emerald-400" /><span className="text-stone-500">Key saved</span></>
-          ) : (
-            <><XCircle size={11} className="text-stone-600" /><span className="text-stone-600">No key</span></>
+
+        <div className="flex gap-2">
+          {config.isActive && config.hasApiKey && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleTest}
+                disabled={testing}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 disabled:opacity-50 rounded-lg text-xs text-stone-400 transition-colors"
+              >
+                {testing ? "Probando..." : "Probar"}
+              </button>
+              {testResult === "ok" && <span className="text-xs text-emerald-400">✓ OK</span>}
+              {testResult === "credits" && <span className="text-xs text-amber-400">⚠ Sin crédito</span>}
+              {testResult === "key" && <span className="text-xs text-red-400">✗ Key inválida</span>}
+              {testResult === "error" && <span className="text-xs text-red-400">✗ Error</span>}
+            </div>
+          )}
+          {!config.isActive && config.hasApiKey && (
+            <button
+              onClick={handleActivate}
+              disabled={activating}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 rounded-lg text-xs text-stone-300 transition-colors"
+            >
+              <Zap size={12} />
+              {activating ? "Activando..." : "Activar"}
+            </button>
           )}
         </div>
       </div>
 
-      <div className="flex gap-2">
-        {config.isActive && config.hasApiKey && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleTest}
-              disabled={testing}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 disabled:opacity-50 rounded-lg text-xs text-stone-400 transition-colors"
-            >
-              {testing ? "Probando..." : "Probar"}
-            </button>
-            {testResult === "ok" && <span className="text-xs text-emerald-400">✓ OK</span>}
-            {testResult === "credits" && <span className="text-xs text-amber-400">⚠ Sin crédito</span>}
-            {testResult === "key" && <span className="text-xs text-red-400">✗ Key inválida</span>}
-            {testResult === "error" && <span className="text-xs text-red-400">✗ Error</span>}
-          </div>
-        )}
-        {!config.isActive && config.hasApiKey && (
-          <button
-            onClick={handleActivate}
-            disabled={activating}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 border border-stone-700 rounded-lg text-xs text-stone-300 transition-colors"
-          >
-            <Zap size={12} />
-            {activating ? "Activating..." : "Set Active"}
-          </button>
-        )}
-      </div>
+      {providerInfo?.pricing && (
+        <p className="text-xs text-stone-600 mt-2">{providerInfo.pricing}</p>
+      )}
     </div>
   );
 }
@@ -178,34 +239,17 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
   const [model, setModel] = useState("gpt-4o-mini");
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
-  const [validating, setValidating] = useState(false);
-  const [validated, setValidated] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const selectedProvider = PROVIDERS.find((p) => p.id === provider);
-
-  async function handleValidate() {
-    if (!apiKey.trim()) return;
-    setValidating(true);
-    setValidated(null);
-    try {
-      const { valid } = await api.llmConfig.validate({ provider, apiKey: apiKey.trim() });
-      setValidated(valid);
-      if (!valid) setError("Key validation failed — check the key and try again");
-      else setError("");
-    } catch (e: unknown) {
-      setValidated(false);
-      setError(e instanceof Error ? e.message : "Validation failed");
-    } finally {
-      setValidating(false);
-    }
-  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError("");
+    setSuccess(false);
     try {
       await api.llmConfig.save({
         provider,
@@ -213,10 +257,12 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
         apiKey: apiKey.trim() || undefined,
       });
       setApiKey("");
-      setValidated(null);
+      setSuccess(true);
       onSaved();
+      setTimeout(() => setSuccess(false), 4000);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to save");
+      const msg = e instanceof Error ? e.message : "Error al guardar";
+      setError(msg);
     } finally {
       setSaving(false);
     }
@@ -224,7 +270,7 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
 
   return (
     <form onSubmit={handleSave} className="border border-stone-800 bg-stone-900 rounded-xl p-6 space-y-4">
-      <h3 className="font-semibold text-stone-200">Configure Provider</h3>
+      <h3 className="font-semibold text-stone-200">Configurar provider</h3>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -233,7 +279,8 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
             value={provider}
             onChange={(e) => {
               setProvider(e.target.value);
-              setValidated(null);
+              setError("");
+              setSuccess(false);
               const p = PROVIDERS.find((p) => p.id === e.target.value);
               if (p) setModel(p.models[0]);
             }}
@@ -246,7 +293,7 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
         </div>
 
         <div>
-          <label className="block text-sm text-stone-400 mb-1">Model</label>
+          <label className="block text-sm text-stone-400 mb-1">Modelo</label>
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
@@ -260,56 +307,62 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
       </div>
 
       <div>
-        <label className="block text-sm text-stone-400 mb-1">API Key</label>
-        <div className="flex gap-2">
-          <div className="flex-1 flex bg-stone-800 border border-stone-700 rounded-lg overflow-hidden focus-within:border-amber-500 transition-colors">
-            <input
-              type={showKey ? "text" : "password"}
-              value={apiKey}
-              onChange={(e) => { setApiKey(e.target.value); setValidated(null); }}
-              placeholder={provider === "ollama" ? "Not required for local Ollama" : "sk-..."}
-              className="flex-1 bg-transparent px-3 py-2 text-stone-100 text-sm focus:outline-none font-mono"
-            />
-            <button
-              type="button"
-              onClick={() => setShowKey((s) => !s)}
-              className="px-3 text-stone-500 hover:text-stone-300 transition-colors"
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-sm text-stone-400">API Key</label>
+          {selectedProvider && (
+            <a
+              href={selectedProvider.keyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-amber-500 hover:text-amber-400 transition-colors"
             >
-              {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
-            </button>
-          </div>
-
+              Obtener key →
+            </a>
+          )}
+        </div>
+        <div className="flex bg-stone-800 border border-stone-700 rounded-lg overflow-hidden focus-within:border-amber-500 transition-colors">
+          <input
+            type={showKey ? "text" : "password"}
+            value={apiKey}
+            onChange={(e) => { setApiKey(e.target.value); setError(""); setSuccess(false); }}
+            placeholder={provider === "ollama" ? "No requerido para Ollama local" : "sk-..."}
+            className="flex-1 bg-transparent px-3 py-2 text-stone-100 text-sm focus:outline-none font-mono"
+          />
           <button
             type="button"
-            onClick={handleValidate}
-            disabled={validating || !apiKey.trim()}
-            className="px-4 py-2 bg-stone-800 border border-stone-700 hover:border-stone-500 disabled:opacity-50 text-stone-300 rounded-lg text-sm transition-colors whitespace-nowrap"
+            onClick={() => setShowKey((s) => !s)}
+            className="px-3 text-stone-500 hover:text-stone-300 transition-colors"
+            aria-label={showKey ? "Ocultar API key" : "Mostrar API key"}
           >
-            {validating ? "Checking..." : "Validate"}
+            {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         </div>
 
-        {validated !== null && (
-          <div className={clsx("flex items-center gap-1.5 text-sm mt-2", validated ? "text-emerald-400" : "text-red-400")}>
-            {validated ? <CheckCircle size={14} /> : <XCircle size={14} />}
-            {validated ? "Key is valid" : "Key validation failed"}
-          </div>
-        )}
-
-        <p className="text-xs text-stone-600 mt-1.5 flex items-center gap-1">
-          <AlertCircle size={11} />
-          The key is encrypted before storage and never returned to this interface
-        </p>
+        <div className="flex items-center justify-between mt-1.5">
+          <p className="text-xs text-stone-600 flex items-center gap-1">
+            <AlertCircle size={11} />
+            La key se encripta antes de guardarse y nunca se devuelve en texto plano
+          </p>
+          {selectedProvider?.pricing && (
+            <p className="text-xs text-stone-600">{selectedProvider.pricing}</p>
+          )}
+        </div>
       </div>
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
+      {success && (
+        <p className="text-emerald-400 text-sm flex items-center gap-1.5">
+          <CheckCircle size={14} />
+          Key validada y guardada
+        </p>
+      )}
 
       <button
         type="submit"
         disabled={saving}
         className="w-full px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm"
       >
-        {saving ? "Saving..." : "Save Configuration"}
+        {saving ? "Validando y guardando..." : "Guardar configuración"}
       </button>
     </form>
   );
@@ -735,7 +788,7 @@ function SrdStatus() {
                       {data.embeddedChunks.toLocaleString()} / {data.totalChunks.toLocaleString()} chunks embedidos · {data.coverage}% cobertura
                     </p>
                     <p className="text-xs text-stone-700 mt-0.5">
-                      CC-BY-4.0 · <a href="https://www.dndbeyond.com/srd" target="_blank" className="underline hover:text-stone-500">dndbeyond.com/srd</a>
+                      CC-BY-4.0 · <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-500">dndbeyond.com/srd</a>
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -909,8 +962,136 @@ function EmbeddingStatus() {
 }
 
 
+function AuthProviderForm({ onSaved }: { onSaved: () => void }) {
+  const [connecting, setConnecting] = useState(false);
+  const [polling, setPolling] = useState(false);
+  const [error, setError] = useState("");
+  const [oauthStatus, setOauthStatus] = useState<{ connected: boolean } | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  useEffect(() => {
+    api.llmConfig.oauthStatus().then(setOauthStatus).catch(() => {});
+  }, []);
+
+  async function handleConnect() {
+    setConnecting(true);
+    setError("");
+    try {
+      const { authUrl } = await api.llmConfig.oauthStart();
+      window.open(authUrl, "_blank", "noopener");
+
+      setPolling(true);
+      setConnecting(false);
+
+      let attempts = 0;
+      const maxAttempts = 60;
+      const interval = setInterval(async () => {
+        attempts++;
+        try {
+          const status = await api.llmConfig.oauthStatus();
+          if (status.connected) {
+            clearInterval(interval);
+            setPolling(false);
+            setOauthStatus(status);
+            onSaved();
+          }
+        } catch { /* continue polling */ }
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setPolling(false);
+          setError("Tiempo de espera agotado. Intentá de nuevo.");
+        }
+      }, 3000);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error al iniciar OAuth");
+      setConnecting(false);
+    }
+  }
+
+  async function handleDisconnect() {
+    setDisconnecting(true);
+    try {
+      await api.llmConfig.oauthDisconnect();
+      setOauthStatus({ connected: false });
+      onSaved();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error al desconectar");
+    } finally {
+      setDisconnecting(false);
+    }
+  }
+
+  return (
+    <div className="border border-stone-800 bg-stone-900 rounded-xl p-6 space-y-4">
+      <h3 className="font-semibold text-stone-200">Conectar con OpenAI</h3>
+      <p className="text-xs text-stone-500">
+        Usá tu suscripción de ChatGPT Plus/Pro en lugar de una API key. Se abrirá una ventana para autenticarte en OpenAI.
+      </p>
+
+      {oauthStatus?.connected ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 bg-emerald-950/30 border border-emerald-800 rounded-lg p-3">
+            <CheckCircle size={16} className="text-emerald-400 shrink-0" />
+            <div>
+              <p className="text-sm text-emerald-300">Conectado con OpenAI</p>
+              <p className="text-xs text-stone-500 mt-0.5">Los tokens se refrescan automáticamente</p>
+            </div>
+          </div>
+          <button
+            onClick={handleDisconnect}
+            disabled={disconnecting}
+            className="w-full px-4 py-2 bg-stone-800 hover:bg-stone-700 border border-stone-700 disabled:opacity-50 text-stone-400 rounded-lg text-sm transition-colors"
+          >
+            {disconnecting ? "Desconectando..." : "Desconectar cuenta"}
+          </button>
+        </div>
+      ) : (
+        <>
+          {polling ? (
+            <div className="flex items-center gap-3 bg-amber-950/20 border border-amber-800 rounded-lg p-4">
+              <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin shrink-0" />
+              <div>
+                <p className="text-sm text-amber-300">Esperando autenticación...</p>
+                <p className="text-xs text-stone-500 mt-0.5">Completá el login en la ventana de OpenAI</p>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleConnect}
+              disabled={connecting}
+              className="w-full px-4 py-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+            >
+              {connecting ? "Iniciando..." : "Conectar con OpenAI"}
+            </button>
+          )}
+        </>
+      )}
+
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+
+      <div className="border-t border-stone-800 pt-3">
+        <p className="text-xs text-stone-600 flex items-center gap-1">
+          <AlertCircle size={11} />
+          Los tokens se encriptan (AES-256-GCM) y nunca se exponen. OpenAI puede revocar este acceso en cualquier momento.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+type LlmTab = "auth" | "api";
+
 export default function SettingsPage() {
-  const { data: configs, isLoading } = useSWR("/llm-config", () => api.llmConfig.list());
+  const [llmTab, setLlmTab] = useState<LlmTab>("api");
+  const { data: configs, error: configError, isLoading } = useSWR("/llm-config", () => api.llmConfig.list());
+
+  if (configError) return (
+    <AppShell>
+      <div className="p-8 text-center text-red-400">
+        Error al cargar los datos. Intenta recargar la pagina.
+      </div>
+    </AppShell>
+  );
 
   return (
     <AppShell>
@@ -922,8 +1103,33 @@ export default function SettingsPage() {
 
         <section className="mb-8">
           <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-wider mb-4">
-            AI Provider
+            Proveedor de IA
           </h2>
+
+          <div className="flex gap-1 mb-4 bg-stone-800 rounded-lg p-1">
+            <button
+              onClick={() => setLlmTab("auth")}
+              className={clsx(
+                "flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                llmTab === "auth"
+                  ? "bg-stone-700 text-amber-400"
+                  : "text-stone-500 hover:text-stone-300"
+              )}
+            >
+              Autenticación
+            </button>
+            <button
+              onClick={() => setLlmTab("api")}
+              className={clsx(
+                "flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                llmTab === "api"
+                  ? "bg-stone-700 text-amber-400"
+                  : "text-stone-500 hover:text-stone-300"
+              )}
+            >
+              API Key
+            </button>
+          </div>
 
           {isLoading && (
             <div className="space-y-3 mb-4">
@@ -937,7 +1143,13 @@ export default function SettingsPage() {
             </div>
           )}
 
-          <AddProviderForm onSaved={() => mutate("/llm-config")} />
+          {llmTab === "auth" && (
+            <AuthProviderForm onSaved={() => mutate("/llm-config")} />
+          )}
+
+          {llmTab === "api" && (
+            <AddProviderForm onSaved={() => mutate("/llm-config")} />
+          )}
         </section>
 
         <ObsidianSync />

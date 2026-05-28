@@ -5,7 +5,10 @@ import { chatService } from "../services/chat.service.js";
 import { prisma } from "../db/prisma.js";
 
 export const chatRoutes: FastifyPluginAsync = async (server) => {
-  server.post<{ Body: unknown }>("/", async (request) => {
+  server.post<{ Body: unknown }>(
+    "/",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
     const schema = z.object({
       campaignId: z.string().optional(),
       mode: AssistantModeSchema,

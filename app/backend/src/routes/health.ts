@@ -3,7 +3,7 @@ import { prisma } from "../db/prisma.js";
 import { env } from "../config/env.js";
 
 export const healthRoutes: FastifyPluginAsync = async (server) => {
-  server.get("/", async (_request, reply) => {
+  server.get("/", { config: { rateLimit: false } }, async (_request, reply) => {
     // Check DB connectivity
     let dbStatus: "ok" | "error" = "ok";
     try {
