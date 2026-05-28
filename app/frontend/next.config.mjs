@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "export",
+  trailingSlash: true,
   transpilePackages: ["@dnd/shared", "@dnd/domain"],
   webpack(config) {
     config.resolve.extensionAlias = {
