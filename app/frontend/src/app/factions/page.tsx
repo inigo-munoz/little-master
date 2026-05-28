@@ -28,6 +28,7 @@ function FactionForm({ campaignId, initial, onClose, onSaved }: FactionFormProps
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [alignment, setAlignment] = useState(initial?.alignment ?? "");
+  const [disposition, setDisposition] = useState(initial?.disposition ?? "unknown");
   const [tagInput, setTagInput] = useState(parseTags(initial?.tags ?? "[]").join(", "));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,9 +46,9 @@ function FactionForm({ campaignId, initial, onClose, onSaved }: FactionFormProps
 
     try {
       if (isEdit && initial?.id) {
-        await api.factions.update(initial.id, { name: name.trim(), description, alignment, tags });
+        await api.factions.update(initial.id, { name: name.trim(), description, alignment, disposition, tags });
       } else {
-        await api.factions.create({ campaignId, name: name.trim(), description, alignment, tags });
+        await api.factions.create({ campaignId, name: name.trim(), description, alignment, disposition, tags });
       }
       onSaved();
     } catch (err: unknown) {
@@ -64,13 +65,13 @@ function FactionForm({ campaignId, initial, onClose, onSaved }: FactionFormProps
           <h2 className="font-semibold text-amber-400">
             {isEdit ? "Editar Facción" : "Nueva Facción"}
           </h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300">
+          <button onClick={onClose} className="text-stone-500 hover:text-stone-300" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-sm text-stone-400 mb-1">Nombre *</label>
               <input
@@ -82,12 +83,25 @@ function FactionForm({ campaignId, initial, onClose, onSaved }: FactionFormProps
               />
             </div>
             <div>
+              <label className="block text-sm text-stone-400 mb-1">Disposición</label>
+              <select
+                value={disposition}
+                onChange={(e) => setDisposition(e.target.value)}
+                className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+              >
+                <option value="unknown">Desconocida</option>
+                <option value="allied">Aliada</option>
+                <option value="neutral">Neutral</option>
+                <option value="hostile">Hostil</option>
+              </select>
+            </div>
+            <div>
               <label className="block text-sm text-stone-400 mb-1">Alineamiento</label>
               <input
                 type="text"
                 value={alignment}
                 onChange={(e) => setAlignment(e.target.value)}
-                placeholder="Neutral malvado, Caótico bueno..."
+                placeholder="Neutral malvado..."
                 className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
               />
             </div>
@@ -146,6 +160,13 @@ const DISPOSITION_COLORS: Record<string, string> = {
   unknown: "text-stone-500 bg-stone-800/50 border-stone-700/50",
 };
 
+const DISPOSITION_LABELS: Record<string, string> = {
+  allied: "Aliada",
+  neutral: "Neutral",
+  hostile: "Hostil",
+  unknown: "Desconocida",
+};
+
 function FactionCard({
   faction,
   onEdit,
@@ -197,7 +218,7 @@ function FactionCard({
             <h3 className="font-semibold text-stone-100 text-base leading-tight">{faction.name}</h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className={clsx("text-xs px-2 py-0.5 rounded-full border capitalize", dispositionStyle)}>
-                {faction.disposition ?? "unknown"}
+                {DISPOSITION_LABELS[faction.disposition ?? "unknown"] ?? "Desconocida"}
               </span>
               {faction.alignment && (
                 <span className="text-xs text-stone-500">{faction.alignment}</span>
@@ -218,6 +239,7 @@ function FactionCard({
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
               className="p-1.5 text-stone-600 hover:text-amber-400 transition-colors rounded"
+              aria-label="Editar facción"
             >
               <Pencil size={12} />
             </button>
@@ -225,6 +247,7 @@ function FactionCard({
               onClick={(e) => { e.stopPropagation(); setShowConfirm(true); }}
               disabled={deleting}
               className="p-1.5 text-stone-600 hover:text-red-400 transition-colors rounded"
+              aria-label="Eliminar facción"
             >
               <Trash2 size={12} />
             </button>
@@ -267,7 +290,7 @@ function FactionsContent() {
   const [search, setSearch] = useState("");
 
   const swrKey = effectiveCampaignId ? `/factions/${effectiveCampaignId}` : null;
-  const { data: factions, isLoading } = useSWR(swrKey, () =>
+  const { data: factions, error: swrError, isLoading } = useSWR(swrKey, () =>
     api.factions.list(effectiveCampaignId!)
   );
 
@@ -278,6 +301,14 @@ function FactionsContent() {
   );
 
   if (!_hasHydrated && !campaignId) return null;
+
+  if (swrError) return (
+    <AppShell>
+      <div className="p-8 text-center text-red-400">
+        Error al cargar los datos. Intenta recargar la pagina.
+      </div>
+    </AppShell>
+  );
 
   return (
     <AppShell>
@@ -346,7 +377,7 @@ function FactionsContent() {
               faction={faction}
               onEdit={() => setEditFaction(faction)}
               onDelete={refresh}
-              onView={() => setSelected({ type: "faction", data: { ...faction, disposition: "unknown" } })}
+              onView={() => setSelected({ type: "faction", data: faction })}
             />
           ))}
         </div>

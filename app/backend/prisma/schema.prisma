@@ -74,6 +74,7 @@ model Npc {
   description String?
   rawContent  String?  // Original Obsidian note for export fidelity
   status      String   @default("alive") // NpcStatus enum
+  disposition String   @default("neutral") // NpcDisposition: ally | neutral | enemy
   sourceType  String   @default("campaign") // official | srd | campaign | homebrew_* | ai_inferred
   tags        String   @default("[]") // JSON array stored as string in SQLite
   createdAt   DateTime @default(now())
@@ -103,6 +104,7 @@ model Npc {
   npcType         String?   // "monster" | "player"
   npcClass        String?
   npcLevel        Int?
+  npcSpecies      String?
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 }
@@ -266,13 +268,19 @@ model Issue {
 
 // ─── LLM Configs ──────────────────────────────────────────────────────────────
 model LlmConfig {
-  id              String   @id @default(cuid())
-  provider        String   // openai | anthropic | openrouter | ollama
-  model           String
-  apiKeyEncrypted String?  // NEVER returned to frontend plain
-  isActive        Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  provider            String    // openai | anthropic | openrouter | ollama
+  model               String
+  authMethod          String    @default("apikey") // apikey | oauth
+  apiKeyEncrypted     String?   // NEVER returned to frontend plain
+  isActive            Boolean   @default(false)
+  keyIsValid          Boolean?
+  keyValidatedAt      DateTime?
+  oauthAccessToken    String?   // encrypted
+  oauthRefreshToken   String?   // encrypted
+  oauthExpiresAt      DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   assistantRuns AssistantRun[]
 }
