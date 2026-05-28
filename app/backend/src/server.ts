@@ -4,7 +4,7 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
 import multipart from "@fastify/multipart";
-import { mkdirSync, existsSync } from "node:fs";
+import { mkdirSync, existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
 import { env } from "./config/env.js";
@@ -45,26 +45,47 @@ const server = Fastify({
 });
 
 function initDatabase() {
-  const dbPath = env.DATABASE_URL.replace("file:", "");
-  if (existsSync(dbPath)) {
-    const { statSync } = require("node:fs");
-    if (statSync(dbPath).size > 0) return;
-  }
-  const candidates = [
+  const marker = join(env.DATA_DIR, ".db-initialized");
+  if (existsSync(marker)) return;
+
+  const schemaCandidates = [
     join(__dirname, "schema.prisma"),
     join(__dirname, "..", "prisma", "schema.prisma"),
   ];
-  const schema = candidates.find(existsSync);
-  if (!schema) return;
+  const schema = schemaCandidates.find(existsSync);
+  if (!schema) {
+    console.error("initDatabase: no schema.prisma found in", schemaCandidates);
+    return;
+  }
+
+  const prismaCli = join(__dirname, "node_modules", "prisma", "build", "index.js");
+  if (!existsSync(prismaCli)) {
+    console.error("initDatabase: prisma CLI not found at", prismaCli);
+    return;
+  }
+
   try {
-    execSync(`npx prisma db push --schema="${schema}" --skip-generate --accept-data-loss`, {
+    console.log("initDatabase: pushing schema from", schema);
+    execSync(`"${process.execPath}" "${prismaCli}" db push --schema="${schema}" --skip-generate --accept-data-loss`, {
       env: { ...process.env, DATABASE_URL: env.DATABASE_URL },
+      cwd: __dirname,
       stdio: "pipe",
       timeout: 30000,
     });
+    prisma.user.upsert({
+      where: { id: "default-user" },
+      update: {},
+      create: { id: "default-user", name: "DM" },
+    }).then(() => console.log("Default user seeded"))
+      .catch((e: unknown) => console.error("Seed user failed:", e));
+    writeFileSync(marker, new Date().toISOString());
     console.log("Database initialized with schema");
   } catch (err) {
-    console.error("Failed to initialize database:", err instanceof Error ? err.message : err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Failed to initialize database:", msg);
+    if (err && typeof err === "object" && "stderr" in err) {
+      console.error("stderr:", String((err as { stderr: Buffer }).stderr));
+    }
   }
 }
 
