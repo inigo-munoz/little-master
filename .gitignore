@@ -26,6 +26,12 @@ dist/
 # Config with secrets
 /config/providers.json
 
+# Tauri
+app/desktop/src-tauri/target/
+app/desktop/src-tauri/binaries/
+app/desktop/src-tauri/resources/
+app/frontend/out/
+
 # OS
 .DS_Store
 Thumbs.db
