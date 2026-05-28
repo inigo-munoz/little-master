@@ -10,9 +10,12 @@ import type { Npc, UpdateNpc, StatBlockEntry } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
 import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
-import { StatusBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
-import { DND_CLASSES } from "../../lib/dnd-2024-data";
+import { DND_CLASSES, DND_SPECIES, SAVING_THROWS_BY_CLASS, HIT_DIE_BY_CLASS, LANGUAGES_BY_SPECIES, baseSpeedForSpecies } from "../../lib/dnd-2024-data";
+import { abilityModifier, proficiencyBonus } from "../../lib/player-calcs";
+import { MonsterPicker } from "../../components/ui/MonsterPicker";
+import type { MonsterEntry } from "../../lib/monster-types";
+import { formatCR } from "../../lib/monster-types";
 
 function parseTags(raw: string): string[] {
   try { return JSON.parse(raw); } catch { return []; }
@@ -88,7 +91,7 @@ function EntryListEditor({
                 className="col-span-2 bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-100 text-xs focus:outline-none focus:border-amber-500"
               />
             </div>
-            <button type="button" onClick={() => remove(i)} className="text-stone-600 hover:text-red-400 transition-colors mt-1">
+            <button type="button" onClick={() => remove(i)} className="text-stone-600 hover:text-red-400 transition-colors mt-1" aria-label="Eliminar entrada">
               <X size={13} />
             </button>
           </div>
@@ -110,6 +113,9 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
   const [description, setDescription] = useState(initial?.description ?? "");
   const [status, setStatus] = useState<"alive" | "dead" | "unknown" | "missing">(
     (initial?.status ?? "alive") as "alive" | "dead" | "unknown" | "missing"
+  );
+  const [disposition, setDisposition] = useState<"ally" | "neutral" | "enemy">(
+    (initial?.disposition ?? "neutral") as "ally" | "neutral" | "enemy"
   );
   const [tagInput, setTagInput] = useState(parseTags(initial?.tags ?? "[]").join(", "));
   const [loading, setLoading] = useState(false);
@@ -136,16 +142,65 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
   const [cr, setCr] = useState(initial?.challengeRating ?? "");
   const [npcClass, setNpcClass] = useState(initial?.npcClass ?? "");
   const [npcLevel, setNpcLevel] = useState(initial?.npcLevel != null ? String(initial.npcLevel) : "");
+  const [npcSpecies, setNpcSpecies] = useState(initial?.npcSpecies ?? "");
   const [traits, setTraits] = useState<StatBlockEntry[]>(parseEntriesField(initial?.traits));
   const [actions, setActions] = useState<StatBlockEntry[]>(parseEntriesField(initial?.actions));
   const [bonusActions, setBonusActions] = useState<StatBlockEntry[]>(parseEntriesField(initial?.bonusActions));
   const [reactions, setReactions] = useState<StatBlockEntry[]>(parseEntriesField(initial?.reactions));
 
   useEffect(() => {
+    if (npcType !== "player" || !npcClass || !npcLevel) return;
+    const lvl = parseInt(npcLevel, 10);
+    if (isNaN(lvl) || lvl < 1) return;
+    const pb = proficiencyBonus(lvl);
+
+    const scores: Record<string, string> = {
+      strength: str, dexterity: dex, constitution: con,
+      intelligence: int_, wisdom: wis, charisma: cha,
+    };
+    const labels: Record<string, string> = {
+      strength: "FUE", dexterity: "DES", constitution: "CON",
+      intelligence: "INT", wisdom: "SAB", charisma: "CAR",
+    };
+
+    const classSaves = SAVING_THROWS_BY_CLASS[npcClass];
+    if (classSaves) {
+      const parts = classSaves.map(key => {
+        const score = parseInt(scores[key] ?? "", 10);
+        const mod = isNaN(score) ? 0 : abilityModifier(score);
+        const total = mod + pb;
+        return `${labels[key] ?? key} ${total >= 0 ? "+" : ""}${total}`;
+      });
+      setSaves(parts.join(", "));
+    }
+
+    const conScore = parseInt(con, 10);
+    const conMod = isNaN(conScore) ? 0 : abilityModifier(conScore);
+    const hitDie = HIT_DIE_BY_CLASS[npcClass];
+    if (hitDie) {
+      const hpMax = hitDie + conMod + (lvl - 1) * (Math.floor(hitDie / 2) + 1 + conMod);
+      setHp(`${hpMax} (${lvl}d${hitDie}${conMod >= 0 ? " + " : " - "}${Math.abs(conMod * lvl)})`);
+    }
+
+    const wisScore = parseInt(wis, 10);
+    if (!isNaN(wisScore)) {
+      const pp = 10 + abilityModifier(wisScore);
+      setSenses(`percepción pasiva ${pp}`);
+    }
+
+    if (npcSpecies) {
+      setSpd(`${baseSpeedForSpecies(npcSpecies)} pies`);
+      const speciesLangs = LANGUAGES_BY_SPECIES[npcSpecies];
+      if (speciesLangs) setLangs(speciesLangs.join(", "));
+    }
+  }, [npcType, npcClass, npcLevel, npcSpecies, str, dex, con, int_, wis, cha]);
+
+  useEffect(() => {
     setName(initial?.name ?? "");
     setRole(initial?.role ?? "");
     setDescription(initial?.description ?? "");
     setStatus((initial?.status ?? "alive") as "alive" | "dead" | "unknown" | "missing");
+    setDisposition((initial?.disposition ?? "neutral") as "ally" | "neutral" | "enemy");
     setTagInput(parseTags(initial?.tags ?? "[]").join(", "));
     setNpcType((initial?.npcType ?? "monster") as "monster" | "player");
     setAc(initial?.armorClass != null ? String(initial.armorClass) : "");
@@ -166,11 +221,12 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
     setCr(initial?.challengeRating ?? "");
     setNpcClass(initial?.npcClass ?? "");
     setNpcLevel(initial?.npcLevel != null ? String(initial.npcLevel) : "");
+    setNpcSpecies(initial?.npcSpecies ?? "");
     setTraits(parseEntriesField(initial?.traits));
     setActions(parseEntriesField(initial?.actions));
     setBonusActions(parseEntriesField(initial?.bonusActions));
     setReactions(parseEntriesField(initial?.reactions));
-  }, [initial?.id]);
+  }, [initial]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -200,6 +256,7 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
       challengeRating: cr || undefined,
       npcClass: npcType === "player" ? (npcClass || undefined) : undefined,
       npcLevel: npcType === "player" && npcLevel ? parseInt(npcLevel, 10) : undefined,
+      npcSpecies: npcType === "player" ? (npcSpecies || undefined) : undefined,
       traits: traits.length ? traits : undefined,
       actions: actions.length ? actions : undefined,
       bonusActions: bonusActions.length ? bonusActions : undefined,
@@ -208,10 +265,10 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
 
     try {
       if (isEdit && initial?.id) {
-        const update: UpdateNpc = { name: name.trim(), role, description, status, tags, ...statBlockData };
+        const update: UpdateNpc = { name: name.trim(), role, description, status, disposition, tags, ...statBlockData };
         await api.npcs.update(initial.id, update);
       } else {
-        await api.npcs.create({ campaignId, name: name.trim(), role, description, status, tags, ...statBlockData });
+        await api.npcs.create({ campaignId, name: name.trim(), role, description, status, disposition, tags, ...statBlockData });
       }
       onSaved();
     } catch (err: unknown) {
@@ -219,6 +276,31 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
     } finally {
       setLoading(false);
     }
+  }
+
+  function applyMonster(m: MonsterEntry) {
+    setNpcType("monster");
+    setAc(String(m.ac));
+    setHp(String(m.hp));
+    setSpd(m.speed);
+    setStr(String(m.str));
+    setDex(String(m.dex));
+    setCon(String(m.con));
+    setInt(String(m.int));
+    setWis(String(m.wis));
+    setCha(String(m.cha));
+    setSaves(m.savingThrows);
+    setSkillsField(m.skills);
+    setResistances([m.resistances, m.vulnerabilities ? `Vulnerabilidades: ${m.vulnerabilities}` : ""].filter(Boolean).join("; "));
+    setImmunities([m.damageImmunities, m.conditionImmunities ? `Condiciones: ${m.conditionImmunities}` : ""].filter(Boolean).join("; "));
+    setSenses(m.senses ? `${m.senses}, percepción pasiva ${m.passivePerception}` : `percepción pasiva ${m.passivePerception}`);
+    setLangs(m.languages);
+    setCr(formatCR(m.cr, m.xp));
+    setTraits(m.traits ? m.traits.split(", ").map(t => ({ name: t.trim(), description: "" })) : []);
+    setActions(m.actions);
+    setBonusActions(m.bonusAction ? [{ name: "Acción adicional", description: m.bonusAction }] : []);
+    setReactions(m.reaction ? [{ name: "Reacción", description: m.reaction }] : []);
+    setStatExpanded(true);
   }
 
   const inputCls = "w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500";
@@ -230,7 +312,7 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
         {/* Header */}
         <div className="px-6 py-4 border-b border-stone-800 flex items-center justify-between shrink-0">
           <h2 className="font-semibold text-amber-400">{isEdit ? "Edit NPC" : "New NPC"}</h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300">
+          <button onClick={onClose} className="text-stone-500 hover:text-stone-300" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>
@@ -239,7 +321,7 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
         <div className="overflow-y-auto flex-1">
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {/* Basic fields */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm text-stone-400 mb-1">Nombre *</label>
                 <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} required />
@@ -251,6 +333,14 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
                   <option value="dead">Muerto</option>
                   <option value="unknown">Desconocido</option>
                   <option value="missing">Desaparecido</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-stone-400 mb-1">Disposición</label>
+                <select value={disposition} onChange={(e) => setDisposition(e.target.value as "ally" | "neutral" | "enemy")} className={inputCls}>
+                  <option value="neutral">Neutral</option>
+                  <option value="ally">Aliado</option>
+                  <option value="enemy">Enemigo</option>
                 </select>
               </div>
             </div>
@@ -287,6 +377,8 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
 
               {statExpanded && (
                 <div className="p-4 space-y-4 bg-stone-900/50">
+                  <MonsterPicker onSelect={applyMonster} />
+
                   {/* Tipo */}
                   <div>
                     <label className="block text-xs text-stone-500 mb-2">Tipo</label>
@@ -316,13 +408,22 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
                       <input type="text" value={cr} onChange={(e) => setCr(e.target.value)} placeholder="ej: 3 (700 XP)" className={`${smallInputCls} max-w-xs`} />
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       <div>
                         <label className="block text-xs text-stone-500 mb-1">Clase</label>
                         <select value={npcClass} onChange={(e) => setNpcClass(e.target.value)} className={smallInputCls}>
                           <option value="">— seleccionar —</option>
                           {Object.keys(DND_CLASSES).map((name) => (
                             <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-stone-500 mb-1">Especie</label>
+                        <select value={npcSpecies} onChange={(e) => setNpcSpecies(e.target.value)} className={smallInputCls}>
+                          <option value="">— seleccionar —</option>
+                          {DND_SPECIES.map((sp) => (
+                            <option key={sp} value={sp}>{sp}</option>
                           ))}
                         </select>
                       </div>
@@ -496,7 +597,20 @@ function NpcCard({
     ? "bg-gradient-to-r from-emerald-600 to-emerald-900"
     : dotColor === "bg-red-500"
     ? "bg-gradient-to-r from-red-700 to-red-950"
+    : dotColor === "bg-amber-400"
+    ? "bg-gradient-to-r from-amber-600 to-amber-900"
     : "bg-gradient-to-r from-stone-600 to-stone-900";
+
+  const dispositionLabel = npc.disposition === "ally" ? "Aliado" : npc.disposition === "enemy" ? "Enemigo" : "Neutral";
+  const dispositionCls = npc.disposition === "ally"
+    ? "bg-emerald-900/60 text-emerald-300"
+    : npc.disposition === "enemy"
+    ? "bg-red-900/60 text-red-300"
+    : "bg-stone-700/60 text-stone-400";
+
+  const statusLabel = npc.status === "alive" ? "Vivo" : npc.status === "dead" ? "Muerto" : npc.status === "missing" ? "Desaparecido" : "Desconocido";
+
+  const hasStats = npc.armorClass != null || npc.hitPoints;
 
   return (
     <>
@@ -512,7 +626,7 @@ function NpcCard({
       <div className={clsx("h-0.5 w-full", topBarColor)} />
 
       <div className="p-4">
-        <div className="flex items-start gap-3 mb-3">
+        <div className="flex items-start gap-3 mb-2">
           <div className={clsx(
             "w-12 h-12 rounded-lg bg-gradient-to-br shrink-0 flex items-center justify-center",
             "text-white font-bold text-lg shadow-md border border-white/10",
@@ -524,14 +638,29 @@ function NpcCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
               <h3 className="font-semibold text-stone-100 text-base leading-tight">{npc.name}</h3>
-              <div className="flex items-center gap-1">
-                <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", dotColor)} />
-                <span className="text-xs text-stone-500 capitalize">{npc.status}</span>
-              </div>
             </div>
             {npc.role && (
-              <p className="text-xs text-amber-500/80 font-medium">{npc.role}</p>
+              <p className="text-xs text-amber-500/80 font-medium mb-1">{npc.role}</p>
             )}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={clsx("text-[10px] font-bold px-1.5 py-0.5 rounded", dispositionCls)}>
+                {dispositionLabel}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", dotColor)} />
+                <span className="text-[10px] font-medium text-stone-400">{statusLabel}</span>
+              </span>
+              {npc.challengeRating && (
+                <span className="text-[10px] font-bold bg-violet-900/60 text-violet-300 px-1.5 py-0.5 rounded">
+                  VD {npc.challengeRating}
+                </span>
+              )}
+              {npc.npcLevel && (
+                <span className="text-[10px] font-bold bg-sky-900/60 text-sky-300 px-1.5 py-0.5 rounded">
+                  Nv. {npc.npcLevel}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -548,6 +677,7 @@ function NpcCard({
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
               className="p-1.5 text-stone-600 hover:text-amber-400 transition-colors rounded"
+              aria-label="Editar NPC"
             >
               <Pencil size={12} />
             </button>
@@ -555,14 +685,54 @@ function NpcCard({
               onClick={(e) => { e.stopPropagation(); setShowConfirm(true); }}
               disabled={deleting}
               className="p-1.5 text-stone-600 hover:text-red-400 transition-colors rounded"
+              aria-label="Eliminar NPC"
             >
               <Trash2 size={12} />
             </button>
           </div>
         </div>
 
+        {hasStats && (
+          <div className="flex items-center gap-3 mb-2 px-2 py-1.5 bg-stone-800/50 rounded-lg border border-stone-700/40">
+            {npc.armorClass != null && (
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-stone-500 uppercase">CA</span>
+                <span className="text-sm font-bold text-sky-400">{npc.armorClass}</span>
+              </div>
+            )}
+            {npc.hitPoints && (
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-stone-500 uppercase">PG</span>
+                <span className="text-sm font-bold text-red-400">{npc.hitPoints}</span>
+              </div>
+            )}
+            {npc.speed && (
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-stone-500 uppercase">Vel</span>
+                <span className="text-xs text-stone-300">{npc.speed}</span>
+              </div>
+            )}
+            {npc.strength != null && (
+              <div className="flex items-center gap-2 ml-auto text-[10px]">
+                {([
+                  ["FUE", npc.strength],
+                  ["DES", npc.dexterity],
+                  ["CON", npc.constitution],
+                  ["INT", npc.intelligence],
+                  ["SAB", npc.wisdom],
+                  ["CAR", npc.charisma],
+                ] as const).map(([label, val]) => val != null ? (
+                  <span key={label} className="text-stone-400">
+                    <span className="text-stone-600">{label}</span> {val}
+                  </span>
+                ) : null)}
+              </div>
+            )}
+          </div>
+        )}
+
         {(race || gender || age) && (
-          <div className="flex gap-1.5 flex-wrap mb-3">
+          <div className="flex gap-1.5 flex-wrap mb-2">
             {race && <span className="text-xs bg-stone-800 border border-stone-700 text-stone-400 px-2 py-0.5 rounded-full">{race}</span>}
             {gender && <span className="text-xs bg-stone-800 border border-stone-700 text-stone-500 px-2 py-0.5 rounded-full">{gender}</span>}
             {age && <span className="text-xs bg-stone-800 border border-stone-700 text-stone-500 px-2 py-0.5 rounded-full">{age}</span>}
@@ -570,13 +740,13 @@ function NpcCard({
         )}
 
         {cleanDesc && (
-          <p className="text-xs text-stone-400 leading-relaxed line-clamp-3 mb-3">
+          <p className="text-xs text-stone-400 leading-relaxed line-clamp-2 mb-2">
             {cleanDesc}
           </p>
         )}
 
         {allies.length > 0 && (
-          <div className="border-t border-stone-800 pt-2.5">
+          <div className="border-t border-stone-800 pt-2">
             <p className="text-xs text-stone-600 mb-1">Aliados</p>
             <div className="flex gap-1.5 flex-wrap">
               {allies.map((a) => (
@@ -613,7 +783,7 @@ function NpcsContent() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const swrKey = effectiveCampaignId ? `/npcs/${effectiveCampaignId}` : null;
-  const { data: npcs, isLoading } = useSWR(swrKey, () =>
+  const { data: npcs, error: swrError, isLoading } = useSWR(swrKey, () =>
     api.npcs.list(effectiveCampaignId!)
   );
 
@@ -629,6 +799,14 @@ function NpcsContent() {
   });
 
   if (!_hasHydrated && !campaignId) return null;
+
+  if (swrError) return (
+    <AppShell>
+      <div className="p-8 text-center text-red-400">
+        Error al cargar los datos. Intenta recargar la pagina.
+      </div>
+    </AppShell>
+  );
 
   return (
     <AppShell>

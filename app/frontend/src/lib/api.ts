@@ -24,10 +24,11 @@ async function request<T>(
   path: string,
   body?: unknown
 ): Promise<T> {
+  const isFormData = body instanceof FormData;
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: { "Content-Type": "application/json" },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    headers: isFormData ? undefined : { "Content-Type": "application/json" },
+    body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
   });
 
   const hasBody =
@@ -104,21 +105,8 @@ export const api = {
     content: (id: string) =>
       get<{ content: string }>(`/api/documents/${id}/content`),
     create: (data: CreateDocument) => post<Document>("/api/documents", data),
-    upload: async (formData: FormData): Promise<Document> => {
-      const res = await fetch(`${BASE}/api/documents/upload`, {
-        method: "POST",
-        body: formData,
-      });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new ApiError(
-          json.error?.code ?? "UNKNOWN",
-          json.error?.message ?? "Upload failed",
-          res.status
-        );
-      }
-      return json.data as Document;
-    },
+    upload: (formData: FormData) =>
+      post<Document>("/api/documents/upload", formData),
     reindex: (id: string) =>
       post<{ chunkCount: number }>(`/api/documents/${id}/reindex`, {}),
     delete: (id: string) => del(`/api/documents/${id}`),
@@ -142,6 +130,12 @@ export const api = {
       post<{ valid: boolean }>("/api/llm-config/validate", data),
     activate: (id: string) =>
       post<LlmConfigPublic>(`/api/llm-config/${id}/activate`, {}),
+    oauthStart: () =>
+      get<{ authUrl: string }>("/api/llm-config/oauth/start"),
+    oauthStatus: () =>
+      get<{ connected: boolean; provider: string | null; expiresAt: string | null }>("/api/llm-config/oauth/status"),
+    oauthDisconnect: () =>
+      post<{ disconnected: boolean }>("/api/llm-config/oauth/disconnect", {}),
   },
 
   changelog: {
@@ -441,6 +435,7 @@ export interface NpcStatBlock {
   npcType?: string | null;
   npcClass?: string | null;
   npcLevel?: number | null;
+  npcSpecies?: string | null;
 }
 
 export interface Npc extends NpcStatBlock {
@@ -450,6 +445,7 @@ export interface Npc extends NpcStatBlock {
   role?: string | null;
   description?: string | null;
   status: "alive" | "dead" | "unknown" | "missing";
+  disposition: "ally" | "neutral" | "enemy";
   tags: string;
   createdAt: string;
   updatedAt: string;
@@ -461,6 +457,7 @@ export interface CreateNpc extends NpcStatBlock {
   role?: string;
   description?: string;
   status?: "alive" | "dead" | "unknown" | "missing";
+  disposition?: "ally" | "neutral" | "enemy";
   tags?: string[];
   authorType?: "user" | "assistant";
 }
@@ -543,8 +540,13 @@ export interface LlmConfigPublic {
   id: string;
   provider: string;
   model: string;
+  authMethod: "apikey" | "oauth";
   isActive: boolean;
   hasApiKey: boolean;
+  hasOAuth: boolean;
+  keyIsValid: boolean | null;
+  keyValidatedAt: string | null;
+  lastUsedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -617,6 +619,7 @@ export interface CreateFaction {
   name: string;
   description?: string;
   alignment?: string;
+  disposition?: string;
   tags?: string[];
   authorType?: "user" | "assistant";
 }
@@ -626,6 +629,7 @@ export interface UpdateNpc extends NpcStatBlock {
   role?: string;
   description?: string;
   status?: "alive" | "dead" | "unknown" | "missing";
+  disposition?: "ally" | "neutral" | "enemy";
   tags?: string[];
 }
 
@@ -639,6 +643,7 @@ export interface UpdateFaction {
   name?: string;
   description?: string;
   alignment?: string;
+  disposition?: string;
   tags?: string[];
 }
 
