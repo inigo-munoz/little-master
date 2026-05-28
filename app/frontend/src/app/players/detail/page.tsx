@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import { Shield, Heart, Star, Zap, ChevronLeft, Save, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
@@ -46,8 +46,9 @@ const SpellsTab = dynamic(() => import("./SpellsTab").then(m => ({ default: m.Sp
 
 
 function CharacterSheetContent() {
-  const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const router = useRouter();
+  const params = { id: searchParams.get("id") ?? "" };
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
