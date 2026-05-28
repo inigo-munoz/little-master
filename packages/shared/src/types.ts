@@ -80,6 +80,10 @@ export type CampaignStatus = z.infer<typeof CampaignStatusSchema>;
 export const NpcStatusSchema = z.enum(["alive", "dead", "unknown", "missing"]);
 export type NpcStatus = z.infer<typeof NpcStatusSchema>;
 
+// ─── NPC Disposition ─────────────────────────────────────────────────────────
+export const NpcDispositionSchema = z.enum(["ally", "neutral", "enemy"]);
+export type NpcDisposition = z.infer<typeof NpcDispositionSchema>;
+
 // ─── Document Content Types ───────────────────────────────────────────────────
 export const ContentTypeSchema = z.enum(["markdown", "plaintext", "pdf"]);
 export type ContentType = z.infer<typeof ContentTypeSchema>;

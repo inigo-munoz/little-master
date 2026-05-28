@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   CampaignStatusSchema,
   NpcStatusSchema,
+  NpcDispositionSchema,
   ContentTypeSchema,
   SourceTypeSchema,
   AuthorityLevelSchema,
@@ -78,6 +79,7 @@ export const NpcSchema = z.object({
   role: z.string().max(200).optional().nullable(),
   description: z.string().max(10000).optional().nullable(),
   status: NpcStatusSchema,
+  disposition: NpcDispositionSchema.default("neutral"),
   sourceType: SourceTypeSchema.default("campaign"),
   tags: z.array(z.string()).default([]),
   createdAt: timestamp(),
@@ -93,6 +95,7 @@ export const CreateNpcSchema = z.object({
   role: z.string().max(200).optional().nullable(),
   description: z.string().max(10000).optional().nullable(),
   status: NpcStatusSchema.default("alive"),
+  disposition: NpcDispositionSchema.default("neutral"),
   sourceType: SourceTypeSchema.optional().default("campaign"),
   tags: z.array(z.string()).default([]),
   // Stat block de combate — todos opcionales
@@ -119,6 +122,7 @@ export const CreateNpcSchema = z.object({
   npcType: z.string().optional().nullable(),
   npcClass: z.string().optional().nullable(),
   npcLevel: z.number().int().optional().nullable(),
+  npcSpecies: z.string().optional().nullable(),
 });
 export type CreateNpc = z.infer<typeof CreateNpcSchema>;
 
