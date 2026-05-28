@@ -4,7 +4,6 @@ import { useState, Suspense } from "react";
 import useSWR from "swr";
 import { useSearchParams } from "next/navigation";
 import { Users, Shield, Heart, Star, X, Plus } from "lucide-react";
-import { clsx } from "clsx";
 import { api } from "../../lib/api";
 import type { Player } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
@@ -117,7 +116,7 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
       <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-stone-800 flex items-center justify-between sticky top-0 bg-stone-900 z-10">
           <h2 className="font-semibold text-amber-400">Nuevo Jugador</h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300">
+          <button onClick={onClose} className="text-stone-500 hover:text-stone-300" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>
@@ -383,7 +382,7 @@ function PlayersContent() {
   const [showForm, setShowForm] = useState(false);
 
   const swrKey = effectiveCampaignId ? `/players/${effectiveCampaignId}` : null;
-  const { data: players, isLoading, mutate } = useSWR(swrKey, () =>
+  const { data: players, error: swrError, isLoading, mutate } = useSWR(swrKey, () =>
     api.players.list(effectiveCampaignId!)
   );
 
@@ -391,6 +390,14 @@ function PlayersContent() {
   const inactive = players?.filter((p) => p.status !== "active") ?? [];
 
   if (!_hasHydrated && !campaignId) return null;
+
+  if (swrError) return (
+    <AppShell>
+      <div className="p-8 text-center text-red-400">
+        Error al cargar los datos. Intenta recargar la pagina.
+      </div>
+    </AppShell>
+  );
 
   return (
     <AppShell>
@@ -434,7 +441,7 @@ function PlayersContent() {
             <Users size={40} className="text-stone-700 mx-auto mb-3" />
             <p className="text-stone-500">No hay jugadores registrados</p>
             <p className="text-stone-600 text-sm mt-1">
-              Usa "+ Nuevo Jugador" o importa tu vault de Obsidian desde Settings
+              Usa &quot;+ Nuevo Jugador&quot; o importa tu vault de Obsidian desde Settings
             </p>
           </div>
         )}

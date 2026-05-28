@@ -24,9 +24,9 @@ pnpm typecheck
 pnpm lint               # Frontend only (ESLint CLI + flat config)
 
 # Tests
-cd app/frontend && pnpm test   # Vitest — ~133 tests unitarios del frontend
+cd app/frontend && pnpm test   # Vitest — ~155 tests unitarios del frontend
 cd app/backend  && pnpm test   # Vitest — ~130 tests unitarios del backend
-# Total: ~263 tests
+# Total: ~285 tests
 
 # Database
 pnpm db:migrate         # Run Prisma migrations
@@ -135,7 +135,7 @@ Endpoints: `GET /api/embeddings/status` (incluye `bySourceType` y `byAuthorityLe
 - **Idiomas** — fijos por especie (no editables) + selectores adicionales por especie y trasfondo, sin duplicados
 - **Dotes de inicio** — trasfondo (classIndex -1, level 0) + especie/Humano (classIndex -2, level 0)
 - **ASI** — slots en niveles 4/8/12/16/19 (Guerrero: 4/6/8/12/14/16/19, Pícaro: 4/8/10/12/16/19). Permite Mejora de Característica (+1/+2 con select de stat) o cualquier dote
-- **Trasfondo** — confirmación al guardar (modal `showSaveConfirm`). Al cambiar: recalcula habilidades, dote, idiomas, herramientas
+- **Trasfondo** — confirmación al elegir + bloqueo tras guardar (`backgroundLocked`). Desbloqueo requiere segunda confirmación explícita. Al cambiar: recalcula habilidades, dote, idiomas, herramientas
 - **Combate** — armas con categoría (simple/marcial, melee/ranged), Finesse (elección DES/FUE), arma mágica (+0/+1/+2/+3), daño extra, maestría con descripción del efecto
 - **Hechizos** — organizado por nivel 0–9. Slots con burbujas interactivas (usar/recuperar). Magia de Pacto del Brujo (burbuja separada, violeta). Modal de búsqueda con filtro por clase. Vista expandida con CD/ataque del personaje, indicadores de concentración (C), ritual (R), acción adicional (AA), reacción (Rx)
 
@@ -223,12 +223,15 @@ Strict mode throughout. Base config at `tsconfig.base.json` (ES2022 target, ESNe
 - **`AssistantMode` unificado** — de 4 definiciones independientes a 1 fuente de verdad (`AssistantModeSchema` en `@dnd/domain`). `@dnd/llm-providers` re-exporta; `chat.ts` y `chat.service.ts` importan de domain ✅
 - **`encryption.ts`** — tipos corregidos (aserciones explícitas en destructuring de arrays) ✅
 
+### Sprint 11 — completado
+
+- **Background lock** — confirmación al elegir trasfondo + bloqueo tras guardar + desbloqueo con segunda confirmación explícita. Campo `backgroundLocked` añadido al schema Prisma ✅
+- **22 tests nuevos** en `player-calcs.test.ts`: `expertiseSlotsFromClasses` (6), `expertiseSlotsFromFeats` (4), `calcSuggestedSpellSlots` (7), `calcAC` Monje (5) ✅
+- **`any` reducidos de 50 a 4** — 15 archivos tipados (settings/page.tsx 20→0, api.ts 4→0, npcs/page.tsx 5→0, encounter/page.tsx 3→0, + 8 catch clauses + npc-parser + campaigns/[id]). Los 4 restantes son justificados: form genérico de players, home, e2e ✅
+
 ### Pendientes conocidos
 
 - **`MVP_USER_ID` hardcodeado** — Multi-user auth aplazado; aceptable en esta fase de uso local
-- **Lock/confirmación en cambio de trasfondo** — Solo hay confirmación al guardar; falta lock al cambiar
-- **Tests faltantes** — `expertiseSlotsFromClasses`, `expertiseSlotsFromFeats`, `calcSuggestedSpellSlots`, `calcAC` con Monje
-- **55 `any` en frontend** — Degradados a warning en ESLint; pendiente tipar progresivamente
 
 ## Ecosistema de desarrollo
 
