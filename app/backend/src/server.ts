@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
 import multipart from "@fastify/multipart";
 import { env } from "./config/env.js";
@@ -46,6 +47,10 @@ async function bootstrap() {
   await server.register(cors, {
     origin: env.CORS_ORIGIN,
     credentials: true,
+  });
+  await server.register(rateLimit, {
+    max: 100,
+    timeWindow: "1 minute",
   });
   await server.register(sensible);
   await server.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } }); // 10 MB
@@ -94,7 +99,17 @@ async function shutdown() {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
+process.on("unhandledRejection", (reason) => {
+  server.log.fatal({ err: reason }, "Unhandled rejection");
+  process.exit(1);
+});
+
+process.on("uncaughtException", (err) => {
+  server.log.fatal({ err }, "Uncaught exception");
+  process.exit(1);
+});
+
 bootstrap().catch((err) => {
-  console.error("Failed to start server:", err);
+  server.log.fatal({ err }, "Failed to start server");
   process.exit(1);
 });
