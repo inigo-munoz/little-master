@@ -4,7 +4,9 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
 import multipart from "@fastify/multipart";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, existsSync } from "node:fs";
+import { join } from "node:path";
+import { execSync } from "node:child_process";
 import { env } from "./config/env.js";
 import { prisma } from "./db/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -42,11 +44,38 @@ const server = Fastify({
   },
 });
 
+function initDatabase() {
+  const dbPath = env.DATABASE_URL.replace("file:", "");
+  if (existsSync(dbPath)) {
+    const { statSync } = require("node:fs");
+    if (statSync(dbPath).size > 0) return;
+  }
+  const candidates = [
+    join(__dirname, "schema.prisma"),
+    join(__dirname, "..", "prisma", "schema.prisma"),
+  ];
+  const schema = candidates.find(existsSync);
+  if (!schema) return;
+  try {
+    execSync(`npx prisma db push --schema="${schema}" --skip-generate --accept-data-loss`, {
+      env: { ...process.env, DATABASE_URL: env.DATABASE_URL },
+      stdio: "pipe",
+      timeout: 30000,
+    });
+    console.log("Database initialized with schema");
+  } catch (err) {
+    console.error("Failed to initialize database:", err instanceof Error ? err.message : err);
+  }
+}
+
 async function bootstrap() {
   // ── Ensure data directories exist ───────────────────────────────────────
   mkdirSync(env.DATA_DIR, { recursive: true });
   mkdirSync(env.DOCUMENTS_DIR, { recursive: true });
   mkdirSync(env.LOGS_DIR, { recursive: true });
+  mkdirSync(join(env.DATA_DIR, "backups"), { recursive: true });
+
+  initDatabase();
 
   // ── Security plugins ─────────────────────────────────────────────────────
   await server.register(helmet, { contentSecurityPolicy: false });
