@@ -4,6 +4,7 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
 import multipart from "@fastify/multipart";
+import { mkdirSync } from "node:fs";
 import { env } from "./config/env.js";
 import { prisma } from "./db/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -42,10 +43,22 @@ const server = Fastify({
 });
 
 async function bootstrap() {
+  // ── Ensure data directories exist ───────────────────────────────────────
+  mkdirSync(env.DATA_DIR, { recursive: true });
+  mkdirSync(env.DOCUMENTS_DIR, { recursive: true });
+  mkdirSync(env.LOGS_DIR, { recursive: true });
+
   // ── Security plugins ─────────────────────────────────────────────────────
   await server.register(helmet, { contentSecurityPolicy: false });
   await server.register(cors, {
-    origin: env.CORS_ORIGIN,
+    origin: [
+      env.CORS_ORIGIN,
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://localhost:1420",
+      "tauri://localhost",
+      "https://tauri.localhost",
+    ],
     credentials: true,
   });
   await server.register(rateLimit, {

@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
+    "bundle": "bash ../../scripts/bundle-backend.sh",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "db:migrate": "prisma migrate dev",
@@ -37,10 +38,11 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "pino-pretty": "^11.0.0",
     "@types/node": "^20.12.0",
     "@types/pdfkit": "^0.17.5",
     "@types/supertest": "^7.2.0",
+    "esbuild": "^0.28.0",
+    "pino-pretty": "^11.0.0",
     "prisma": "^5.13.0",
     "supertest": "^7.2.2",
     "tsx": "^4.8.2",

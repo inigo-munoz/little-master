@@ -342,12 +342,7 @@ export async function importFromVault(
            !rel.includes("kanban") && !rel.includes("0-scratch");
   });
 
-  // DATA_DIR from env, fallback to relative path from this file
-  const { fileURLToPath } = await import("node:url");
-  const __dirname2 = path.dirname(fileURLToPath(import.meta.url));
-  const dataDir = process.env["DATA_DIR"]
-    ? path.resolve(process.env["DATA_DIR"])
-    : path.resolve(__dirname2, "../../../../data");
+  const dataDir = path.resolve(process.env["DATA_DIR"] ?? "../../../data");
   const documentsDir = path.join(dataDir, "documents", "global");
   await fs.mkdir(documentsDir, { recursive: true }).catch(() => {});
 
