@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import useSWR, { mutate } from "swr";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Swords,
   BookOpen,
@@ -241,8 +241,9 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 ];
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function CampaignDetailPage() {
-  const params = useParams<{ id: string }>();
+function CampaignDetailContent() {
+  const searchParams = useSearchParams();
+  const params = { id: searchParams.get("id") ?? "" };
   const router = useRouter();
   const { setActiveCampaign } = useAppStore();
   const [activeTab, setActiveTab] = useState<Tab>("sessions");
@@ -605,4 +606,8 @@ export default function CampaignDetailPage() {
       )}
     </AppShell>
   );
+}
+
+export default function CampaignDetailPage() {
+  return <Suspense><CampaignDetailContent /></Suspense>;
 }
