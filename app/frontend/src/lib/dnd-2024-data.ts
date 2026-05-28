@@ -293,14 +293,31 @@ export const CLASS_SKILLS_OPTIONS: Record<string, string[]> = {
   "Bardo":      ["Acrobatics", "AnimalHandling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "SleightOfHand", "Stealth", "Survival"],
   "Clérigo":    ["History", "Insight", "Medicine", "Persuasion", "Religion"],
   "Druida":     ["Arcana", "AnimalHandling", "Insight", "Medicine", "Nature", "Perception", "Religion", "Survival"],
-  "Guerrero":   ["Acrobatics", "AnimalHandling", "Athletics", "History", "Insight", "Intimidation", "Perception", "Survival"],
+  "Guerrero":   ["Acrobatics", "AnimalHandling", "Athletics", "History", "Insight", "Intimidation", "Perception", "Persuasion", "Survival"],
   "Monje":      ["Acrobatics", "Athletics", "History", "Insight", "Religion", "Stealth"],
   "Paladín":    ["Athletics", "Insight", "Intimidation", "Medicine", "Persuasion", "Religion"],
   "Explorador": ["AnimalHandling", "Athletics", "Insight", "Investigation", "Nature", "Perception", "Stealth", "Survival"],
-  "Pícaro":     ["Acrobatics", "Athletics", "Deception", "Insight", "Intimidation", "Investigation", "Perception", "Performance", "Persuasion", "SleightOfHand", "Stealth"],
+  "Pícaro":     ["Acrobatics", "Athletics", "Deception", "Insight", "Intimidation", "Investigation", "Perception", "Persuasion", "SleightOfHand", "Stealth"],
   "Hechicero":  ["Arcana", "Deception", "Insight", "Intimidation", "Persuasion", "Religion"],
   "Brujo":      ["Arcana", "Deception", "History", "Intimidation", "Investigation", "Nature", "Religion"],
   "Mago":       ["Arcana", "History", "Insight", "Investigation", "Medicine", "Religion"],
+};
+
+// Cantidad de habilidades que otorga cada clase en nivel 1 (PHB 2024)
+export const CLASS_SKILL_SLOTS: Record<string, number> = {
+  "Bárbaro": 2, "Bardo": 3, "Clérigo": 2, "Druida": 2,
+  "Guerrero": 2, "Monje": 2, "Paladín": 2, "Explorador": 3,
+  "Pícaro": 4, "Hechicero": 2, "Brujo": 2, "Mago": 2,
+};
+
+// Habilidades otorgadas al multiclasear HACIA una clase (PHB 2024)
+export const MULTICLASS_SKILL_SLOTS: Record<string, number> = {
+  "Bardo": 1, "Explorador": 1, "Pícaro": 1,
+};
+
+// Slots de habilidad por elección de especie (PHB 2024)
+export const SPECIES_SKILL_CHOICE_SLOTS: Record<string, number> = {
+  "Humano": 1,
 };
 
 // Dotes de Origen (PHB 2024) — disponibles a nivel 1 y en slots ASI

@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import type { CreateNpc } from "@dnd/domain";
 import { npcService } from "../services/npc.service.js";
 
 const TraitEntrySchema = z.union([
@@ -55,6 +56,7 @@ const StatBlockFields = {
   npcType: z.string().optional(),
   npcClass: z.string().optional(),
   npcLevel: z.number().int().optional(),
+  npcSpecies: z.string().optional(),
 } as const;
 
 export const npcRoutes: FastifyPluginAsync = async (server) => {
@@ -76,21 +78,23 @@ export const npcRoutes: FastifyPluginAsync = async (server) => {
       role: z.string().max(200).optional(),
       description: z.string().max(10000).optional(),
       status: z.enum(["alive", "dead", "unknown", "missing"]).default("alive"),
+      disposition: z.enum(["ally", "neutral", "enemy"]).default("neutral"),
       tags: z.array(z.string()).default([]),
       authorType: z.enum(["user", "assistant"]).default("user"),
       ...StatBlockFields,
     });
 
     const { authorType, traits, actions, bonusActions, reactions, ...rest } = schema.parse(request.body);
-    const data = {
+    const data: CreateNpc = {
       ...rest,
+      sourceType: "campaign",
       traits: traits?.map(normalizeEntry),
       actions: actions?.map(normalizeEntry),
       bonusActions: bonusActions?.map(normalizeEntry),
       reactions: reactions?.map(normalizeEntry),
     };
     const serviceAuthorType = authorType === "assistant" ? "ai" : "user";
-    const npc = await npcService.create(data as any, serviceAuthorType);
+    const npc = await npcService.create(data, serviceAuthorType);
     return reply.status(201).send({ success: true, data: npc });
   });
 
@@ -100,19 +104,20 @@ export const npcRoutes: FastifyPluginAsync = async (server) => {
       role: z.string().max(200).optional(),
       description: z.string().max(10000).optional(),
       status: z.enum(["alive", "dead", "unknown", "missing"]).optional(),
+      disposition: z.enum(["ally", "neutral", "enemy"]).optional(),
       tags: z.array(z.string()).optional(),
       ...StatBlockFields,
     });
 
     const { traits, actions, bonusActions, reactions, ...rest } = schema.parse(request.body);
-    const data = {
+    const data: Partial<Omit<CreateNpc, "campaignId">> = {
       ...rest,
       ...(traits !== undefined && { traits: traits.map(normalizeEntry) }),
       ...(actions !== undefined && { actions: actions.map(normalizeEntry) }),
       ...(bonusActions !== undefined && { bonusActions: bonusActions.map(normalizeEntry) }),
       ...(reactions !== undefined && { reactions: reactions.map(normalizeEntry) }),
     };
-    const npc = await npcService.update(request.params.id, data as any, "user");
+    const npc = await npcService.update(request.params.id, data, "user");
     return { success: true, data: npc };
   });
 
