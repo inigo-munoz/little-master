@@ -181,7 +181,7 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
 
   function handleClick() {
     setActiveCampaign(campaign);
-    router.push(`/campaigns/${campaign.id}`);
+    router.push(`/campaigns/detail?id=${campaign.id}`);
   }
 
   const counts = [

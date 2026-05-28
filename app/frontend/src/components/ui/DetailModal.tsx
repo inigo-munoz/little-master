@@ -164,7 +164,7 @@ function PlayerDetail({ data, campaignId }: { data: PlayerData; campaignId?: str
         <InfoField label="Estado" value={<StatusBadge status={data.status} />} />
       </div>
 
-      <a href={`/players/${data.id}`} className="flex items-center justify-center gap-2 w-full py-2.5 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-600/40 text-amber-400 text-sm font-medium rounded-lg transition-colors">
+      <a href={`/players/detail?id=${data.id}`} className="flex items-center justify-center gap-2 w-full py-2.5 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-600/40 text-amber-400 text-sm font-medium rounded-lg transition-colors">
         Abrir ficha completa D&amp;D 2024 →
       </a>
 
