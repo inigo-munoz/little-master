@@ -167,7 +167,7 @@ function IssuesContent() {
 
   const [statusFilter, setStatusFilter] = useState<string>("open");
 
-  const { data: issues, error, isLoading } = useSWR(
+  const { data: issues, error: swrError, isLoading } = useSWR(
     effectiveCampaignId ? `/issues/${effectiveCampaignId}/${statusFilter}` : null,
     () => api.issues.list(effectiveCampaignId!, statusFilter === "all" ? undefined : statusFilter)
   );
@@ -175,6 +175,14 @@ function IssuesContent() {
   const refresh = () => mutate(`/issues/${effectiveCampaignId}/${statusFilter}`);
 
   if (!_hasHydrated && !campaignId) return null;
+
+  if (swrError) return (
+    <AppShell>
+      <div className="p-8 text-center text-red-400">
+        Error al cargar los datos. Intenta recargar la pagina.
+      </div>
+    </AppShell>
+  );
 
   return (
     <AppShell>

@@ -4,7 +4,6 @@ import { useState, Suspense } from "react";
 import useSWR, { mutate } from "swr";
 import { useSearchParams } from "next/navigation";
 import { MapPin, Plus, Pencil, Trash2, X, Search, Download } from "lucide-react";
-import { clsx } from "clsx";
 import { api } from "../../lib/api";
 import type { Location } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
@@ -63,7 +62,7 @@ function LocationForm({ campaignId, initial, onClose, onSaved }: LocationFormPro
           <h2 className="font-semibold text-amber-400">
             {isEdit ? "Editar Localización" : "Nueva Localización"}
           </h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300">
+          <button onClick={onClose} className="text-stone-500 hover:text-stone-300" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>
@@ -197,6 +196,7 @@ function LocationCard({
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
               className="p-1.5 text-stone-600 hover:text-amber-400 transition-colors rounded"
+              aria-label="Editar localización"
             >
               <Pencil size={12} />
             </button>
@@ -204,6 +204,7 @@ function LocationCard({
               onClick={(e) => { e.stopPropagation(); setShowConfirm(true); }}
               disabled={deleting}
               className="p-1.5 text-stone-600 hover:text-red-400 transition-colors rounded"
+              aria-label="Eliminar localización"
             >
               <Trash2 size={12} />
             </button>
@@ -237,7 +238,7 @@ function LocationsContent() {
   const [search, setSearch] = useState("");
 
   const swrKey = effectiveCampaignId ? `/locations/${effectiveCampaignId}` : null;
-  const { data: locations, isLoading } = useSWR(swrKey, () =>
+  const { data: locations, error: swrError, isLoading } = useSWR(swrKey, () =>
     api.locations.list(effectiveCampaignId!)
   );
 
@@ -248,6 +249,14 @@ function LocationsContent() {
   );
 
   if (!_hasHydrated && !campaignId) return null;
+
+  if (swrError) return (
+    <AppShell>
+      <div className="p-8 text-center text-red-400">
+        Error al cargar los datos. Intenta recargar la pagina.
+      </div>
+    </AppShell>
+  );
 
   return (
     <AppShell>
