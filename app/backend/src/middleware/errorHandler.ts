@@ -2,6 +2,14 @@ import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 import { ZodError } from "zod";
 import { AppError, ErrorCode } from "@dnd/shared";
 
+interface ProviderError extends Error {
+  provider?: string;
+}
+
+function hasProvider(error: Error): error is ProviderError {
+  return "provider" in error;
+}
+
 export function errorHandler(
   error: FastifyError | AppError | ZodError | Error,
   request: FastifyRequest,
@@ -51,7 +59,7 @@ export function errorHandler(
       error: {
         code: "INSUFFICIENT_CREDITS",
         message: "El proveedor de IA no tiene crédito suficiente. Ve a Settings y recarga tu cuenta.",
-        details: { provider: (error as any).provider },
+        details: { provider: hasProvider(error) ? error.provider : undefined },
       },
     });
   }
@@ -62,7 +70,7 @@ export function errorHandler(
       error: {
         code: "INVALID_API_KEY",
         message: "API key inválida. Ve a Settings y verifica tu clave.",
-        details: { provider: (error as any).provider },
+        details: { provider: hasProvider(error) ? error.provider : undefined },
       },
     });
   }
@@ -73,7 +81,7 @@ export function errorHandler(
       error: {
         code: "RATE_LIMITED",
         message: "Límite de peticiones alcanzado. Espera unos segundos e inténtalo de nuevo.",
-        details: { provider: (error as any).provider },
+        details: { provider: hasProvider(error) ? error.provider : undefined },
       },
     });
   }

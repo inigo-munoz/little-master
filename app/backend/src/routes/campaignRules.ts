@@ -63,7 +63,7 @@ export const campaignRuleRoutes: FastifyPluginAsync = async (server) => {
       low: 2,
     };
 
-    const sorted = rules.sort((a: any, b: any) =>
+    const sorted = rules.sort((a, b) =>
         (authorityOrder[a.authorityLevel] ?? 2) -
         (authorityOrder[b.authorityLevel] ?? 2)
     );

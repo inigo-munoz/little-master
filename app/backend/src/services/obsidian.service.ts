@@ -13,6 +13,10 @@ import { prisma } from "../db/prisma.js";
 
 const log = pino({ name: "obsidian-service" });
 
+function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
 // ─── Frontmatter parser ───────────────────────────────────────────────────────
 export function parseFrontmatter(content: string): { fm: Record<string, any>; body: string } {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
@@ -418,7 +422,7 @@ export async function importFromVault(
           },
         });
         result.players.imported++;
-      } catch (e: any) { result.players.errors.push(`${fileName}: ${e.message}`); }
+      } catch (e: unknown) { result.players.errors.push(`${fileName}: ${errorMessage(e)}`); }
       continue;
     }
 
@@ -468,7 +472,7 @@ export async function importFromVault(
           },
         });
         result.npcs.imported++;
-      } catch (e: any) { result.npcs.errors.push(`${fileName}: ${e.message}`); }
+      } catch (e: unknown) { result.npcs.errors.push(`${fileName}: ${errorMessage(e)}`); }
       continue;
     }
 
@@ -499,7 +503,7 @@ export async function importFromVault(
           },
         });
         result.sessions.imported++;
-      } catch (e: any) { result.sessions.errors.push(`${fileName}: ${e.message}`); }
+      } catch (e: unknown) { result.sessions.errors.push(`${fileName}: ${errorMessage(e)}`); }
       continue;
     }
 
@@ -529,7 +533,7 @@ export async function importFromVault(
           },
         });
         result.factions.imported++;
-      } catch (e: any) { result.factions.errors.push(`${fileName}: ${e.message}`); }
+      } catch (e: unknown) { result.factions.errors.push(`${fileName}: ${errorMessage(e)}`); }
       continue;
     }
 
@@ -552,7 +556,7 @@ export async function importFromVault(
           },
         });
         result.locations.imported++;
-      } catch (e: any) { result.locations.errors.push(`${fileName}: ${e.message}`); }
+      } catch (e: unknown) { result.locations.errors.push(`${fileName}: ${errorMessage(e)}`); }
       continue;
     }
 
@@ -584,7 +588,7 @@ export async function importFromVault(
           },
         });
         result.quests.imported++;
-      } catch (e: any) { result.quests.errors.push(`${fileName}: ${e.message}`); }
+      } catch (e: unknown) { result.quests.errors.push(`${fileName}: ${errorMessage(e)}`); }
     }
   }
 
@@ -639,7 +643,7 @@ export async function exportToVault(vaultPath: string, campaignId: string): Prom
       }
 
       // Note does not exist — create from rawContent or description
-      const rawContent = (npc as any).rawContent as string | null;
+      const rawContent = npc.rawContent;
       if (rawContent) {
         const { fm: originalFm, body: originalBody } = parseFrontmatter(rawContent);
         originalFm["dnd-assistant-id"] = npc.id;
@@ -663,7 +667,7 @@ export async function exportToVault(vaultPath: string, campaignId: string): Prom
         await fs.writeFile(filePath, serializeFrontmatter(fm) + "\n" + body, "utf-8");
       }
       result.npcs.exported++;
-    } catch (e: any) { result.npcs.errors.push(`${npc.name}: ${e.message}`); }
+    } catch (e: unknown) { result.npcs.errors.push(`${npc.name}: ${errorMessage(e)}`); }
   }
 
   // Sessions
@@ -689,7 +693,7 @@ export async function exportToVault(vaultPath: string, campaignId: string): Prom
         await fs.writeFile(sessionPath, serializeFrontmatter(fm) + "\n" + body, "utf-8");
       }
       result.sessions.exported++;
-    } catch (e: any) { result.sessions.errors.push(`${session.title}: ${e.message}`); }
+    } catch (e: unknown) { result.sessions.errors.push(`${session.title}: ${errorMessage(e)}`); }
   }
 
   // Factions
@@ -712,7 +716,7 @@ export async function exportToVault(vaultPath: string, campaignId: string): Prom
         await fs.writeFile(factionPath, serializeFrontmatter(fm) + "\n" + body, "utf-8");
       }
       result.factions.exported++;
-    } catch (e: any) { result.factions.errors.push(`${faction.name}: ${e.message}`); }
+    } catch (e: unknown) { result.factions.errors.push(`${faction.name}: ${errorMessage(e)}`); }
   }
 
   // Locations
@@ -735,7 +739,7 @@ export async function exportToVault(vaultPath: string, campaignId: string): Prom
         await fs.writeFile(locationPath, serializeFrontmatter(fm) + "\n" + body, "utf-8");
       }
       result.locations.exported++;
-    } catch (e: any) { result.locations.errors.push(`${location.name}: ${e.message}`); }
+    } catch (e: unknown) { result.locations.errors.push(`${location.name}: ${errorMessage(e)}`); }
   }
 
   return result;
