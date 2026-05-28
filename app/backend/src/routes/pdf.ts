@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import PDFDocument from "pdfkit";
 import { prisma } from "../db/prisma.js";
 import { AppError, ErrorCode } from "@dnd/shared";
@@ -22,7 +22,7 @@ function parseTags(raw: string): string[] {
   try { return JSON.parse(raw); } catch { return []; }
 }
 
-function sendPdf(reply: any, buffer: Buffer, filename: string): void {
+function sendPdf(reply: FastifyReply, buffer: Buffer, filename: string): void {
   reply
     .header("Content-Type", "application/pdf")
     .header("Content-Disposition", `attachment; filename="${filename}"`)

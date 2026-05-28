@@ -91,7 +91,7 @@ export const chatService = {
         mode: input.mode,
         prompt: this.extractUserQuery(input.messages),
         response: response.content,
-        contextChunks: JSON.stringify(contextChunks.map((c: any) => c.id)),
+        contextChunks: JSON.stringify(contextChunks.map((c) => c.id)),
         toolsUsed: JSON.stringify(toolsUsed),
         tokensUsed: response.tokensUsed,
         llmConfigId: llmConfig?.id ?? null,
@@ -119,10 +119,10 @@ export const chatService = {
 
     if (mode === "rule_reviewer") {
       // For rule_reviewer: prepend context as a system-like user message with strict XML tags
-      const sorted = [...chunks].sort((a: any, b: any) => {
-        const order = { high: 0, medium: 1, low: 2 };
-        return (order[a.authorityLevel as keyof typeof order] ?? 2) -
-               (order[b.authorityLevel as keyof typeof order] ?? 2);
+      const order: Record<string, number> = { high: 0, medium: 1, low: 2 };
+      const sorted = [...chunks].sort((a, b) => {
+        return (order[a.authorityLevel] ?? 2) -
+               (order[b.authorityLevel] ?? 2);
       });
 
       const contextBlock = sorted.map((c, i) =>
@@ -160,11 +160,11 @@ Understood. I will only answer from the documents above and will explicitly flag
     if (chunks.length === 0) return basePrompt;
 
     const contextSection = chunks
-      .sort((a: any, b: any) => {
-        const order = { high: 0, medium: 1, low: 2 };
+      .sort((a, b) => {
+        const order: Record<string, number> = { high: 0, medium: 1, low: 2 };
         return (
-          (order[a.authorityLevel as keyof typeof order] ?? 2) -
-          (order[b.authorityLevel as keyof typeof order] ?? 2)
+          (order[a.authorityLevel] ?? 2) -
+          (order[b.authorityLevel] ?? 2)
         );
       })
       .map(
@@ -218,7 +218,7 @@ ${contextSection}
       take: maxChunks,
     });
 
-    return chunks.map((c: any) => ({
+    return chunks.map((c) => ({
       id: c.id,
       content: c.content,
       sourceType: c.sourceType,
