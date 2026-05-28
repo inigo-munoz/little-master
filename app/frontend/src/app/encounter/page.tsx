@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import useSWR, { mutate as globalMutate } from "swr";
+import useSWR from "swr";
 import {
   Swords, Plus, Trash2, AlertTriangle, Shield,
   ChevronDown, ChevronUp, Save, Check, Loader2,
-  History, RotateCcw,
+  History, RotateCcw, X,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { AppShell } from "../../components/layout/AppShell";
 import { useAppStore } from "../../store/app.store";
 import { api } from "../../lib/api";
-import type { MonsterDetail, Encounter, Npc, StatBlockEntry } from "../../lib/api";
+import type { Encounter, Npc, StatBlockEntry } from "../../lib/api";
 
 // NPC stat block data shaped for display in the encounter panel
 interface NpcStatBlockDisplay {
@@ -186,6 +186,7 @@ function MonsterAutocomplete({
         onChange={(e) => onChange(e.target.value)}
         placeholder="Monster name"
         autoComplete="off"
+        aria-label="Nombre del monstruo"
         className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
       />
       {open && (
@@ -493,7 +494,7 @@ export default function EncounterPage() {
   const { activeCampaign, _hasHydrated } = useAppStore();
 
   const encountersSWRKey = activeCampaign ? `/encounters/${activeCampaign.id}` : null;
-  const { data: savedEncounters, mutate: mutateEncounters } = useSWR(
+  const { data: savedEncounters, error: swrError, mutate: mutateEncounters } = useSWR(
     encountersSWRKey,
     () => api.encounters.list(activeCampaign!.id)
   );
@@ -501,6 +502,7 @@ export default function EncounterPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [dangerModal, setDangerModal] = useState(false);
+  const [selectedEncounter, setSelectedEncounter] = useState<Encounter | null>(null);
 
   const [partySize, setPartySize] = useState(4);
   const [avgLevel, setAvgLevel] = useState(5);
@@ -634,6 +636,14 @@ export default function EncounterPage() {
   const diff = result ? DIFFICULTY_CONFIG[result.difficulty] : null;
 
   if (!_hasHydrated) return null;
+
+  if (swrError) return (
+    <AppShell>
+      <div className="p-8 text-center text-red-400">
+        Error al cargar los datos. Intenta recargar la pagina.
+      </div>
+    </AppShell>
+  );
 
   return (
     <AppShell>
@@ -787,6 +797,7 @@ export default function EncounterPage() {
                     onClick={() => toggleExpand(m.id)}
                     disabled={!m.name.trim()}
                     title="Ver bloque de estadísticas"
+                    aria-label="Ver bloque de estadísticas"
                     className={clsx(
                       "p-2 rounded-lg transition-colors",
                       m.expanded
@@ -799,6 +810,7 @@ export default function EncounterPage() {
                   <button
                     onClick={() => removeMonster(m.id)}
                     className="p-2 text-stone-600 hover:text-red-400 transition-colors"
+                    aria-label="Eliminar monstruo"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -888,7 +900,8 @@ export default function EncounterPage() {
               return (
                 <div
                   key={enc.id}
-                  className="border border-stone-800 bg-stone-900 rounded-xl p-4"
+                  className="border border-stone-800 bg-stone-900 rounded-xl p-4 cursor-pointer hover:border-stone-700 transition-colors"
+                  onClick={() => setSelectedEncounter(enc)}
                 >
                   {/* Header row */}
                   <div className="flex gap-4 items-start">
@@ -904,16 +917,20 @@ export default function EncounterPage() {
                           {enc.adjustedXp.toLocaleString()} XP · Grupo {enc.partySize} · Nv.{enc.partyLevel}
                         </span>
                       </div>
-                      {/* Monster list with per-monster expand */}
+                      {/* Monster summary */}
                       <div className="space-y-0.5">
                         {enc.monsters.map((m, i) => (
-                          <SavedEncounterMonsterRow key={i} monster={m} campaignNpcs={campaignNpcs} />
+                          <div key={i} className="flex items-center gap-2 py-0.5">
+                            <span className="text-sm text-stone-300 truncate">{m.name}</span>
+                            <span className="text-stone-500 text-sm shrink-0">x{m.count}</span>
+                            <span className="text-xs text-amber-400 font-mono shrink-0">CR {m.cr}</span>
+                          </div>
                         ))}
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => loadEncounter(enc)}
                         title="Cargar en el validador"
@@ -992,6 +1009,115 @@ export default function EncounterPage() {
           </div>
         </div>
       )}
+
+      {/* ── Modal de detalle del encuentro ────────────────────────────────────── */}
+      {selectedEncounter && (() => {
+        const enc = selectedEncounter;
+        const dcfg = DIFFICULTY_CONFIG[enc.difficulty as keyof typeof DIFFICULTY_CONFIG];
+        const dateStr = new Date(enc.createdAt).toLocaleDateString("es-ES", {
+          day: "2-digit", month: "short", year: "numeric",
+        });
+        return (
+          <div
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedEncounter(null)}
+            onKeyDown={(e) => { if (e.key === "Escape") setSelectedEncounter(null); }}
+          >
+            <div
+              className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-5 border-b border-stone-800 shrink-0">
+                <div className="flex items-center gap-3">
+                  <Swords size={18} className="text-amber-400" />
+                  <h2 className="text-lg font-bold text-stone-100">Detalle del encuentro</h2>
+                </div>
+                <button
+                  onClick={() => setSelectedEncounter(null)}
+                  className="p-1.5 text-stone-500 hover:text-stone-300 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Scrollable body */}
+              <div className="overflow-y-auto p-5 space-y-5">
+                {/* Summary */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-stone-800 rounded-lg p-3 text-center">
+                    <p className="text-xs text-stone-500 mb-1">Dificultad</p>
+                    {dcfg ? (
+                      <span className={clsx("text-sm font-bold", dcfg.color)}>{dcfg.label}</span>
+                    ) : (
+                      <span className="text-sm text-stone-300">{enc.difficulty}</span>
+                    )}
+                  </div>
+                  <div className="bg-stone-800 rounded-lg p-3 text-center">
+                    <p className="text-xs text-stone-500 mb-1">XP Ajustado</p>
+                    <p className="text-sm font-mono text-stone-200">{enc.adjustedXp.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-stone-800 rounded-lg p-3 text-center">
+                    <p className="text-xs text-stone-500 mb-1">Grupo</p>
+                    <p className="text-sm text-stone-200">{enc.partySize} PJs · Nv.{enc.partyLevel}</p>
+                  </div>
+                  <div className="bg-stone-800 rounded-lg p-3 text-center">
+                    <p className="text-xs text-stone-500 mb-1">Fecha</p>
+                    <p className="text-sm text-stone-200">{dateStr}</p>
+                  </div>
+                </div>
+
+                {/* Stat blocks */}
+                <div>
+                  <h3 className="text-sm font-semibold text-stone-300 mb-3">
+                    Monstruos ({enc.monsters.reduce((sum, m) => sum + m.count, 0)})
+                  </h3>
+                  <div className="space-y-3">
+                    {enc.monsters.map((m, i) => {
+                      const matchingNpc = campaignNpcs?.find(
+                        (n) => n.name.toLowerCase() === m.name.toLowerCase()
+                      );
+                      const npcStatBlock = matchingNpc ? npcToStatBlockDisplay(matchingNpc) : null;
+                      return (
+                        <div key={i}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-semibold text-stone-200">{m.name}</span>
+                            <span className="text-stone-500 text-sm">x{m.count}</span>
+                            <span className="text-xs text-amber-400 font-mono">CR {m.cr}</span>
+                            {matchingNpc && (
+                              <span className="bg-purple-900/60 text-purple-300 border border-purple-700/50 px-1.5 py-0.5 rounded text-xs">NPC</span>
+                            )}
+                          </div>
+                          <MonsterStatBlockPanel name={m.name} npcStatBlock={npcStatBlock} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex gap-3 p-5 border-t border-stone-800 shrink-0">
+                <button
+                  onClick={() => {
+                    loadEncounter(enc);
+                    setSelectedEncounter(null);
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-300 rounded-lg text-sm transition-colors"
+                >
+                  <RotateCcw size={14} /> Cargar en validador
+                </button>
+                <button
+                  onClick={() => setSelectedEncounter(null)}
+                  className="px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 text-sm transition-colors ml-auto"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </AppShell>
   );
 }

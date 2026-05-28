@@ -13,7 +13,6 @@ import {
   Plus,
   Loader2,
 } from "lucide-react";
-import { clsx } from "clsx";
 import { api } from "../../lib/api";
 import type { Session } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
@@ -93,14 +92,14 @@ function SessionRow({ session, campaignId, onUpdated }: { session: Session; camp
 
   return (
     <div className="border border-stone-800 bg-stone-900 rounded-xl">
-      {/* Cabecera */}
-      <div className="flex items-center gap-3 p-4">
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="text-stone-500 hover:text-stone-300 transition-colors shrink-0"
-        >
+      {/* Cabecera — toda la fila es clickable */}
+      <div
+        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-stone-800/40 transition-colors rounded-t-xl"
+        onClick={() => { if (!editing) setExpanded((v) => !v); }}
+      >
+        <span className="text-stone-500 shrink-0">
           {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        </button>
+        </span>
 
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-900/30 text-amber-400 text-sm font-bold shrink-0">
           #{session.sessionNumber}
@@ -112,16 +111,22 @@ function SessionRow({ session, campaignId, onUpdated }: { session: Session; camp
               type="text"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              onClick={(e) => e.stopPropagation()}
               className="w-full bg-stone-800 border border-amber-700 rounded px-2 py-1 text-stone-100 text-sm focus:outline-none"
               autoFocus
             />
           ) : (
-            <p className="font-medium text-stone-100 text-sm truncate">{session.title}</p>
+            <>
+              <p className="font-medium text-stone-100 text-sm truncate">{session.title}</p>
+              {!expanded && session.summary && (
+                <p className="text-xs text-stone-500 mt-0.5 truncate">{session.summary}</p>
+              )}
+            </>
           )}
-          {dateStr && <p className="text-xs text-stone-500 mt-0.5">{dateStr}</p>}
+          {dateStr && <p className="text-xs text-stone-600 mt-0.5">{dateStr}</p>}
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
           {editing ? (
             <>
               <button
@@ -254,7 +259,7 @@ function NewSessionModal({
       <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-lg">
         <div className="p-6 border-b border-stone-800 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-amber-400">Nueva Sesión</h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300 transition-colors">
+          <button onClick={onClose} className="text-stone-500 hover:text-stone-300 transition-colors" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>
@@ -323,7 +328,7 @@ function SessionsContent() {
   const [showNewSession, setShowNewSession] = useState(false);
 
   const swrKey = activeCampaign ? `/sessions/${activeCampaign.id}` : null;
-  const { data: sessions, isLoading } = useSWR(swrKey, () =>
+  const { data: sessions, error: swrError, isLoading } = useSWR(swrKey, () =>
     activeCampaign ? api.sessions.list(activeCampaign.id) : Promise.resolve([])
   );
 
@@ -333,6 +338,14 @@ function SessionsContent() {
 
   // Evita mostrar "No hay campaña activa" antes de que persist rehidrate localStorage
   if (!_hasHydrated) return null;
+
+  if (swrError) return (
+    <AppShell>
+      <div className="p-8 text-center text-red-400">
+        Error al cargar los datos. Intenta recargar la pagina.
+      </div>
+    </AppShell>
+  );
 
   return (
     <AppShell>

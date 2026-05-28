@@ -34,7 +34,7 @@ function UploadModal({ campaignId, onClose, onUploaded }: UploadModalProps) {
   const [tab, setTab] = useState<"text" | "file">("text");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [contentType, setContentType] = useState<"markdown" | "plaintext">("markdown");
+  const [contentType] = useState<"markdown" | "plaintext">("markdown");
   const [sourceType, setSourceType] = useState("campaign");
   const [authorityLevel, setAuthorityLevel] = useState("medium");
   const [version, setVersion] = useState("1.0");
@@ -107,7 +107,7 @@ function UploadModal({ campaignId, onClose, onUploaded }: UploadModalProps) {
       <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="p-6 border-b border-stone-800 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-amber-400">Añadir Documento</h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300 transition-colors">
+          <button onClick={onClose} className="text-stone-500 hover:text-stone-300 transition-colors" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>
@@ -323,7 +323,7 @@ function DocumentViewModal({ doc, onClose }: { doc: Document; onClose: () => voi
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300 transition-colors p-1 shrink-0 ml-4">
+          <button onClick={onClose} className="text-stone-500 hover:text-stone-300 transition-colors p-1 shrink-0 ml-4" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>
@@ -455,7 +455,7 @@ function DocumentsContent() {
   const [filter, setFilter] = useState<"all" | "campaign" | "global">("all");
 
   const swrKey = `/documents/${effectiveCampaignId ?? "global"}`;
-  const { data: docs, isLoading } = useSWR(swrKey, () =>
+  const { data: docs, error: swrError, isLoading } = useSWR(swrKey, () =>
     api.documents.list(effectiveCampaignId)
   );
 
@@ -471,6 +471,14 @@ function DocumentsContent() {
   const indexedDocs = docs?.filter((d) => d.isIndexed).length ?? 0;
 
   if (!_hasHydrated && !campaignId) return null;
+
+  if (swrError) return (
+    <AppShell>
+      <div className="p-8 text-center text-red-400">
+        Error al cargar los datos. Intenta recargar la pagina.
+      </div>
+    </AppShell>
+  );
 
   return (
     <AppShell>

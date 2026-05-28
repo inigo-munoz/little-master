@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { X, Shield, Heart, Star, Users, MapPin, Swords, ScrollText } from "lucide-react";
 import { clsx } from "clsx";
-import { StatusBadge, SourceBadge } from "./Badge";
+import { StatusBadge } from "./Badge";
 import { WikiMarkdown } from "./WikiMarkdown";
 import { RelationsPanel } from "./RelationsPanel";
 
@@ -126,6 +126,7 @@ export function DetailModal({
           <button
             onClick={onClose}
             className="text-stone-500 hover:text-stone-300 transition-colors p-1"
+            aria-label="Cerrar"
           >
             <X size={18} />
           </button>
