@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { EntityTypeSchema } from "@dnd/shared";
 import { changeLogService } from "../services/changeLog.service.js";
 
 export const changeLogRoutes: FastifyPluginAsync = async (server) => {
@@ -26,7 +27,8 @@ export const changeLogRoutes: FastifyPluginAsync = async (server) => {
         .object({ entityType: z.string(), entityId: z.string() })
         .parse(request.query);
 
-      const logs = await changeLogService.listByEntity(entityType as any, entityId);
+      const validEntityType = EntityTypeSchema.parse(entityType);
+      const logs = await changeLogService.listByEntity(validEntityType, entityId);
       return { success: true, data: logs };
     }
   );

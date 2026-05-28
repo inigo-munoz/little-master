@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { EntityTypeSchema } from "@dnd/shared";
 import { issueService } from "../services/issue.service.js";
 
 export const issueRoutes: FastifyPluginAsync = async (server) => {
@@ -28,12 +29,12 @@ export const issueRoutes: FastifyPluginAsync = async (server) => {
       ]),
       severity: z.enum(["critical", "major", "minor", "info"]),
       description: z.string().min(1).max(5000),
-      relatedEntityType: z.string().optional(),
+      relatedEntityType: EntityTypeSchema.optional(),
       relatedEntityId: z.string().optional(),
     });
 
     const data = schema.parse(request.body);
-    const issue = await issueService.create(data as any);
+    const issue = await issueService.create(data);
     return reply.status(201).send({ success: true, data: issue });
   });
 

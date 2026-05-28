@@ -184,10 +184,11 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
           platform: process.platform,
         },
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       return {
         success: false,
-        error: { code: "BROWSE_ERROR", message: `Cannot read directory: ${err.message}` },
+        error: { code: "BROWSE_ERROR", message: `Cannot read directory: ${msg}` },
       };
     }
   });
