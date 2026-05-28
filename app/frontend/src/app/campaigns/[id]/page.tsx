@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { api } from "../../../lib/api";
-import type { Campaign, Session, Npc, Document, Issue } from "../../../lib/api";
+import type { Campaign, Session } from "../../../lib/api";
 import { AppShell } from "../../../components/layout/AppShell";
 import { DetailModal, type ModalEntity } from "../../../components/ui/DetailModal";
 import { WikiMarkdown } from "../../../components/ui/WikiMarkdown";
@@ -83,7 +83,7 @@ function SessionForm({
       <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="p-6 border-b border-stone-800 flex items-center justify-between shrink-0">
           <h2 className="font-semibold text-amber-400">{isEdit ? "Edit Session" : "New Session"}</h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300">
+          <button onClick={onClose} className="text-stone-500 hover:text-stone-300" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>
@@ -211,6 +211,7 @@ function SessionCard({ session, campaignId, onEdit }: { session: Session; campai
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(); }}
             className="p-1 hover:text-amber-400 transition-colors"
+            aria-label="Editar sesión"
           >
             <Pencil size={12} />
           </button>
@@ -249,7 +250,7 @@ export default function CampaignDetailPage() {
   const [selected, setSelected] = useState<ModalEntity | null>(null);
   const [editSession, setEditSession] = useState<Session | null>(null);
 
-  const { data: campaignData, isLoading } = useSWR(
+  const { data: campaignData, error: campaignError, isLoading } = useSWR(
     `/campaigns/${params.id}`,
     () => api.campaigns.get(params.id)
   );
@@ -290,6 +291,16 @@ export default function CampaignDetailPage() {
         <div className="p-8">
           <div className="h-8 w-64 bg-stone-800 rounded animate-pulse mb-4" />
           <div className="h-4 w-96 bg-stone-800 rounded animate-pulse" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (campaignError) {
+    return (
+      <AppShell>
+        <div className="p-8 text-center text-red-400">
+          Error al cargar los datos. Intenta recargar la pagina.
         </div>
       </AppShell>
     );
@@ -474,8 +485,6 @@ export default function CampaignDetailPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 {npcs?.map((npc) => {
-                  let tags: string[] = [];
-                  try { tags = JSON.parse(npc.tags); } catch {}
                   return (
                     <div key={npc.id} className="border border-stone-800 bg-stone-900 rounded-lg p-3 cursor-pointer hover:border-stone-700 transition-colors" onClick={() => setSelected({ type: "npc", data: npc })}>
                       <div className="flex items-center gap-2 mb-1">

@@ -159,6 +159,7 @@ export function RelationsPanel({
                 onClick={() => handleDelete(r.id)}
                 className="text-stone-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
                 title="Eliminar relación"
+                aria-label="Eliminar relación"
               >
                 <X size={13} />
               </button>

@@ -590,7 +590,7 @@ function ChatInterface() {
             {!effectiveCampaignId && (
               <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
                 <AlertCircle size={12} />
-                No campaign selected — responses won't use campaign context
+                No campaign selected — responses won&apos;t use campaign context
               </p>
             )}
             {/* Tools disponibles para el modo activo */}

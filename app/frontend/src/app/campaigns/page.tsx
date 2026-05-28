@@ -5,7 +5,7 @@ import useSWR, { mutate } from "swr";
 import { Plus, Swords, ChevronRight, Zap } from "lucide-react";
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
-import type { Campaign, Encounter } from "../../lib/api";
+import type { Campaign } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
 import { StatusBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
@@ -285,7 +285,7 @@ export default function CampaignsPage() {
       {showCreate && (
         <CreateCampaignModal
           onClose={() => setShowCreate(false)}
-          onCreated={(campaign) => {
+          onCreated={(_campaign) => {
             mutate("/campaigns");
             setShowCreate(false);
           }}
