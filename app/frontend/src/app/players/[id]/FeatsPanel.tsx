@@ -211,6 +211,7 @@ export function FeatsPanel({ feats, classes, onChange }: FeatsPanelProps) {
                 <button
                   onClick={() => removeStatBonus(slot.classIndex, slot.classLevel, bi)}
                   className="text-stone-500 hover:text-red-400 text-xs transition-colors shrink-0"
+                  aria-label="Eliminar bono"
                 >
                   ✕
                 </button>

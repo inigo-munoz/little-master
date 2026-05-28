@@ -9,6 +9,9 @@ import {
   PACT_MAGIC_CLASS,
   THIRD_CASTER_SUBCLASSES,
   FULL_CASTER_SLOTS,
+  CLASS_SKILL_SLOTS,
+  MULTICLASS_SKILL_SLOTS,
+  SPECIES_SKILL_CHOICE_SLOTS,
   type ArmorKey,
 } from "./dnd-2024-data";
 
@@ -267,4 +270,35 @@ export function expertiseSlotsFromClasses(classes: PlayerClassEntry[]): number {
 // Slots de maestría otorgados por dotes (Skill Expert: +1 por dote)
 export function expertiseSlotsFromFeats(feats: FeatEntry[]): number {
   return feats.filter(f => f.name === "Skill Expert").length;
+}
+
+// Slots de competencia en habilidades según clase, multiclase, nivel y dotes (PHB 2024)
+export function skillProficiencySlots(
+  classes: PlayerClassEntry[],
+  feats: FeatEntry[],
+  species: string,
+): number {
+  if (classes.length === 0) return 0;
+
+  const firstClass = classes[0];
+  let total = (firstClass ? CLASS_SKILL_SLOTS[firstClass.class] : undefined) ?? 2;
+
+  for (let i = 1; i < classes.length; i++) {
+    const cls = classes[i];
+    if (cls) total += MULTICLASS_SKILL_SLOTS[cls.class] ?? 0;
+  }
+
+  // Bárbaro nv.3: Primal Knowledge (+1 habilidad)
+  for (const cls of classes) {
+    if (cls.class === "Bárbaro" && cls.level >= 3) total += 1;
+  }
+
+  // Dotes que otorgan competencias en habilidades
+  total += feats.filter(f => f.name === "Skilled").length * 3;
+  total += feats.filter(f => f.name === "Skill Expert").length;
+
+  // Especie con slots de elección (Humano: 1)
+  total += SPECIES_SKILL_CHOICE_SLOTS[species] ?? 0;
+
+  return total;
 }
