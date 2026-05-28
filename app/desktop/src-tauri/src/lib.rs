@@ -57,7 +57,8 @@ pub fn run() {
                     &data_dir_str,
                     "--port",
                     "3001",
-                ]);
+                ])
+                .envs([("NODE_ENV", "production")]);
 
             let (mut rx, backend_child) = backend_cmd
                 .spawn()

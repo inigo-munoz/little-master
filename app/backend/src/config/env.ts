@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
 
 loadDotenv();
@@ -22,6 +24,19 @@ if (cliArgs["data-dir"]) {
 }
 if (cliArgs.port) {
   process.env.PORT = cliArgs.port;
+}
+
+if (!process.env.ENCRYPTION_KEY) {
+  const dataDir = process.env.DATA_DIR ?? "../../../data";
+  mkdirSync(dataDir, { recursive: true });
+  const keyFile = join(dataDir, ".encryption-key");
+  if (existsSync(keyFile)) {
+    process.env.ENCRYPTION_KEY = readFileSync(keyFile, "utf-8").trim();
+  } else {
+    const key = randomBytes(32).toString("hex");
+    writeFileSync(keyFile, key, { mode: 0o600 });
+    process.env.ENCRYPTION_KEY = key;
+  }
 }
 
 const EnvSchema = z.object({
