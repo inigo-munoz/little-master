@@ -1,15 +1,14 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { llmConfigService } from "../services/llmConfig.service.js";
+import { oauthService } from "../services/oauth.service.js";
 
 export const llmConfigRoutes: FastifyPluginAsync = async (server) => {
-  // List configs — safe view, no keys exposed
   server.get("/", async () => {
     const configs = await llmConfigService.list();
     return { success: true, data: configs };
   });
 
-  // Save or update a provider config + encrypted key
   server.post<{ Body: unknown }>("/", async (request, reply) => {
     const schema = z.object({
       provider: z.enum(["openai", "anthropic", "openrouter", "ollama"]),
@@ -22,7 +21,6 @@ export const llmConfigRoutes: FastifyPluginAsync = async (server) => {
     return reply.status(201).send({ success: true, data: config });
   });
 
-  // Validate a key before saving
   server.post<{ Body: unknown }>("/validate", async (request) => {
     const schema = z.object({
       provider: z.enum(["openai", "anthropic", "openrouter", "ollama"]),
@@ -34,9 +32,23 @@ export const llmConfigRoutes: FastifyPluginAsync = async (server) => {
     return { success: true, data: { valid } };
   });
 
-  // Activate a config (only one active at a time)
   server.post<{ Params: { id: string } }>("/:id/activate", async (request) => {
     const config = await llmConfigService.activate(request.params.id);
     return { success: true, data: config };
+  });
+
+  server.get("/oauth/start", async () => {
+    const { authUrl } = await oauthService.startOAuth();
+    return { success: true, data: { authUrl } };
+  });
+
+  server.get("/oauth/status", async () => {
+    const status = await oauthService.getOAuthStatus();
+    return { success: true, data: status };
+  });
+
+  server.post("/oauth/disconnect", async () => {
+    await oauthService.disconnectOAuth();
+    return { success: true, data: { disconnected: true } };
   });
 };
