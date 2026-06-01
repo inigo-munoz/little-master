@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
-  "productName": "DnD Campaign Assistant",
+  "productName": "Little Master",
   "version": "1.0.0",
-  "identifier": "com.dnd-assistant.desktop",
+  "identifier": "com.littlemaster.desktop",
   "build": {
     "frontendDist": "../../frontend/out",
     "devUrl": "http://localhost:3000"
@@ -10,7 +10,7 @@
   "app": {
     "windows": [
       {
-        "title": "D&D Campaign Assistant",
+        "title": "Little Master",
         "width": 1400,
         "height": 900,
         "minWidth": 1024,

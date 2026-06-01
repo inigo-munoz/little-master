@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useAppStore } from "../../store/app.store";
+import { PRODUCT_NAME, PRODUCT_VERSION } from "@dnd/shared";
 
 const NAV_ITEMS = [
   { href: "/campaigns", label: "Campaigns", icon: Swords },
@@ -53,7 +54,7 @@ export function Sidebar() {
         <Shield className="text-amber-500 shrink-0" size={20} />
         {sidebarOpen && (
           <span className="font-bold text-amber-400 text-sm tracking-wide truncate">
-            D&D Assistant
+            {PRODUCT_NAME}
           </span>
         )}
       </div>
@@ -89,14 +90,19 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Toggle button */}
-      <button
-        onClick={toggleSidebar}
-        className="flex items-center justify-center p-3 border-t border-stone-800 text-stone-500 hover:text-stone-300 transition-colors"
-        aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-      >
-        {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-      </button>
+      {/* Version + Toggle */}
+      <div className="border-t border-stone-800">
+        {sidebarOpen && (
+          <p className="text-[10px] text-stone-600 text-center pt-2">v{PRODUCT_VERSION}</p>
+        )}
+        <button
+          onClick={toggleSidebar}
+          className="flex items-center justify-center w-full p-3 text-stone-500 hover:text-stone-300 transition-colors"
+          aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+        >
+          {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+        </button>
+      </div>
     </aside>
   );
 }

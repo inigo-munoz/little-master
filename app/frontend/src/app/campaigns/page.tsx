@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
-import { Plus, Swords, ChevronRight, Zap } from "lucide-react";
+import { Plus, Swords, ChevronRight, Zap, Trash2 } from "lucide-react";
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
 import type { Campaign } from "../../lib/api";
@@ -174,14 +174,28 @@ function CreateCampaignModal({
   );
 }
 
-function CampaignRow({ campaign }: { campaign: Campaign }) {
+function CampaignRow({ campaign, onDeleted }: { campaign: Campaign; onDeleted: () => void }) {
   const { setActiveCampaign, activeCampaignId } = useAppStore();
   const router = useRouter();
   const isActive = campaign.id === activeCampaignId;
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   function handleClick() {
     setActiveCampaign(campaign);
     router.push(`/campaigns/detail?id=${campaign.id}`);
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await api.campaigns.delete(campaign.id);
+      if (isActive) setActiveCampaign(null);
+      onDeleted();
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
   }
 
   const counts = [
@@ -193,39 +207,71 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
   ];
 
   return (
-    <div
-      onClick={handleClick}
-      className={clsx(
-        "flex items-center gap-4 border rounded-xl px-4 py-3.5 cursor-pointer transition-colors group",
-        isActive
-          ? "border-amber-600 bg-amber-950/20"
-          : "border-stone-800 bg-stone-900 hover:border-stone-700"
-      )}
-    >
-      {/* Nombre + sistema */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-stone-100 truncate group-hover:text-white">
-          {campaign.title}
-        </p>
-        <p className="text-xs text-stone-500 mt-0.5">{campaign.system}</p>
+    <>
+      <div
+        onClick={handleClick}
+        className={clsx(
+          "flex items-center gap-4 border rounded-xl px-4 py-3.5 cursor-pointer transition-colors group",
+          isActive
+            ? "border-amber-600 bg-amber-950/20"
+            : "border-stone-800 bg-stone-900 hover:border-stone-700"
+        )}
+      >
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-stone-100 truncate group-hover:text-white">
+            {campaign.title}
+          </p>
+          <p className="text-xs text-stone-500 mt-0.5">{campaign.system}</p>
+        </div>
+
+        <StatusBadge status={campaign.status} />
+
+        <div className="hidden sm:flex items-center gap-5">
+          {counts.map(({ value, label }) => (
+            <div key={label} className="text-center">
+              <p className="text-sm font-semibold text-amber-400 leading-none">{value}</p>
+              <p className="text-xs text-stone-500 mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
+          className="p-1.5 rounded-lg text-stone-600 hover:text-red-400 hover:bg-red-950/30 transition-colors shrink-0"
+          aria-label={`Eliminar ${campaign.title}`}
+        >
+          <Trash2 size={15} />
+        </button>
+
+        <ChevronRight size={16} className="text-stone-600 group-hover:text-stone-400 shrink-0" />
       </div>
 
-      {/* Badge estado */}
-      <StatusBadge status={campaign.status} />
-
-      {/* Contadores */}
-      <div className="hidden sm:flex items-center gap-5">
-        {counts.map(({ value, label }) => (
-          <div key={label} className="text-center">
-            <p className="text-sm font-semibold text-amber-400 leading-none">{value}</p>
-            <p className="text-xs text-stone-500 mt-0.5">{label}</p>
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-sm p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-red-400">Eliminar campaña</h3>
+            <p className="text-sm text-stone-300">
+              ¿Eliminar <strong>{campaign.title}</strong>? Se borrarán todas las sesiones, PNJs, localizaciones, facciones y PJs asociados. Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
+              >
+                {deleting ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
-
-      {/* Chevron */}
-      <ChevronRight size={16} className="text-stone-600 group-hover:text-stone-400 shrink-0" />
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -276,7 +322,7 @@ export default function CampaignsPage() {
         )}
 
         <div className="space-y-2">
-          {campaigns?.map((c) => <CampaignRow key={c.id} campaign={c} />)}
+          {campaigns?.map((c) => <CampaignRow key={c.id} campaign={c} onDeleted={() => mutate("/campaigns")} />)}
         </div>
 
         {activeCampaignId && <EncuentrosRecientes campaignId={activeCampaignId} />}

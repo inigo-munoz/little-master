@@ -581,7 +581,7 @@ function ChatInterface() {
         {/* Header */}
         <div className="border-b border-stone-800 px-6 py-4 flex items-center justify-between shrink-0">
           <div>
-            <h1 className="font-semibold text-stone-100">Campaign Assistant</h1>
+            <h1 className="font-semibold text-stone-100">Little Master</h1>
             {effectiveCampaignId && (
               <p className="text-xs text-stone-500 mt-0.5">
                 Context: {activeCampaign?.title ?? effectiveCampaignId}

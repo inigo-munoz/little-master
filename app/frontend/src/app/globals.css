@@ -12,6 +12,11 @@
   scrollbar-color: theme(colors.stone.700) transparent;
 }
 
+/* Force dark theme for native controls (selects, inputs) in WebKitGTK */
+:root {
+  color-scheme: dark;
+}
+
 /* Markdown content styling */
 .prose-dnd {
   @apply text-stone-200 leading-relaxed;
