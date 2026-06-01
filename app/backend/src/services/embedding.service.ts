@@ -111,7 +111,7 @@ export const embeddingService = {
               data: { embeddingJson: JSON.stringify(vector) },
             });
             embedded++;
-          } catch (err) {
+          } catch (err: unknown) {
             console.error(`Failed to embed chunk ${chunk.id}:`, err);
             failed++;
           }

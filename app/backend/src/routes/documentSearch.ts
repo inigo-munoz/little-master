@@ -42,7 +42,7 @@ export const documentSearchRoutes: FastifyPluginAsync = async (server) => {
         if (mode === "semantic") {
           return { success: true, data: [], meta: { method: "semantic", count: 0 } };
         }
-      } catch (err) {
+      } catch (err: unknown) {
         request.log.warn({ err }, "Semantic search failed, falling back to keyword");
         if (mode === "semantic") throw err;
       }

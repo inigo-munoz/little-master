@@ -136,7 +136,7 @@ async function findMarkdownFiles(dir: string, maxDepth = 6): Promise<string[]> {
         results.push(fullPath);
       }
     }
-  } catch (err) {
+  } catch (err: unknown) {
     log.warn({ dir, err }, "Cannot read directory during vault scan — skipping");
   }
   return results;

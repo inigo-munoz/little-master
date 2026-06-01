@@ -80,7 +80,7 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
             try {
               const subEntries = await fs.readdir(subPath);
               subIsVault = subEntries.includes(".obsidian");
-            } catch (err) {
+            } catch (err: unknown) {
               request.log.warn({ path: subPath, err }, "Cannot read subdirectory during vault detection — skipping");
             }
             return {
@@ -140,7 +140,7 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
               }
             }
           }
-        } catch (err) {
+        } catch (err: unknown) {
           request.log.warn({ err }, "Cannot enumerate /media mount points — skipping Linux drive detection");
         }
       }
@@ -167,7 +167,7 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
               quickAccess.push({ name: `[Drive] ${v.name}`, path: `/Volumes/${v.name}` });
             }
           }
-        } catch (err) {
+        } catch (err: unknown) {
           request.log.warn({ err }, "Cannot enumerate /Volumes mount points — skipping macOS volume detection");
         }
       }

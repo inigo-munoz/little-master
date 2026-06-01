@@ -48,7 +48,7 @@ export const mcpService = {
       }
 
       return json;
-    } catch (err) {
+    } catch (err: unknown) {
       // El MCP server no está disponible, red caída, o timeout
       const message = err instanceof Error ? err.message : "MCP unavailable";
       console.warn(`[mcp] Tool '${name}' unavailable: ${message}`);
