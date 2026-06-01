@@ -18,6 +18,8 @@
     "db:push": "prisma db push",
     "phb:import": "npx tsx src/db/phb-import-cli.ts",
     "phb:import:force": "npx tsx src/db/phb-import-cli.ts --force",
+    "mm:import": "npx tsx src/db/monster-import-cli.ts",
+    "mm:import:force": "npx tsx src/db/monster-import-cli.ts --force",
     "test": "vitest run"
   },
   "dependencies": {
