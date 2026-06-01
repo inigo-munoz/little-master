@@ -21,7 +21,7 @@ export const embeddingRoutes: FastifyPluginAsync = async (server) => {
     });
 
     const total = chunks.length;
-    const embedded = chunks.filter((c) => c.embeddingJson !== null).length;
+    const embedded = chunks.filter((c: typeof chunks[number]) => c.embeddingJson !== null).length;
 
     const bySourceType: Record<string, { total: number; embedded: number }> = {};
     const byAuthorityLevel: Record<string, { total: number; embedded: number }> = {};
@@ -104,7 +104,7 @@ export const embeddingRoutes: FastifyPluginAsync = async (server) => {
     });
 
     // Sort HIGH → MEDIUM → LOW so high-authority content is re-embedded first
-    pendingRows.sort((a, b) => {
+    pendingRows.sort((a: typeof pendingRows[number], b: typeof pendingRows[number]) => {
       const aOrd = AUTHORITY_ORDER[a.authorityLevel] ?? 2;
       const bOrd = AUTHORITY_ORDER[b.authorityLevel] ?? 2;
       return aOrd - bOrd;

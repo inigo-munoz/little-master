@@ -733,7 +733,7 @@ export const srdRoutes: FastifyPluginAsync = async (fastify) => {
     });
 
     const documents = await buildDocumentList(
-      docs.map((d) => ({ ...d, authorityLevel: d.authorityLevel }))
+      docs.map((d: typeof docs[number]) => ({ ...d, authorityLevel: d.authorityLevel }))
     );
     const { totalChunks, embeddedChunks, coverage } = summarize(documents);
 

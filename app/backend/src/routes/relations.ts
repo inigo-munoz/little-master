@@ -46,7 +46,7 @@ export const relationRoutes: FastifyPluginAsync = async (server) => {
     });
 
     const data = await Promise.all(
-      rows.map(async (r) => {
+      rows.map(async (r: typeof rows[number]) => {
         const isFrom = r.fromType === entityType && r.fromId === entityId;
         const relatedType = (isFrom ? r.toType : r.fromType) as EntityKind;
         const relatedId = isFrom ? r.toId : r.fromId;

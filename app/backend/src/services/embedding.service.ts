@@ -103,7 +103,7 @@ export const embeddingService = {
       const batch = chunks.slice(i, i + BATCH_SIZE);
 
       await Promise.allSettled(
-        batch.map(async (chunk) => {
+        batch.map(async (chunk: typeof chunks[number]) => {
           try {
             const vector = await provider.embedText(chunk.content.slice(0, 8000));
             await prisma.documentChunk.update({
@@ -162,7 +162,7 @@ export const embeddingService = {
 
     // Score each candidate by cosine similarity
     const scored = candidates
-      .map((chunk) => {
+      .map((chunk: typeof candidates[number]) => {
         const chunkVector = JSON.parse(chunk.embeddingJson!) as number[];
         const similarity = cosineSimilarity(queryVector, chunkVector);
         return {
@@ -176,7 +176,7 @@ export const embeddingService = {
           rawSimilarity: similarity,
         };
       })
-      .filter((r) => r.rawSimilarity >= minScore);
+      .filter((r: { rawSimilarity: number }) => r.rawSimilarity >= minScore);
 
     // Tiered selection: HIGH sources always fill their quota before MEDIUM/LOW
     return selectByTier(scored, limit, tierQuotas);

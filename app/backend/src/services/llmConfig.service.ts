@@ -18,7 +18,7 @@ export const llmConfigService = {
       },
     });
 
-    return configs.map((c) => ({
+    return configs.map((c: typeof configs[number]) => ({
       id: c.id,
       provider: c.provider,
       model: c.model,

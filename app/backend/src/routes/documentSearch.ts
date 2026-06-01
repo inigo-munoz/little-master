@@ -77,7 +77,7 @@ export const documentSearchRoutes: FastifyPluginAsync = async (server) => {
     const authorityScore = { high: 0.15, medium: 0.07, low: 0 };
 
     const scored = chunks
-      .map((chunk) => {
+      .map((chunk: typeof chunks[number]) => {
         const text = chunk.content.toLowerCase();
         const tokenHits = tokens.filter((t) => text.includes(t)).length;
         const relevanceScore =
@@ -94,8 +94,8 @@ export const documentSearchRoutes: FastifyPluginAsync = async (server) => {
           rawSimilarity: tokenHits / tokens.length,
         };
       })
-      .filter((c) => c.relevanceScore > 0)
-      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .filter((c: { relevanceScore: number }) => c.relevanceScore > 0)
+      .sort((a: { relevanceScore: number }, b: { relevanceScore: number }) => b.relevanceScore - a.relevanceScore)
       .slice(0, limit);
 
     return { success: true, data: scored, meta: { method: "keyword", count: scored.length } };

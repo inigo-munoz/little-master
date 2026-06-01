@@ -79,10 +79,10 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
     if (npc.description) {
       for (const line of npc.description.split("\n")) {
         if (line.startsWith("Allies:")) {
-          allies.push(...line.slice(7).split(",").map(s => s.trim()).filter(Boolean));
+          allies.push(...line.slice(7).split(",").map((s: string) => s.trim()).filter(Boolean));
         }
         if (line.startsWith("Enemies:")) {
-          enemies.push(...line.slice(8).split(",").map(s => s.trim()).filter(Boolean));
+          enemies.push(...line.slice(8).split(",").map((s: string) => s.trim()).filter(Boolean));
         }
       }
     }
@@ -90,7 +90,7 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
     // Extraer secreto del DM
     const rawDesc = (npc.description ?? "")
       .split("\n")
-      .filter(l => !l.startsWith("Allies:") && !l.startsWith("Enemies:"))
+      .filter((l: string) => !l.startsWith("Allies:") && !l.startsWith("Enemies:"))
       .join("\n");
 
     const { cleanDesc, secret: descSecret } = extractDmSecret(rawDesc);
@@ -290,8 +290,8 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
     ]);
 
     // NPCs agrupados: vivos primero, muertos al final
-    const npcsAlive = allNpcs.filter(n => n.status !== "dead");
-    const npcsDead = allNpcs.filter(n => n.status === "dead");
+    const npcsAlive = allNpcs.filter((n: typeof allNpcs[number]) => n.status !== "dead");
+    const npcsDead = allNpcs.filter((n: typeof allNpcs[number]) => n.status === "dead");
 
     // Issues ordenados por severidad
     const SEVERITY_ORDER: Record<string, number> = { critical: 0, major: 1, minor: 2, info: 3 };
@@ -400,7 +400,7 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
 
       // ── NPCs activos ──────────────────────────────────────────────────────
       if (npcsAlive.length > 0) {
-        addSection(doc, `NPCs activos (${npcsAlive.length})`, npcsAlive.map(n =>
+        addSection(doc, `NPCs activos (${npcsAlive.length})`, npcsAlive.map((n: typeof npcsAlive[number]) =>
           `${n.name}${n.role ? ` — ${n.role}` : ""}${n.status !== "alive" ? ` [${n.status}]` : ""}`
         ).join("\n"));
       }
@@ -411,14 +411,14 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
           .text(`NPCS FALLECIDOS (${npcsDead.length})`, { width: PAGE_WIDTH });
         doc.moveDown(0.3);
         doc.font(FONT_NORMAL).fontSize(11).fillColor("#8b6060")
-          .text(npcsDead.map(n => `${n.name}${n.role ? ` — ${n.role}` : ""}`).join("\n"), { width: PAGE_WIDTH });
+          .text(npcsDead.map((n: typeof npcsDead[number]) => `${n.name}${n.role ? ` — ${n.role}` : ""}`).join("\n"), { width: PAGE_WIDTH });
         doc.moveDown(1);
         addSectionDivider(doc);
       }
 
       // ── Sesiones ──────────────────────────────────────────────────────────
       if (sessions.length > 0) {
-        addSection(doc, `Sesiones jugadas (${sessions.length})`, sessions.map(s => {
+        addSection(doc, `Sesiones jugadas (${sessions.length})`, sessions.map((s: typeof sessions[number]) => {
           const datePart = s.playedAt
             ? `  (${new Date(s.playedAt).toLocaleDateString("es-ES")})`
             : "";
@@ -429,14 +429,14 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
 
       // ── Localizaciones ────────────────────────────────────────────────────
       if (locations.length > 0) {
-        addSection(doc, "Localizaciones", locations.map(l =>
+        addSection(doc, "Localizaciones", locations.map((l: typeof locations[number]) =>
           `${l.name}${l.description ? `\n   ${stripMarkdown(l.description).slice(0, 150)}` : ""}`
         ).join("\n\n"));
       }
 
       // ── Facciones ─────────────────────────────────────────────────────────
       if (factions.length > 0) {
-        addSection(doc, "Facciones", factions.map(f =>
+        addSection(doc, "Facciones", factions.map((f: typeof factions[number]) =>
           `${f.name}${f.alignment ? ` (${f.alignment})` : ""}` +
           (f.description ? `\n   ${stripMarkdown(f.description).slice(0, 150)}` : "")
         ).join("\n\n"));

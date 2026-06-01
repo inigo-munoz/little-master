@@ -218,7 +218,7 @@ ${contextSection}
       take: maxChunks,
     });
 
-    return chunks.map((c) => ({
+    return chunks.map((c: typeof chunks[number]) => ({
       id: c.id,
       content: c.content,
       sourceType: c.sourceType,
