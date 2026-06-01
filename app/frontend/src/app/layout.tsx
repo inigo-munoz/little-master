@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { PRODUCT_NAME, PRODUCT_DESCRIPTION } from "@dnd/shared";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "D&D Campaign Assistant",
-  description: "Local-first campaign management system",
+  title: PRODUCT_NAME,
+  description: PRODUCT_DESCRIPTION,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

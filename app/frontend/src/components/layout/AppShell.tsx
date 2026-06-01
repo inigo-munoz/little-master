@@ -22,7 +22,7 @@ function LoadingSplash() {
     <div className="flex items-center justify-center h-screen bg-stone-950">
       <div className="text-center">
         <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="mt-4 text-stone-400 text-sm">Iniciando D&D Campaign Assistant...</p>
+        <p className="mt-4 text-stone-400 text-sm">Iniciando...</p>
       </div>
     </div>
   );
