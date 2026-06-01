@@ -15,14 +15,14 @@ const { values: cliArgs } = parseArgs({
   strict: false,
 });
 
-if (cliArgs["data-dir"]) {
+if (typeof cliArgs["data-dir"] === "string") {
   const d = cliArgs["data-dir"];
   process.env.DATA_DIR = d;
   process.env.DOCUMENTS_DIR = join(d, "documents");
   process.env.LOGS_DIR = join(d, "logs");
   process.env.DATABASE_URL = `file:${join(d, "dnd-assistant.db")}`;
 }
-if (cliArgs.port) {
+if (typeof cliArgs.port === "string") {
   process.env.PORT = cliArgs.port;
 }
 
