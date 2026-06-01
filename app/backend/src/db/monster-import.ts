@@ -283,7 +283,7 @@ export async function importMonsters(
 
       log(`  ✓ Importado: ${docTitle} — ${groupMonsters.length} criaturas, ${chunks.length} chunks`);
       results.imported++;
-    } catch (err) {
+    } catch (err: unknown) {
       const msg = `Error importando ${docTitle}: ${err}`;
       results.errors.push(msg);
       log(`  ✗ ${msg}`);

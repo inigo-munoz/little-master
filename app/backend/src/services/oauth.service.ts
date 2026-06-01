@@ -93,7 +93,7 @@ export const oauthService = {
           pendingOAuth.resolved = true;
           res.writeHead(200, { "Content-Type": "text/html" });
           res.end(successHtml());
-        } catch (err) {
+        } catch (err: unknown) {
           res.writeHead(200, { "Content-Type": "text/html" });
           res.end(errorHtml(err instanceof Error ? err.message : "Token exchange failed"));
         } finally {

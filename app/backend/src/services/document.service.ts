@@ -126,7 +126,7 @@ export const documentService = {
         const result = await embeddingService.embedDocument(documentId);
         console.log(`[embed] doc=${documentId} embedded=${result.embedded} failed=${result.failed}`);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[embed] Failed for doc=' + documentId + ':', err);
     }
   },

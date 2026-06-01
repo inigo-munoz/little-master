@@ -104,7 +104,7 @@ export async function importPhb2024(
     let content: string;
     try {
       content = await fs.readFile(srcPath, "utf-8");
-    } catch (err) {
+    } catch (err: unknown) {
       const msg = `Error leyendo ${srcPath}: ${err}`;
       results.errors.push(msg);
       log(`  ✗ ${msg}`);
@@ -155,7 +155,7 @@ export async function importPhb2024(
 
       log(`  ✓ Importado: ${doc.title} (${chunks.length} chunks)`);
       results.imported++;
-    } catch (err) {
+    } catch (err: unknown) {
       const msg = `Error importando ${doc.title}: ${err}`;
       results.errors.push(msg);
       log(`  ✗ ${msg}`);

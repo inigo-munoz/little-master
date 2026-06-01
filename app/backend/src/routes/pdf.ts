@@ -120,7 +120,7 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
         bufferPages: true,
       });
       const chunks: Buffer[] = [];
-      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
       doc.on("end", () => {
         const buffer = Buffer.concat(chunks);
         sendPdf(reply, buffer, `npc-${npc.name.toLowerCase().replace(/\s+/g, "-")}.pdf`);
@@ -310,7 +310,7 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
         bufferPages: true,
       });
       const chunks: Buffer[] = [];
-      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
       doc.on("end", () => {
         const buffer = Buffer.concat(chunks);
         reply

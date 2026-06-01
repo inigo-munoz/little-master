@@ -81,7 +81,7 @@ function initDatabase() {
       .catch((e: unknown) => console.error("Seed user failed:", e));
     writeFileSync(marker, new Date().toISOString());
     console.log("Database initialized with schema");
-  } catch (err) {
+  } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("Failed to initialize database:", msg);
     if (err && typeof err === "object" && "stderr" in err) {
@@ -173,7 +173,7 @@ process.on("uncaughtException", (err) => {
   process.exit(1);
 });
 
-bootstrap().catch((err) => {
+bootstrap().catch((err: unknown) => {
   server.log.fatal({ err }, "Failed to start server");
   process.exit(1);
 });
