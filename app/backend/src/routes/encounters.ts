@@ -16,7 +16,7 @@ export const encounterRoutes: FastifyPluginAsync = async (server) => {
     });
     return {
       success: true,
-      data: encounters.map((e) => ({
+      data: encounters.map((e: typeof encounters[number]) => ({
         ...e,
         monsters: JSON.parse(e.monsters),
       })),
