@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 env:
-  PNPM_VERSION: "9"
-  NODE_VERSION: "20"
+  PNPM_VERSION: "9.0.0"
+  NODE_VERSION: "22"
 
 jobs:
   test:
