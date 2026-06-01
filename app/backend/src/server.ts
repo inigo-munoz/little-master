@@ -48,9 +48,10 @@ function initDatabase() {
   const marker = join(env.DATA_DIR, ".db-initialized");
   if (existsSync(marker)) return;
 
+  const dir = import.meta.dirname;
   const schemaCandidates = [
-    join(__dirname, "schema.prisma"),
-    join(__dirname, "..", "prisma", "schema.prisma"),
+    join(dir, "schema.prisma"),
+    join(dir, "..", "prisma", "schema.prisma"),
   ];
   const schema = schemaCandidates.find(existsSync);
   if (!schema) {
@@ -58,7 +59,7 @@ function initDatabase() {
     return;
   }
 
-  const prismaCli = join(__dirname, "node_modules", "prisma", "build", "index.js");
+  const prismaCli = join(dir, "node_modules", "prisma", "build", "index.js");
   if (!existsSync(prismaCli)) {
     console.error("initDatabase: prisma CLI not found at", prismaCli);
     return;
@@ -68,7 +69,7 @@ function initDatabase() {
     console.log("initDatabase: pushing schema from", schema);
     execSync(`"${process.execPath}" "${prismaCli}" db push --schema="${schema}" --skip-generate --accept-data-loss`, {
       env: { ...process.env, DATABASE_URL: env.DATABASE_URL },
-      cwd: __dirname,
+      cwd: dir,
       stdio: "pipe",
       timeout: 30000,
     });
