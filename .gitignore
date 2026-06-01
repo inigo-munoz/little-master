@@ -32,6 +32,11 @@ app/desktop/src-tauri/binaries/
 app/desktop/src-tauri/resources/
 app/frontend/out/
 
+# Editor / tools config (personal)
+.claude/
+.atl/
+.vscode/
+
 # OS
 .DS_Store
 Thumbs.db
