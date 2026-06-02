@@ -78,6 +78,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: app/desktop/src-tauri
+          prefix-key: v2
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
