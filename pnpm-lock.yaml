@@ -111,6 +111,9 @@ importers:
       '@dnd/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@tauri-apps/api':
+        specifier: ^2
+        version: 2.11.0
       clsx:
         specifier: ^2.1.1
         version: 2.1.1

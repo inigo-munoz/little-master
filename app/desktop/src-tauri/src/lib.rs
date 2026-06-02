@@ -1,9 +1,20 @@
 use tauri::Manager;
 use tauri_plugin_shell::ShellExt;
+use std::net::TcpListener;
 use std::sync::Mutex;
 
 struct SidecarState {
     backend_child: Mutex<Option<tauri_plugin_shell::process::CommandChild>>,
+    backend_port: Mutex<u16>,
+}
+
+fn find_free_port(start: u16) -> u16 {
+    for port in start..start + 100 {
+        if TcpListener::bind(("127.0.0.1", port)).is_ok() {
+            return port;
+        }
+    }
+    panic!("No free port found in range {}..{}", start, start + 100);
 }
 
 #[tauri::command]
@@ -11,6 +22,11 @@ fn get_data_dir(app: tauri::AppHandle) -> String {
     let path = app.path().app_data_dir().expect("Failed to get app data dir");
     std::fs::create_dir_all(&path).expect("Failed to create data dir");
     path.to_string_lossy().to_string()
+}
+
+#[tauri::command]
+fn get_backend_port(state: tauri::State<SidecarState>) -> u16 {
+    *state.backend_port.lock().unwrap()
 }
 
 pub fn run() {
@@ -25,8 +41,9 @@ pub fn run() {
         )
         .manage(SidecarState {
             backend_child: Mutex::new(None),
+            backend_port: Mutex::new(0),
         })
-        .invoke_handler(tauri::generate_handler![get_data_dir])
+        .invoke_handler(tauri::generate_handler![get_data_dir, get_backend_port])
         .setup(|app| {
             let app_handle = app.handle().clone();
 
@@ -47,6 +64,15 @@ pub fn run() {
                 .join("server.js");
             let server_js_str = server_js.to_string_lossy().to_string();
 
+            let seed_dir = resource_dir
+                .join("resources")
+                .join("seed");
+            let seed_dir_str = seed_dir.to_string_lossy().to_string();
+
+            let port = find_free_port(3001);
+            let port_str = port.to_string();
+            log::info!("Backend will use port {}", port);
+
             let shell = app_handle.shell();
             let backend_cmd = shell
                 .sidecar("node")
@@ -56,7 +82,9 @@ pub fn run() {
                     "--data-dir",
                     &data_dir_str,
                     "--port",
-                    "3001",
+                    &port_str,
+                    "--seed-dir",
+                    &seed_dir_str,
                 ])
                 .envs([("NODE_ENV", "production")]);
 
@@ -84,6 +112,7 @@ pub fn run() {
 
             let state = app_handle.state::<SidecarState>();
             *state.backend_child.lock().unwrap() = Some(backend_child);
+            *state.backend_port.lock().unwrap() = port;
 
             Ok(())
         })
