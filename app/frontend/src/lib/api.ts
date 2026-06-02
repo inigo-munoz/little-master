@@ -3,10 +3,10 @@
  *
  * All requests to the backend go through this module.
  * Components never call fetch() directly.
- * The backend URL comes from an env var — never hardcoded.
+ * In Tauri, the port is resolved dynamically via IPC.
  */
 
-const BASE = process.env["NEXT_PUBLIC_BACKEND_URL"] ?? "http://localhost:3001";
+import { getBackendUrl } from "./backend-url";
 
 class ApiError extends Error {
   constructor(
@@ -25,7 +25,7 @@ async function request<T>(
   body?: unknown
 ): Promise<T> {
   const isFormData = body instanceof FormData;
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${getBackendUrl()}${path}`, {
     method,
     headers: isFormData ? undefined : { "Content-Type": "application/json" },
     body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
@@ -60,7 +60,7 @@ const patch = <T>(path: string, body: unknown) => request<T>("PATCH", path, body
 const del = (path: string) => request<void>("DELETE", path);
 
 async function requestBlob(path: string): Promise<Blob> {
-  const res = await fetch(`${BASE}${path}`);
+  const res = await fetch(`${getBackendUrl()}${path}`);
   if (!res.ok) throw new ApiError("UNKNOWN", "Request failed", res.status);
   return res.blob();
 }
