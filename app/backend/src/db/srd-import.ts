@@ -33,6 +33,7 @@ const SRD_SECTIONS: SrdSection[] = [
   { filename: "06_Trasfondos_y_Equipo.txt",       title: "SRD 5.2.1 — Backgrounds & Equipment",     lang: "en" },
   { filename: "07_Caja_de_Herramientas.txt",      title: "SRD 5.2.1 — Gameplay Toolbox",            lang: "en" },
   { filename: "08_Monstruos.txt",                title: "SRD 5.2.1 — Monsters",                    lang: "en" },
+  { filename: "09_Hechizos.md",                   title: "SRD 5.2.1 — Spells",                      lang: "en" },
 ];
 
 function chunkText(text: string): string[] {

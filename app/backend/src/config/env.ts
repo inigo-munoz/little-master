@@ -11,6 +11,7 @@ const { values: cliArgs } = parseArgs({
   options: {
     "data-dir": { type: "string" },
     port: { type: "string" },
+    "seed-dir": { type: "string" },
   },
   strict: false,
 });
@@ -24,6 +25,9 @@ if (typeof cliArgs["data-dir"] === "string") {
 }
 if (typeof cliArgs.port === "string") {
   process.env.PORT = cliArgs.port;
+}
+if (typeof cliArgs["seed-dir"] === "string") {
+  process.env.SEED_DIR = cliArgs["seed-dir"];
 }
 
 if (!process.env.ENCRYPTION_KEY) {
@@ -64,6 +68,9 @@ const EnvSchema = z.object({
 
   // CORS - only allow local frontend
   CORS_ORIGIN: z.string().default("http://localhost:3000"),
+
+  // Seed directory (Tauri bundles SRD content here)
+  SEED_DIR: z.string().optional(),
 });
 
 function parseEnv() {

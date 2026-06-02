@@ -307,9 +307,14 @@ export function SpellsTab({ form, set, classes, calcDC, calcAttack }: SpellsTabP
                                 {detail === undefined ? (
                                   <p className="text-xs text-stone-500 italic">Cargando...</p>
                                 ) : detail === null ? (
-                                  <p className="text-xs text-stone-500 italic">
-                                    Descripción no disponible para &quot;{spell.name}&quot;.
-                                  </p>
+                                  <div className="space-y-1">
+                                    <p className="text-xs text-stone-500 italic">
+                                      Descripción no disponible para &quot;{spell.name}&quot;.
+                                    </p>
+                                    <p className="text-xs text-stone-600">
+                                      Importa el contenido del PHB desde Configuración → Documentos para acceder a todos los hechizos.
+                                    </p>
+                                  </div>
                                 ) : (
                                   <>
                                     {/* Cabecera: nivel + escuela */}
