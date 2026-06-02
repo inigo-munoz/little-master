@@ -15,5 +15,9 @@ cp -r app/backend/dist "$RESOURCES/backend"
 cp -r app/backend/prisma/migrations "$RESOURCES/prisma/" 2>/dev/null || echo "  No migrations dir"
 cp app/backend/prisma/schema.prisma "$RESOURCES/prisma/"
 
+# SRD content for first-run seed (CC-BY-4.0 only — no PHB/MM)
+mkdir -p "$RESOURCES/seed/srd"
+cp -r data/srd/en "$RESOURCES/seed/srd/"
+
 echo "→ Resources ready:"
 du -sh "$RESOURCES"/*

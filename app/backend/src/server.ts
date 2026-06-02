@@ -33,6 +33,7 @@ import { encounterRoutes } from "./routes/encounters.js";
 import { wikiRoutes } from "./routes/wiki.js";
 import { relationRoutes } from "./routes/relations.js";
 import { spellRoutes } from "./routes/spells.js";
+import { seedSrdIfNeeded } from "./db/seed-srd.js";
 
 const server = Fastify({
   logger: {
@@ -98,6 +99,9 @@ async function bootstrap() {
   mkdirSync(join(env.DATA_DIR, "backups"), { recursive: true });
 
   initDatabase();
+
+  // ── Seed SRD content on first run (desktop app) ─────────────────────────
+  await seedSrdIfNeeded(env.DATA_DIR, env.SEED_DIR);
 
   // ── Security plugins ─────────────────────────────────────────────────────
   await server.register(helmet, { contentSecurityPolicy: false });
