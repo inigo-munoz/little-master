@@ -978,7 +978,12 @@ function AuthProviderForm({ onSaved }: { onSaved: () => void }) {
     setError("");
     try {
       const { authUrl } = await api.llmConfig.oauthStart();
-      window.open(authUrl, "_blank", "noopener");
+      if ("__TAURI_INTERNALS__" in window) {
+        const { open } = await import("@tauri-apps/plugin-shell");
+        await open(authUrl);
+      } else {
+        window.open(authUrl, "_blank", "noopener");
+      }
 
       setPolling(true);
       setConnecting(false);
