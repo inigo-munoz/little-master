@@ -101,7 +101,8 @@ jobs:
           sed -i.bak 's/"version": "[^"]*"/"version": "'"$VERSION"'"/' app/desktop/src-tauri/tauri.conf.json
           sed -i.bak 's/^version = "[^"]*"/version = "'"$VERSION"'"/' app/desktop/src-tauri/Cargo.toml
           sed -i.bak 's/"version": "[^"]*"/"version": "'"$VERSION"'"/' app/desktop/package.json
-          rm -f app/desktop/src-tauri/tauri.conf.json.bak app/desktop/src-tauri/Cargo.toml.bak app/desktop/package.json.bak
+          sed -i.bak 's/PRODUCT_VERSION = "[^"]*"/PRODUCT_VERSION = "'"$VERSION"'"/' packages/shared/src/app-info.ts
+          rm -f app/desktop/src-tauri/tauri.conf.json.bak app/desktop/src-tauri/Cargo.toml.bak app/desktop/package.json.bak packages/shared/src/app-info.ts.bak
 
       - name: Build frontend
         working-directory: app/frontend
