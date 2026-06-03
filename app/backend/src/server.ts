@@ -114,6 +114,7 @@ async function bootstrap() {
       "http://localhost:1420",
       "tauri://localhost",
       "https://tauri.localhost",
+      "http://tauri.localhost",
     ],
     credentials: true,
   });
