@@ -16,6 +16,7 @@ import { abilityModifier, proficiencyBonus } from "../../lib/player-calcs";
 import { MonsterPicker } from "../../components/ui/MonsterPicker";
 import type { MonsterEntry } from "../../lib/monster-types";
 import { formatCR } from "../../lib/monster-types";
+import { getPdfUrl } from "../../lib/backend-url";
 
 function parseTags(raw: string): string[] {
   try { return JSON.parse(raw); } catch { return []; }
@@ -665,7 +666,7 @@ function NpcCard({
 
           <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
             <a
-              href={`${process.env["NEXT_PUBLIC_BACKEND_URL"] ?? "http://localhost:3001"}/api/pdf/npc/${npc.id}`}
+              href={getPdfUrl(`/api/pdf/npc/${npc.id}`)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}

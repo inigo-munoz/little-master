@@ -28,6 +28,7 @@ import { WikiMarkdown } from "../../../components/ui/WikiMarkdown";
 import { StatusBadge, SeverityBadge, SourceBadge, AuthorityBadge } from "../../../components/ui/Badge";
 import { useAppStore } from "../../../store/app.store";
 import Link from "next/link";
+import { getPdfUrl } from "../../../lib/backend-url";
 
 // ─── Session Form ─────────────────────────────────────────────────────────────
 function SessionForm({
@@ -199,7 +200,7 @@ function SessionCard({ session, campaignId, onEdit }: { session: Session; campai
             </span>
           )}
           <a
-            href={`${process.env["NEXT_PUBLIC_BACKEND_URL"] ?? "http://localhost:3001"}/api/pdf/session/${session.id}`}
+            href={getPdfUrl(`/api/pdf/session/${session.id}`)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -342,7 +343,7 @@ function CampaignDetailContent() {
             </div>
             <div className="flex gap-2">
               <a
-                href={`${process.env["NEXT_PUBLIC_BACKEND_URL"] ?? "http://localhost:3001"}/api/pdf/campaign/${campaign.id}`}
+                href={getPdfUrl(`/api/pdf/campaign/${campaign.id}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 py-2 border border-stone-700 text-stone-400 hover:text-stone-200 hover:border-stone-500 rounded-lg text-sm transition-colors"

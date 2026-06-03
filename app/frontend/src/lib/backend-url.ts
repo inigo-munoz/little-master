@@ -22,3 +22,7 @@ export function getBackendUrl(): string {
     "http://localhost:3001"
   );
 }
+
+export function getPdfUrl(path: string): string {
+  return `${getBackendUrl()}${path}`;
+}
