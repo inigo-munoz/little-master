@@ -466,6 +466,7 @@ export interface Document {
   id: string;
   campaignId?: string | null;
   title: string;
+  description?: string | null;
   path: string;
   contentType: "markdown" | "plaintext" | "pdf";
   sourceType: string;
@@ -479,6 +480,7 @@ export interface Document {
 
 export interface CreateDocument {
   title: string;
+  description?: string;
   content: string;
   contentType: "markdown" | "plaintext";
   sourceType: string;

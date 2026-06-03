@@ -24,6 +24,7 @@ export const documentRoutes: FastifyPluginAsync = async (server) => {
   server.post<{ Body: unknown }>("/", async (request, reply) => {
     const schema = z.object({
       title: z.string().min(1).max(200),
+      description: z.string().max(1000).optional(),
       content: z.string().min(1),
       contentType: z.enum(["markdown", "plaintext"]),
       sourceType: z.enum(["official", "srd", "campaign", "homebrew_external", "homebrew_user", "ai_inferred"]),
@@ -89,6 +90,7 @@ export const documentRoutes: FastifyPluginAsync = async (server) => {
     }
 
     const title = fields.title?.trim() || filename.replace(/\.[^.]+$/, "");
+    const description = fields.description?.trim() || undefined;
     const sourceType = (fields.sourceType as SourceType) ?? "homebrew_user";
     const authorityLevel = (fields.authorityLevel as AuthorityLevel) ?? "medium";
     const campaignId = fields.campaignId || undefined;
@@ -96,6 +98,7 @@ export const documentRoutes: FastifyPluginAsync = async (server) => {
 
     const doc = await documentService.create({
       title,
+      description,
       content,
       contentType,
       sourceType,
