@@ -93,6 +93,16 @@ jobs:
             libsoup-3.0-dev \
             libjavascriptcoregtk-4.1-dev
 
+      - name: Sync version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Syncing version to $VERSION"
+          sed -i.bak 's/"version": "[^"]*"/"version": "'"$VERSION"'"/' app/desktop/src-tauri/tauri.conf.json
+          sed -i.bak 's/^version = "[^"]*"/version = "'"$VERSION"'"/' app/desktop/src-tauri/Cargo.toml
+          sed -i.bak 's/"version": "[^"]*"/"version": "'"$VERSION"'"/' app/desktop/package.json
+          rm -f app/desktop/src-tauri/tauri.conf.json.bak app/desktop/src-tauri/Cargo.toml.bak app/desktop/package.json.bak
+
       - name: Build frontend
         working-directory: app/frontend
         run: pnpm build
