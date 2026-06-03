@@ -19,5 +19,9 @@ cp app/backend/prisma/schema.prisma "$RESOURCES/prisma/"
 mkdir -p "$RESOURCES/seed/srd"
 cp -r data/srd/en "$RESOURCES/seed/srd/"
 
+# DM core rules — user-specific homebrew_external documents
+mkdir -p "$RESOURCES/seed/core-rules"
+cp data/core-rules/*.md "$RESOURCES/seed/core-rules/"
+
 echo "→ Resources ready:"
 du -sh "$RESOURCES"/*
