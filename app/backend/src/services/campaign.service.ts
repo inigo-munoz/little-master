@@ -101,7 +101,6 @@ export const campaignService = {
 
   async delete(id: string, userId: string) {
     const existing = await this.getById(id, userId);
-    await prisma.campaign.delete({ where: { id } });
 
     await changeLogService.log({
       campaignId: id,
@@ -113,5 +112,7 @@ export const campaignService = {
       source: "user",
       authorType: "user",
     });
+
+    await prisma.campaign.delete({ where: { id } });
   },
 };
