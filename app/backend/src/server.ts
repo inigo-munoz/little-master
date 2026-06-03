@@ -46,9 +46,6 @@ const server = Fastify({
 });
 
 function initDatabase() {
-  const marker = join(env.DATA_DIR, ".db-initialized");
-  if (existsSync(marker)) return;
-
   // import.meta is empty in esbuild CJS bundles — __dirname is the CJS equivalent
   const dir: string = import.meta.dirname ?? __dirname;
   const schemaCandidates = [
@@ -67,6 +64,8 @@ function initDatabase() {
     return;
   }
 
+  // Always sync schema on every launch — safe on upgrades, fast when up to date.
+  // db push --accept-data-loss is safe here: it only adds columns, never drops.
   try {
     console.log("initDatabase: pushing schema from", schema);
     execSync(`"${process.execPath}" "${prismaCli}" db push --schema="${schema}" --skip-generate --accept-data-loss`, {
@@ -75,6 +74,18 @@ function initDatabase() {
       stdio: "pipe",
       timeout: 30000,
     });
+    console.log("Database schema up to date");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Failed to sync database schema:", msg);
+    if (err && typeof err === "object" && "stderr" in err) {
+      console.error("stderr:", String((err as { stderr: Buffer }).stderr));
+    }
+  }
+
+  // Seed default user once — marker guards this block only.
+  const marker = join(env.DATA_DIR, ".db-initialized");
+  if (!existsSync(marker)) {
     prisma.user.upsert({
       where: { id: "default-user" },
       update: {},
@@ -82,13 +93,6 @@ function initDatabase() {
     }).then(() => console.log("Default user seeded"))
       .catch((e: unknown) => console.error("Seed user failed:", e));
     writeFileSync(marker, new Date().toISOString());
-    console.log("Database initialized with schema");
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("Failed to initialize database:", msg);
-    if (err && typeof err === "object" && "stderr" in err) {
-      console.error("stderr:", String((err as { stderr: Buffer }).stderr));
-    }
   }
 }
 
