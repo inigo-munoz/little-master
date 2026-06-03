@@ -21,7 +21,9 @@ if (typeof cliArgs["data-dir"] === "string") {
   process.env.DATA_DIR = d;
   process.env.DOCUMENTS_DIR = join(d, "documents");
   process.env.LOGS_DIR = join(d, "logs");
-  process.env.DATABASE_URL = `file:${join(d, "dnd-assistant.db")}`;
+  // Prisma SQLite requires forward slashes on all platforms
+  const dbPath = join(d, "dnd-assistant.db").replaceAll("\\", "/");
+  process.env.DATABASE_URL = `file:${dbPath}`;
 }
 if (typeof cliArgs.port === "string") {
   process.env.PORT = cliArgs.port;
