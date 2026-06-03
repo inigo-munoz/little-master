@@ -49,7 +49,8 @@ function initDatabase() {
   const marker = join(env.DATA_DIR, ".db-initialized");
   if (existsSync(marker)) return;
 
-  const dir = import.meta.dirname;
+  // import.meta is empty in esbuild CJS bundles — __dirname is the CJS equivalent
+  const dir: string = import.meta.dirname ?? __dirname;
   const schemaCandidates = [
     join(dir, "schema.prisma"),
     join(dir, "..", "prisma", "schema.prisma"),
