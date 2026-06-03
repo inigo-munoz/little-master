@@ -315,6 +315,12 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-amber-500 hover:text-amber-400 transition-colors"
+              onClick={(e) => {
+                if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+                  e.preventDefault();
+                  import("@tauri-apps/plugin-shell").then(({ open }) => open(selectedProvider.keyUrl));
+                }
+              }}
             >
               Obtener key →
             </a>
@@ -788,7 +794,7 @@ function SrdStatus() {
                       {data.embeddedChunks.toLocaleString()} / {data.totalChunks.toLocaleString()} chunks embedidos · {data.coverage}% cobertura
                     </p>
                     <p className="text-xs text-stone-700 mt-0.5">
-                      CC-BY-4.0 · <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-500">dndbeyond.com/srd</a>
+                      CC-BY-4.0 · <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-500" onClick={(e) => { if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) { e.preventDefault(); import("@tauri-apps/plugin-shell").then(({ open }) => open("https://www.dndbeyond.com/srd")); } }}>dndbeyond.com/srd</a>
                     </p>
                   </div>
                   <div className="flex gap-2">

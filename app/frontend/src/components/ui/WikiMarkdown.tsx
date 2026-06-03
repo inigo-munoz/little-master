@@ -47,7 +47,17 @@ export function WikiMarkdown({ children, campaignId }: WikiMarkdownProps) {
         return <span className="text-amber-400 decoration-dotted underline">{name}</span>;
       }
       return (
-        <a href={href} target="_blank" rel="noopener noreferrer">
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => {
+            if (href && typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+              e.preventDefault();
+              import("@tauri-apps/plugin-shell").then(({ open }) => open(href));
+            }
+          }}
+        >
           {linkChildren}
         </a>
       );

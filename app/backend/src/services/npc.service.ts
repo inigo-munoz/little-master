@@ -126,7 +126,6 @@ export const npcService = {
 
   async delete(id: string) {
     const existing = await this.getById(id);
-    await prisma.npc.delete({ where: { id } });
 
     await changeLogService.log({
       campaignId: existing.campaignId,
@@ -138,5 +137,10 @@ export const npcService = {
       source: "user",
       authorType: "user",
     });
+
+    await prisma.entityRelation.deleteMany({
+      where: { OR: [{ fromId: id }, { toId: id }] },
+    });
+    await prisma.npc.delete({ where: { id } });
   },
 };

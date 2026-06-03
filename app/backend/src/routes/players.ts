@@ -171,6 +171,16 @@ export const playerRoutes: FastifyPluginAsync = async (server) => {
   server.delete<{ Params: { id: string } }>("/:id", async (request, reply) => {
     const existing = await prisma.player.findUnique({ where: { id: request.params.id } });
     if (!existing) throw AppError.notFound(ErrorCode.NOT_FOUND, "Player not found");
+    await changeLogService.log({
+      campaignId: null,
+      entityType: "player",
+      entityId: existing.id,
+      beforeJson: JSON.stringify(existing),
+      afterJson: null,
+      reason: "Player deleted",
+      source: "user",
+      authorType: "user",
+    });
     await prisma.player.delete({ where: { id: request.params.id } });
     return reply.status(204).send();
   });

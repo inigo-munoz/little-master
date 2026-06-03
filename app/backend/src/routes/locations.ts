@@ -92,6 +92,19 @@ export const locationRoutes: FastifyPluginAsync = async (server) => {
   server.delete<{ Params: { id: string } }>("/:id", async (request, reply) => {
     const existing = await prisma.location.findUnique({ where: { id: request.params.id } });
     if (!existing) throw AppError.notFound(ErrorCode.NOT_FOUND, "Location not found");
+    await changeLogService.log({
+      campaignId: existing.campaignId,
+      entityType: "location",
+      entityId: existing.id,
+      beforeJson: JSON.stringify(existing),
+      afterJson: null,
+      reason: "Location deleted",
+      source: "user",
+      authorType: "user",
+    });
+    await prisma.entityRelation.deleteMany({
+      where: { OR: [{ fromId: existing.id }, { toId: existing.id }] },
+    });
     await prisma.location.delete({ where: { id: request.params.id } });
     return reply.status(204).send();
   });

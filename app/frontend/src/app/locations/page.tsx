@@ -10,6 +10,7 @@ import { AppShell } from "../../components/layout/AppShell";
 import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { useAppStore } from "../../store/app.store";
+import { getPdfUrl } from "../../lib/backend-url";
 
 function parseTags(raw: string): string[] {
   try { return JSON.parse(raw); } catch { return []; }
@@ -184,7 +185,7 @@ function LocationCard({
           </div>
           <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
             <a
-              href={`${process.env["NEXT_PUBLIC_BACKEND_URL"] ?? "http://localhost:3001"}/api/pdf/location/${location.id}`}
+              href={getPdfUrl(`/api/pdf/location/${location.id}`)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
