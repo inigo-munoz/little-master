@@ -34,6 +34,7 @@ export const documentService = {
 
   async create(input: {
     title: string;
+    description?: string;
     content: string;
     contentType: "markdown" | "plaintext";
     sourceType: SourceType;
@@ -67,6 +68,7 @@ export const documentService = {
       data: {
         id: docId,
         title: input.title,
+        description: input.description ?? null,
         path: relativePath,
         contentType: input.contentType,
         sourceType: input.sourceType,
@@ -99,13 +101,6 @@ export const documentService = {
     const doc = await this.getById(id);
     const fullPath = path.join(env.DOCUMENTS_DIR, doc.path);
 
-    // Delete chunks first
-    await prisma.documentChunk.deleteMany({ where: { documentId: id } });
-    await prisma.document.delete({ where: { id } });
-
-    // Delete file (best-effort)
-    await fs.unlink(fullPath).catch(() => {});
-
     await changeLogService.log({
       campaignId: doc.campaignId ?? null,
       entityType: "document",
@@ -116,6 +111,10 @@ export const documentService = {
       source: "user",
       authorType: "user",
     });
+
+    await prisma.documentChunk.deleteMany({ where: { documentId: id } });
+    await prisma.document.delete({ where: { id } });
+    await fs.unlink(fullPath).catch(() => {});
   },
 
   async indexAndEmbed(documentId: string, content: string) {
