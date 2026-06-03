@@ -361,12 +361,16 @@ function DocumentCard({ doc, onAction, onView }: { doc: Document; onAction: () =
   const [reindexing, setReindexing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [cardError, setCardError] = useState("");
 
   async function handleReindex() {
     setReindexing(true);
+    setCardError("");
     try {
       await api.documents.reindex(doc.id);
       onAction();
+    } catch (err: unknown) {
+      setCardError(err instanceof Error ? err.message : "Error al reindexar");
     } finally {
       setReindexing(false);
     }
@@ -375,9 +379,12 @@ function DocumentCard({ doc, onAction, onView }: { doc: Document; onAction: () =
   async function doDelete() {
     setShowConfirm(false);
     setDeleting(true);
+    setCardError("");
     try {
       await api.documents.delete(doc.id);
       onAction();
+    } catch (err: unknown) {
+      setCardError(err instanceof Error ? err.message : "Error al eliminar");
     } finally {
       setDeleting(false);
     }
@@ -433,6 +440,7 @@ function DocumentCard({ doc, onAction, onView }: { doc: Document; onAction: () =
           </button>
         </div>
       </div>
+      {cardError && <p className="text-xs text-red-400 mt-2">{cardError}</p>}
       <ConfirmModal
         isOpen={showConfirm}
         title="Eliminar documento"
