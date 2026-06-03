@@ -20,6 +20,8 @@
     "phb:import:force": "npx tsx src/db/phb-import-cli.ts --force",
     "mm:import": "npx tsx src/db/monster-import-cli.ts",
     "mm:import:force": "npx tsx src/db/monster-import-cli.ts --force",
+    "rules:import": "npx tsx src/db/import-core-rules.ts",
+    "rules:import:force": "npx tsx src/db/import-core-rules.ts --force",
     "test": "vitest run"
   },
   "dependencies": {

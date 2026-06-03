@@ -328,6 +328,13 @@ function DocumentViewModal({ doc, onClose }: { doc: Document; onClose: () => voi
           </button>
         </div>
 
+        {/* Description */}
+        {doc.description && (
+          <div className="px-6 py-3 border-b border-stone-800 bg-stone-950/40">
+            <p className="text-xs text-stone-400">{doc.description}</p>
+          </div>
+        )}
+
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {isLoading && (
@@ -405,6 +412,9 @@ function DocumentCard({ doc, onAction, onView }: { doc: Document; onAction: () =
             <AuthorityBadge level={doc.authorityLevel} />
             <span className="text-xs text-stone-600">{doc.contentType}</span>
           </div>
+          {doc.description && (
+            <p className="text-xs text-stone-500 mt-1 line-clamp-2">{doc.description}</p>
+          )}
           <div className="flex items-center gap-3 mt-2 text-xs text-stone-600">
             {doc.isIndexed ? (
               <span className="flex items-center gap-1 text-emerald-600">

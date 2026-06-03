@@ -167,6 +167,7 @@ model Document {
   id             String   @id @default(cuid())
   campaignId     String?
   title          String
+  description    String?  // optional summary shown in document list
   path           String   // relative to /data/documents/
   contentType    String   // markdown | plaintext | pdf
   sourceType     String   // official | srd | campaign | homebrew_* | ai_inferred
