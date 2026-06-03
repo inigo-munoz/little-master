@@ -114,8 +114,8 @@ export function RelationsPanel({
     try {
       await api.relations.delete(id);
       await mutate(swrKey);
-    } catch {
-      // silent
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al eliminar la relación");
     }
   }
 

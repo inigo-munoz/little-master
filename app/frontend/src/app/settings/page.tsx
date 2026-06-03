@@ -751,15 +751,17 @@ function ObsidianSync() {
 
 function SrdStatus() {
   const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState("");
   const { data, mutate: refetch } = useSWR("/srd-status", () => api.srd.status());
 
   async function handleImport(force = false) {
     setImporting(true);
+    setImportError("");
     try {
       await api.srd.import(force);
-      // Poll for completion
       setTimeout(() => { refetch(); setImporting(false); }, 4000);
-    } catch {
+    } catch (err: unknown) {
+      setImportError(err instanceof Error ? err.message : "Error al importar SRD");
       setImporting(false);
     }
   }
@@ -819,6 +821,7 @@ function SrdStatus() {
                   </div>
                 </div>
 
+                {importError && <p className="text-xs text-red-400">{importError}</p>}
                 <div className="border-t border-stone-800 pt-3 space-y-1.5">
                   {data.documents.map((doc) => (
                     <div key={doc.id} className="flex items-center justify-between text-xs">
@@ -849,15 +852,18 @@ const AUTHORITY_LABELS: Record<string, { label: string; cls: string }> = {
 function CustomRulesStatus() {
   const { data, mutate: refetch } = useSWR("/custom-rules-status", () => api.srd.customRules());
   const [reindexing, setReindexing] = useState<string | null>(null);
+  const [reindexError, setReindexError] = useState("");
 
   if (!data || data.documents.length === 0) return null;
 
   async function handleReindex(id: string) {
     setReindexing(id);
+    setReindexError("");
     try {
       await api.documents.reindex(id);
       setTimeout(() => { refetch(); setReindexing(null); }, 2000);
-    } catch {
+    } catch (err: unknown) {
+      setReindexError(err instanceof Error ? err.message : "Error al reindexar");
       setReindexing(null);
     }
   }
@@ -878,6 +884,7 @@ function CustomRulesStatus() {
             {embeddedChunks.toLocaleString()} / {totalChunks.toLocaleString()} chunks embedidos · {coverage}% cobertura
           </p>
         </div>
+        {reindexError && <p className="text-xs text-red-400">{reindexError}</p>}
         <div className="border-t border-stone-800 pt-3 space-y-2">
           {data.documents.map((doc) => {
             const auth = AUTHORITY_LABELS[doc.authorityLevel] ?? AUTHORITY_LABELS["low"]!;
@@ -911,13 +918,17 @@ function CustomRulesStatus() {
 
 function EmbeddingStatus() {
   const [embedding, setEmbedding] = useState(false);
+  const [embedError, setEmbedError] = useState("");
   const { data, mutate: refetch } = useSWR("/embedding-status", () => api.embeddings.status());
 
   async function handleEmbedAll() {
     setEmbedding(true);
+    setEmbedError("");
     try {
       await api.embeddings.embedAll();
       refetch();
+    } catch (err: unknown) {
+      setEmbedError(err instanceof Error ? err.message : "Error al generar embeddings");
     } finally {
       setEmbedding(false);
     }
@@ -956,6 +967,7 @@ function EmbeddingStatus() {
             {embedding ? "Embedding... (may take a while)" : `Embed ${data.pendingChunks} pending chunks`}
           </button>
         )}
+        {embedError && <p className="text-xs text-red-400">{embedError}</p>}
         {data.pendingChunks === 0 && data.totalChunks > 0 && (
           <p className="text-xs text-emerald-600">✓ All chunks embedded — semantic search is active</p>
         )}

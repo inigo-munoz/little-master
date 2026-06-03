@@ -180,6 +180,7 @@ function CampaignRow({ campaign, onDeleted }: { campaign: Campaign; onDeleted: (
   const isActive = campaign.id === activeCampaignId;
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   function handleClick() {
     setActiveCampaign(campaign);
@@ -188,13 +189,15 @@ function CampaignRow({ campaign, onDeleted }: { campaign: Campaign; onDeleted: (
 
   async function handleDelete() {
     setDeleting(true);
+    setDeleteError("");
     try {
       await api.campaigns.delete(campaign.id);
       if (isActive) setActiveCampaign(null);
       onDeleted();
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : "Error al eliminar");
     } finally {
       setDeleting(false);
-      setConfirmDelete(false);
     }
   }
 
@@ -253,9 +256,10 @@ function CampaignRow({ campaign, onDeleted }: { campaign: Campaign; onDeleted: (
             <p className="text-sm text-stone-300">
               ¿Eliminar <strong>{campaign.title}</strong>? Se borrarán todas las sesiones, PNJs, localizaciones, facciones y PJs asociados. Esta acción no se puede deshacer.
             </p>
+            {deleteError && <p className="text-sm text-red-400">{deleteError}</p>}
             <div className="flex gap-3 pt-2">
               <button
-                onClick={() => setConfirmDelete(false)}
+                onClick={() => { setConfirmDelete(false); setDeleteError(""); }}
                 className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors"
               >
                 Cancelar
