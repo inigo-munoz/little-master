@@ -5,9 +5,10 @@
  * if already imported. Only runs when --seed-dir is provided (Tauri desktop).
  */
 
-import { copyFile, mkdir, readdir } from "node:fs/promises";
+import { copyFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { prisma } from "./prisma.js";
 
 const CURRENT_RULES_VERSION = "1.0";
@@ -75,11 +76,7 @@ export async function seedCoreRulesIfNeeded(
       continue;
     }
 
-    const { readFile } = await import("node:fs/promises");
-    const content = await readFile(src, "utf-8");
-
-    const crypto = await import("node:crypto");
-    const docId = crypto.randomUUID();
+    const docId = randomUUID();
     const relativePath = join("global", `${docId}.md`);
     const destPath = join(targetDir, `${docId}.md`);
 
