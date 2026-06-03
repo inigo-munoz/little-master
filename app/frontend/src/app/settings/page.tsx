@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import useSWR, { mutate } from "swr";
 import { useAppStore } from "../../store/app.store";
+import { PRODUCT_NAME, PRODUCT_VERSION } from "@dnd/shared";
 import {
   Settings,
   CheckCircle,
@@ -1183,10 +1184,34 @@ export default function SettingsPage() {
           <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-wider mb-4">
             About
           </h2>
-          <div className="border border-stone-800 bg-stone-900 rounded-lg p-4 space-y-2 text-sm text-stone-400">
-            <p>D&D Campaign Assistant — v0.1.0</p>
-            <p>All data is stored locally. API keys are encrypted with AES-256-GCM.</p>
-            <p>The AI is an assistant layer — not the source of truth.</p>
+          <div className="border border-stone-800 bg-stone-900 rounded-lg p-4 space-y-3 text-sm text-stone-400">
+            <p className="font-medium text-stone-300">{PRODUCT_NAME} — v{PRODUCT_VERSION}</p>
+            <div className="border-t border-stone-800 pt-3 text-xs text-stone-600 space-y-1">
+              <p className="text-stone-500 font-medium">Atribución / Attribution</p>
+              <p>
+                This work includes material taken from the System Reference Document 5.2.1 (&ldquo;SRD 5.2.1&rdquo;) by Wizards of the Coast LLC, available at{" "}
+                <a
+                  href="https://www.dndbeyond.com/srd"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-stone-400"
+                  onClick={(e) => { if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) { e.preventDefault(); import("@tauri-apps/plugin-shell").then(({ open }) => open("https://www.dndbeyond.com/srd")); } }}
+                >
+                  dndbeyond.com/srd
+                </a>
+                . The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License available at{" "}
+                <a
+                  href="https://creativecommons.org/licenses/by/4.0/legalcode"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-stone-400"
+                  onClick={(e) => { if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) { e.preventDefault(); import("@tauri-apps/plugin-shell").then(({ open }) => open("https://creativecommons.org/licenses/by/4.0/legalcode")); } }}
+                >
+                  creativecommons.org/licenses/by/4.0
+                </a>
+                .
+              </p>
+            </div>
           </div>
         </section>
       </div>
