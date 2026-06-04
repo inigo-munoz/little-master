@@ -4,7 +4,7 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
 import multipart from "@fastify/multipart";
-import { mkdirSync, existsSync, writeFileSync } from "node:fs";
+import { mkdirSync, existsSync, writeFileSync, copyFileSync, chmodSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
 import { env } from "./config/env.js";
@@ -45,6 +45,48 @@ const server = Fastify({
         : undefined,
   },
 });
+
+// Copies the correct Prisma query engine to a user-writable location and sets
+// PRISMA_QUERY_ENGINE_LIBRARY so neither the client nor the `prisma db push`
+// subprocess try to write to the read-only .deb install path (/usr/lib/…).
+async function setupPrismaEngine(dataDir: string): Promise<void> {
+  if (process.env.PRISMA_QUERY_ENGINE_LIBRARY) return;
+
+  const dir: string = import.meta.dirname ?? __dirname;
+  const clientDir = join(dir, "node_modules", ".prisma", "client");
+  if (!existsSync(clientDir)) return;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getPlatformInfo } = require(join(dir, "node_modules", "@prisma", "get-platform")) as {
+      getPlatformInfo: () => Promise<{ binaryTarget: string }>;
+    };
+    const { binaryTarget } = await getPlatformInfo();
+
+    // Find the bundled engine file for this target
+    const engineFile = readdirSync(clientDir).find(
+      (f) => f.includes(binaryTarget) && (f.endsWith(".so.node") || f.endsWith(".dylib.node") || f.endsWith(".dll.node"))
+    );
+    if (!engineFile) {
+      console.warn(`[prisma] No bundled engine for ${binaryTarget} — Prisma will attempt auto-resolve`);
+      return;
+    }
+
+    const engineDestDir = join(dataDir, ".prisma-engines");
+    mkdirSync(engineDestDir, { recursive: true });
+    const engineDest = join(engineDestDir, engineFile);
+
+    if (!existsSync(engineDest)) {
+      copyFileSync(join(clientDir, engineFile), engineDest);
+      if (process.platform !== "win32") chmodSync(engineDest, 0o755);
+    }
+
+    process.env.PRISMA_QUERY_ENGINE_LIBRARY = engineDest;
+    console.log(`[prisma] Engine: ${binaryTarget}`);
+  } catch (e) {
+    console.warn("[prisma] Engine setup failed:", e instanceof Error ? e.message : e);
+  }
+}
 
 function initDatabase() {
   // import.meta is empty in esbuild CJS bundles — __dirname is the CJS equivalent
@@ -104,6 +146,7 @@ async function bootstrap() {
   mkdirSync(env.LOGS_DIR, { recursive: true });
   mkdirSync(join(env.DATA_DIR, "backups"), { recursive: true });
 
+  await setupPrismaEngine(env.DATA_DIR);
   initDatabase();
 
   // ── Seed SRD content on first run (desktop app) ─────────────────────────
