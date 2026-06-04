@@ -64,24 +64,39 @@ async function setupPrismaEngine(dataDir: string): Promise<void> {
     const { binaryTarget } = await getPlatformInfo();
 
     // Find the bundled engine file for this target
-    const engineFile = readdirSync(clientDir).find(
-      (f) => f.includes(binaryTarget) && (f.endsWith(".so.node") || f.endsWith(".dylib.node") || f.endsWith(".dll.node"))
-    );
-    if (!engineFile) {
-      console.warn(`[prisma] No bundled engine for ${binaryTarget} — Prisma will attempt auto-resolve`);
-      return;
-    }
-
     const engineDestDir = join(dataDir, ".prisma-engines");
     mkdirSync(engineDestDir, { recursive: true });
-    const engineDest = join(engineDestDir, engineFile);
 
-    if (!existsSync(engineDest)) {
-      copyFileSync(join(clientDir, engineFile), engineDest);
-      if (process.platform !== "win32") chmodSync(engineDest, 0o755);
+    // libquery-engine → PRISMA_QUERY_ENGINE_LIBRARY
+    const queryFile = readdirSync(clientDir).find(
+      (f) => f.includes(binaryTarget) && (f.endsWith(".so.node") || f.endsWith(".dylib.node") || f.endsWith(".dll.node"))
+    );
+    if (!queryFile) {
+      console.warn(`[prisma] No bundled query engine for ${binaryTarget}`);
+    } else {
+      const queryDest = join(engineDestDir, queryFile);
+      if (!existsSync(queryDest)) {
+        copyFileSync(join(clientDir, queryFile), queryDest);
+        if (process.platform !== "win32") chmodSync(queryDest, 0o755);
+      }
+      process.env.PRISMA_QUERY_ENGINE_LIBRARY = queryDest;
     }
 
-    process.env.PRISMA_QUERY_ENGINE_LIBRARY = engineDest;
+    // schema-engine → PRISMA_SCHEMA_ENGINE_BINARY (used by `prisma db push`)
+    const schemaEngineName = `schema-engine-${binaryTarget}${process.platform === "win32" ? ".exe" : ""}`;
+    const enginesDir = join(dir, "node_modules", "@prisma", "engines");
+    const schemaSrc = join(enginesDir, schemaEngineName);
+    if (!existsSync(schemaSrc)) {
+      console.warn(`[prisma] No bundled schema engine for ${binaryTarget}`);
+    } else {
+      const schemaDest = join(engineDestDir, schemaEngineName);
+      if (!existsSync(schemaDest)) {
+        copyFileSync(schemaSrc, schemaDest);
+        if (process.platform !== "win32") chmodSync(schemaDest, 0o755);
+      }
+      process.env.PRISMA_SCHEMA_ENGINE_BINARY = schemaDest;
+    }
+
     console.log(`[prisma] Engine: ${binaryTarget}`);
   } catch (e) {
     console.warn("[prisma] Engine setup failed:", e instanceof Error ? e.message : e);
