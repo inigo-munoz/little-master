@@ -46,7 +46,12 @@ const { join } = require('path');
 
 const enginesVersion = require('./node_modules/@prisma/engines-version/package.json').prisma.enginesVersion;
 const clientDir = join(process.cwd(), 'node_modules', '.prisma', 'client');
-const targets = ['debian-openssl-1.1.x', 'debian-openssl-3.0.x'];
+const targets = [
+  'debian-openssl-1.1.x',  // Ubuntu 18.04, 20.04
+  'debian-openssl-3.0.x',  // Ubuntu 22.04+, Debian 12+
+  'rhel-openssl-1.0.x',    // RHEL/CentOS 7, old Fedora
+  'rhel-openssl-3.0.x',    // Fedora 38+, RHEL 9+
+];
 
 async function main() {
   for (const target of targets) {

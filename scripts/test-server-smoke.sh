@@ -38,7 +38,7 @@ echo "bundle: $SERVER_JS"
 if [[ "$(uname -s)" == "Linux" ]]; then
   CLIENT_DIR="$REPO_ROOT/app/backend/dist/node_modules/.prisma/client"
   ENGINE_FAILURES=0
-  for target in "debian-openssl-1.1.x" "debian-openssl-3.0.x"; do
+  for target in "debian-openssl-1.1.x" "debian-openssl-3.0.x" "rhel-openssl-1.0.x" "rhel-openssl-3.0.x"; do
     ENGINE="$CLIENT_DIR/libquery_engine-${target}.so.node"
     if [[ -f "$ENGINE" ]]; then
       echo "engine: $target ✓"
