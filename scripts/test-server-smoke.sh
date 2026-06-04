@@ -31,6 +31,28 @@ echo "=== Backend Bundle Smoke Test ==="
 echo "node:   $("$NODE_BIN" --version)"
 echo "bundle: $SERVER_JS"
 
+# ── Linux engine preflight ─────────────────────────────────────────────────────
+# Verify both OpenSSL engine variants are bundled before running server scenarios.
+# Missing engines cause silent EACCES crashes in .deb installations on modern Ubuntu.
+
+if [[ "$(uname -s)" == "Linux" ]]; then
+  CLIENT_DIR="$REPO_ROOT/app/backend/dist/node_modules/.prisma/client"
+  ENGINE_FAILURES=0
+  for target in "debian-openssl-1.1.x" "debian-openssl-3.0.x"; do
+    ENGINE="$CLIENT_DIR/libquery_engine-${target}.so.node"
+    if [[ -f "$ENGINE" ]]; then
+      echo "engine: $target ✓"
+    else
+      echo "engine: $target MISSING — will crash on systems with that OpenSSL" >&2
+      ENGINE_FAILURES=$((ENGINE_FAILURES + 1))
+    fi
+  done
+  if [[ $ENGINE_FAILURES -gt 0 ]]; then
+    echo "ERROR: $ENGINE_FAILURES engine(s) missing from bundle. Run bundle-backend.sh first." >&2
+    exit 1
+  fi
+fi
+
 # ── Seed dir resolution ────────────────────────────────────────────────────────
 # Prefer resources/seed (exists after prepare-resources.sh).
 # Falls back to data/ (tracked in git, available in CI before prepare-resources).
