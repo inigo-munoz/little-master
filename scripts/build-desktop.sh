@@ -14,8 +14,19 @@ cd ../..
 echo "→ Bundling backend..."
 bash scripts/bundle-backend.sh
 
+echo "→ Smoke testing bundle (system node)..."
+bash scripts/test-server-smoke.sh
+
 echo "→ Downloading Node portable..."
 bash scripts/download-node.sh
+
+echo "→ Smoke testing bundle (portable node)..."
+NODE_PORTABLE=$(find app/desktop/src-tauri/binaries -name "node-*" -type f | head -1)
+if [[ -n "$NODE_PORTABLE" ]]; then
+  NODE_BIN="$NODE_PORTABLE" bash scripts/test-server-smoke.sh
+else
+  echo "⚠ No portable node binary found, skipping portable smoke test"
+fi
 
 echo "→ Preparing Tauri resources..."
 bash scripts/prepare-resources.sh

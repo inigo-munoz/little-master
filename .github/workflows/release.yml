@@ -113,8 +113,18 @@ jobs:
       - name: Bundle backend
         run: bash scripts/bundle-backend.sh
 
+      - name: Smoke test bundle (system node)
+        run: bash scripts/test-server-smoke.sh
+        shell: bash
+
       - name: Download Node portable
         run: bash scripts/download-node.sh ${{ matrix.platform }}
+
+      - name: Smoke test bundle (portable node)
+        shell: bash
+        run: |
+          NODE_PORTABLE=$(find app/desktop/src-tauri/binaries -name "node-*" -type f | head -1)
+          NODE_BIN="$NODE_PORTABLE" bash scripts/test-server-smoke.sh
 
       - name: Prepare Tauri resources
         run: bash scripts/prepare-resources.sh
