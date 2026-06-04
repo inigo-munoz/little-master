@@ -52,29 +52,43 @@ const targets = [
   'rhel-openssl-1.0.x',    // RHEL/CentOS 7, old Fedora
   'rhel-openssl-3.0.x',    // Fedora 38+, RHEL 9+
 ];
+const enginesDir = join(process.cwd(), 'node_modules', '@prisma', 'engines');
+
+async function ensureEngine(binaryType, destDir, fileName, target) {
+  const engineFile = join(destDir, fileName);
+  if (existsSync(engineFile)) {
+    const size = (statSync(engineFile).size / 1024 / 1024).toFixed(1);
+    console.log(`  ✓ ${fileName} (${size}M)`);
+    return;
+  }
+  console.log(`  → Downloading ${fileName}...`);
+  await download({
+    binaries: { [binaryType]: destDir },
+    binaryTargets: [target],
+    version: enginesVersion,
+    showProgress: false,
+    failSilently: false,
+  });
+  if (!existsSync(engineFile)) {
+    console.error(`  ✗ ${fileName}: file missing after download`);
+    process.exit(1);
+  }
+  const size = (statSync(engineFile).size / 1024 / 1024).toFixed(1);
+  console.log(`  ✓ ${fileName} downloaded (${size}M)`);
+}
 
 async function main() {
   for (const target of targets) {
-    const engineFile = join(clientDir, `libquery_engine-${target}.so.node`);
-    if (existsSync(engineFile)) {
-      const size = (statSync(engineFile).size / 1024 / 1024).toFixed(1);
-      console.log(`  ✓ ${target} (${size}M)`);
-      continue;
-    }
-    console.log(`  → Downloading ${target}...`);
-    await download({
-      binaries: { 'libquery-engine': clientDir },
-      binaryTargets: [target],
-      version: enginesVersion,
-      showProgress: false,
-      failSilently: false,
-    });
-    if (!existsSync(engineFile)) {
-      console.error(`  ✗ ${target}: download reported success but file not found`);
-      process.exit(1);
-    }
-    const size = (statSync(engineFile).size / 1024 / 1024).toFixed(1);
-    console.log(`  ✓ ${target} downloaded (${size}M)`);
+    // libquery-engine → .prisma/client/ (used by PRISMA_QUERY_ENGINE_LIBRARY)
+    await ensureEngine(
+      'libquery-engine', clientDir,
+      `libquery_engine-${target}.so.node`, target
+    );
+    // schema-engine → @prisma/engines/ (used by PRISMA_SCHEMA_ENGINE_BINARY)
+    await ensureEngine(
+      'schema-engine', enginesDir,
+      `schema-engine-${target}`, target
+    );
   }
 }
 
