@@ -34,7 +34,48 @@ cp prisma/schema.prisma dist/schema.prisma
 echo "→ Installing production dependencies in dist/..."
 cd dist
 npm install --omit=dev 2>/dev/null
-npx prisma generate --schema=schema.prisma 2>/dev/null
+
+echo "→ Generating Prisma client..."
+npx prisma generate --schema=schema.prisma
+
+echo "→ Ensuring Prisma engines for all Linux targets..."
+node << 'NODESCRIPT'
+const { download } = require('./node_modules/@prisma/fetch-engine');
+const { existsSync, statSync } = require('fs');
+const { join } = require('path');
+
+const enginesVersion = require('./node_modules/@prisma/engines-version/package.json').prisma.enginesVersion;
+const clientDir = join(process.cwd(), 'node_modules', '.prisma', 'client');
+const targets = ['debian-openssl-1.1.x', 'debian-openssl-3.0.x'];
+
+async function main() {
+  for (const target of targets) {
+    const engineFile = join(clientDir, `libquery_engine-${target}.so.node`);
+    if (existsSync(engineFile)) {
+      const size = (statSync(engineFile).size / 1024 / 1024).toFixed(1);
+      console.log(`  ✓ ${target} (${size}M)`);
+      continue;
+    }
+    console.log(`  → Downloading ${target}...`);
+    await download({
+      binaries: { 'libquery-engine': clientDir },
+      binaryTargets: [target],
+      version: enginesVersion,
+      showProgress: false,
+      failSilently: false,
+    });
+    if (!existsSync(engineFile)) {
+      console.error(`  ✗ ${target}: download reported success but file not found`);
+      process.exit(1);
+    }
+    const size = (statSync(engineFile).size / 1024 / 1024).toFixed(1);
+    console.log(`  ✓ ${target} downloaded (${size}M)`);
+  }
+}
+
+main().catch(e => { console.error('Engine fetch failed:', e.message); process.exit(1); });
+NODESCRIPT
+
 cd ..
 
 echo "→ Backend bundled to $BACKEND_DIR/dist/server.js ($(du -h dist/server.js | cut -f1))"
