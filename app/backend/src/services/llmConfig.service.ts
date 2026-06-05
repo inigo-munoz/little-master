@@ -78,13 +78,20 @@ export const llmConfigService = {
     });
   },
 
-  async getActiveKey(): Promise<{ provider: string; model: string; apiKey: string | null; configId: string; authMethod: string }> {
+  async getActiveKey(): Promise<{ provider: string; model: string; apiKey: string | null; configId: string; authMethod: string; accountId?: string }> {
     const config = await prisma.llmConfig.findFirst({ where: { isActive: true } });
     if (!config) throw AppError.notFound(ErrorCode.LLM_CONFIG_NOT_FOUND, "No active LLM config");
 
     if (config.authMethod === "oauth" && config.oauthAccessToken) {
       const token = await oauthService.refreshTokenIfNeeded(config.id);
-      return { provider: config.provider, model: config.model, apiKey: token, configId: config.id, authMethod: config.authMethod };
+      return {
+        provider: config.provider,
+        model: config.model,
+        apiKey: token,
+        configId: config.id,
+        authMethod: config.authMethod,
+        accountId: config.oauthAccountId ?? undefined,
+      };
     }
 
     const apiKey = config.apiKeyEncrypted

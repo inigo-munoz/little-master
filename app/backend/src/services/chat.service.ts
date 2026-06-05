@@ -21,7 +21,7 @@ interface ChatInput {
 export const chatService = {
   async chat(input: ChatInput) {
     // 1. Get active LLM config (throws if none)
-    const { provider, model, apiKey, authMethod } = await llmConfigService.getActiveKey();
+    const { provider, model, apiKey, authMethod, accountId } = await llmConfigService.getActiveKey();
     if (!apiKey) {
       throw new AppError(
         ErrorCode.LLM_INVALID_API_KEY,
@@ -71,7 +71,7 @@ export const chatService = {
 
     // 5. Call the LLM (with OAuth token auto-refresh on 401)
     const callLlm = (key: string) =>
-      createProvider(provider as Parameters<typeof createProvider>[0], key, model).generateText({
+      createProvider(provider as Parameters<typeof createProvider>[0], key, model, { accountId }).generateText({
         messages: augmentedMessages,
         systemPrompt,
         temperature: input.mode === "rule_reviewer" ? 0.1 : 0.7,
