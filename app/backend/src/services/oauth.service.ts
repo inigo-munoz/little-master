@@ -164,13 +164,13 @@ export const oauthService = {
     });
   },
 
-  async refreshTokenIfNeeded(configId: string): Promise<string | null> {
+  async refreshTokenIfNeeded(configId: string, force = false): Promise<string | null> {
     const config = await prisma.llmConfig.findUnique({ where: { id: configId } });
     if (!config?.oauthAccessToken || !config.oauthRefreshToken) return null;
 
     const accessToken = decrypt(config.oauthAccessToken, env.ENCRYPTION_KEY);
 
-    if (config.oauthExpiresAt && config.oauthExpiresAt.getTime() > Date.now() + 60_000) {
+    if (!force && config.oauthExpiresAt && config.oauthExpiresAt.getTime() > Date.now() + 60_000) {
       return accessToken;
     }
 

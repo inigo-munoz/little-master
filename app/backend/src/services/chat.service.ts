@@ -21,7 +21,7 @@ interface ChatInput {
 export const chatService = {
   async chat(input: ChatInput) {
     // 1. Get active LLM config (throws if none)
-    const { provider, model, apiKey } = await llmConfigService.getActiveKey();
+    const { provider, model, apiKey, authMethod } = await llmConfigService.getActiveKey();
     if (!apiKey) {
       throw new AppError(
         ErrorCode.LLM_INVALID_API_KEY,
@@ -69,19 +69,28 @@ export const chatService = {
       input.mode
     );
 
-    // 5. Call the LLM
-    const llmProvider = createProvider(
-      provider as Parameters<typeof createProvider>[0],
-      apiKey,
-      model
-    );
+    // 5. Call the LLM (with OAuth token auto-refresh on 401)
+    const callLlm = (key: string) =>
+      createProvider(provider as Parameters<typeof createProvider>[0], key, model).generateText({
+        messages: augmentedMessages,
+        systemPrompt,
+        temperature: input.mode === "rule_reviewer" ? 0.1 : 0.7,
+        maxTokens: 2048,
+      });
 
-    const response = await llmProvider.generateText({
-      messages: augmentedMessages,
-      systemPrompt,
-      temperature: input.mode === "rule_reviewer" ? 0.1 : 0.7,
-      maxTokens: 2048,
-    });
+    let response;
+    try {
+      response = await callLlm(apiKey);
+    } catch (err) {
+      const isInvalidKey = err instanceof Error && err.message.startsWith("INVALID_API_KEY:");
+      if (isInvalidKey && authMethod === "oauth") {
+        const refreshed = await llmConfigService.forceRefreshActiveKey();
+        if (!refreshed) throw err;
+        response = await callLlm(refreshed);
+      } else {
+        throw err;
+      }
+    }
 
     // 6. Log the run — every AI action is auditable
     const llmConfig = await prisma.llmConfig.findFirst({ where: { isActive: true } });
