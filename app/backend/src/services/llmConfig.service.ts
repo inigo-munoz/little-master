@@ -78,20 +78,26 @@ export const llmConfigService = {
     });
   },
 
-  async getActiveKey(): Promise<{ provider: string; model: string; apiKey: string | null }> {
+  async getActiveKey(): Promise<{ provider: string; model: string; apiKey: string | null; configId: string; authMethod: string }> {
     const config = await prisma.llmConfig.findFirst({ where: { isActive: true } });
     if (!config) throw AppError.notFound(ErrorCode.LLM_CONFIG_NOT_FOUND, "No active LLM config");
 
     if (config.authMethod === "oauth" && config.oauthAccessToken) {
       const token = await oauthService.refreshTokenIfNeeded(config.id);
-      return { provider: config.provider, model: config.model, apiKey: token };
+      return { provider: config.provider, model: config.model, apiKey: token, configId: config.id, authMethod: config.authMethod };
     }
 
     const apiKey = config.apiKeyEncrypted
       ? decrypt(config.apiKeyEncrypted, env.ENCRYPTION_KEY)
       : null;
 
-    return { provider: config.provider, model: config.model, apiKey };
+    return { provider: config.provider, model: config.model, apiKey, configId: config.id, authMethod: config.authMethod };
+  },
+
+  async forceRefreshActiveKey(): Promise<string | null> {
+    const config = await prisma.llmConfig.findFirst({ where: { isActive: true } });
+    if (!config || config.authMethod !== "oauth") return null;
+    return oauthService.refreshTokenIfNeeded(config.id, true);
   },
 
   async validateKey(provider: LlmProvider, apiKey: string): Promise<boolean> {
