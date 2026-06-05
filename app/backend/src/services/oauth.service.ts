@@ -135,7 +135,7 @@ export const oauthService = {
 
   async getOAuthStatus(): Promise<{ connected: boolean; provider: string | null; expiresAt: string | null }> {
     const config = await prisma.llmConfig.findFirst({
-      where: { provider: "openai", authMethod: "oauth" },
+      where: { authMethod: "oauth" },
       select: { oauthAccessToken: true, oauthExpiresAt: true, provider: true },
     });
 
@@ -152,7 +152,7 @@ export const oauthService = {
 
   async disconnectOAuth(): Promise<void> {
     await prisma.llmConfig.updateMany({
-      where: { provider: "openai", authMethod: "oauth" },
+      where: { authMethod: "oauth" },
       data: {
         oauthAccessToken: null,
         oauthRefreshToken: null,
@@ -264,7 +264,7 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string): Promis
     : new Date(Date.now() + 3600_000);
 
   const existing = await prisma.llmConfig.findFirst({
-    where: { provider: "openai", authMethod: "oauth" },
+    where: { authMethod: "oauth" },
   });
 
   const accountId = extractChatGptAccountId((tokens as { id_token?: string }).id_token);
@@ -291,7 +291,7 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string): Promis
   }
 
   await prisma.llmConfig.updateMany({
-    where: { NOT: { provider: "openai", authMethod: "oauth" } },
+    where: { NOT: { authMethod: "oauth" } },
     data: { isActive: false },
   });
 }
