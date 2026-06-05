@@ -131,7 +131,13 @@ jobs:
 
       - name: Build Tauri
         working-directory: app/desktop
-        run: pnpm tauri build
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            pnpm tauri build --bundles deb,rpm
+          else
+            pnpm tauri build
+          fi
+        shell: bash
 
       - name: Upload Linux artifacts
         if: matrix.os == 'ubuntu-22.04'
