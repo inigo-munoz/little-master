@@ -112,7 +112,7 @@ export const oauthService = {
       client_id: OPENAI_CLIENT_ID,
       redirect_uri: REDIRECT_URI,
       response_type: "code",
-      scope: "openid profile email offline_access model.request",
+      scope: "openid profile email offline_access",
       state,
       code_challenge: codeChallenge,
       code_challenge_method: "S256",
@@ -192,11 +192,14 @@ export const oauthService = {
       access_token: string;
       refresh_token?: string;
       expires_in?: number;
+      id_token?: string;
     };
 
     const expiresAt = tokens.expires_in
       ? new Date(Date.now() + tokens.expires_in * 1000)
       : new Date(Date.now() + 3600_000);
+
+    const newAccountId = extractChatGptAccountId(tokens.id_token);
 
     await prisma.llmConfig.update({
       where: { id: configId },
@@ -206,6 +209,7 @@ export const oauthService = {
           ? encrypt(tokens.refresh_token, env.ENCRYPTION_KEY)
           : config.oauthRefreshToken,
         oauthExpiresAt: expiresAt,
+        ...(newAccountId ? { oauthAccountId: newAccountId } : {}),
         keyIsValid: true,
         keyValidatedAt: new Date(),
       },
@@ -214,6 +218,20 @@ export const oauthService = {
     return tokens.access_token;
   },
 };
+
+function extractChatGptAccountId(idToken: string | undefined): string | null {
+  if (!idToken) return null;
+  try {
+    const payload = idToken.split(".")[1];
+    if (!payload) return null;
+    const decoded = Buffer.from(payload, "base64url").toString("utf-8");
+    const claims = JSON.parse(decoded) as Record<string, unknown>;
+    const auth = claims["https://api.openai.com/auth"] as Record<string, unknown> | undefined;
+    return (auth?.["chatgpt_account_id"] as string | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 async function exchangeCodeForTokens(code: string, codeVerifier: string): Promise<void> {
   const res = await fetch(OPENAI_TOKEN_URL, {
@@ -238,6 +256,7 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string): Promis
     refresh_token?: string;
     expires_in?: number;
     token_type: string;
+    id_token?: string;
   };
 
   const expiresAt = tokens.expires_in
@@ -248,15 +267,18 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string): Promis
     where: { provider: "openai", authMethod: "oauth" },
   });
 
+  const accountId = extractChatGptAccountId((tokens as { id_token?: string }).id_token);
+
   const data = {
-    provider: "openai",
-    model: "gpt-4o",
+    provider: "openai-codex",
+    model: "gpt-5.3-codex",
     authMethod: "oauth",
     oauthAccessToken: encrypt(tokens.access_token, env.ENCRYPTION_KEY),
     oauthRefreshToken: tokens.refresh_token
       ? encrypt(tokens.refresh_token, env.ENCRYPTION_KEY)
       : null,
     oauthExpiresAt: expiresAt,
+    oauthAccountId: accountId ?? null,
     keyIsValid: true,
     keyValidatedAt: new Date(),
     isActive: true,

@@ -75,6 +75,13 @@ const PROVIDERS = [
     pricing: "~$2.50/1M input, ~$10/1M output (GPT-4o)",
   },
   {
+    id: "openai-codex",
+    label: "ChatGPT (OAuth)",
+    models: ["gpt-5.3-codex", "gpt-4o"],
+    keyUrl: null,
+    pricing: "Requiere suscripción activa de ChatGPT Plus o Pro",
+  },
+  {
     id: "anthropic",
     label: "Anthropic",
     models: ["claude-opus-4-5", "claude-sonnet-4-5", "claude-3-5-haiku-20241022"],
@@ -310,7 +317,7 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="text-sm text-stone-400">API Key</label>
-          {selectedProvider && (
+          {selectedProvider?.keyUrl && (
             <a
               href={selectedProvider.keyUrl}
               target="_blank"
@@ -319,7 +326,7 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
               onClick={(e) => {
                 if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
                   e.preventDefault();
-                  import("@tauri-apps/plugin-shell").then(({ open }) => open(selectedProvider.keyUrl));
+                  import("@tauri-apps/plugin-shell").then(({ open }) => open(selectedProvider.keyUrl as string));
                 }
               }}
             >
