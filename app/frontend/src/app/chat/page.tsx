@@ -554,8 +554,10 @@ function ChatInterface() {
       const code = err instanceof Error && "code" in err ? (err as Error & { code?: string }).code ?? "" : "";
       if (code === "INSUFFICIENT_CREDITS") {
         setError("💳 Sin crédito en el proveedor de IA. Ve a Settings → recarga tu cuenta.");
-      } else if (code === "INVALID_API_KEY") {
-        setError("🔑 API key inválida. Ve a Settings → verifica tu clave.");
+      } else if (code === "INVALID_API_KEY" || code === "LLM_INVALID_API_KEY") {
+        setError("🔑 No hay API key ni OAuth configurado. Ve a Settings → configurá tu proveedor de IA.");
+      } else if (code === "LLM_CONFIG_NOT_FOUND") {
+        setError("⚙️ Sin proveedor de IA configurado. Ve a Settings → configurá OpenAI u otro proveedor.");
       } else if (code === "RATE_LIMITED") {
         setError("⏱ Límite de peticiones alcanzado. Espera unos segundos e inténtalo de nuevo.");
       } else {
