@@ -148,9 +148,17 @@ function initDatabase() {
       where: { id: "default-user" },
       update: {},
       create: { id: "default-user", name: "DM" },
-    }).then(() => console.log("Default user seeded"))
-      .catch((e: unknown) => console.error("Seed user failed:", e));
-    writeFileSync(marker, new Date().toISOString());
+    }).then(() => {
+      console.log("Default user seeded");
+      writeFileSync(marker, new Date().toISOString());
+    }).catch((e: unknown) => console.error("Seed user failed:", e));
+  } else {
+    // Guard: if marker exists but user is missing (e.g. after a DB reset), re-seed silently.
+    prisma.user.upsert({
+      where: { id: "default-user" },
+      update: {},
+      create: { id: "default-user", name: "DM" },
+    }).catch((e: unknown) => console.error("Re-seed user failed:", e));
   }
 }
 
