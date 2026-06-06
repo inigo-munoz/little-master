@@ -1170,7 +1170,9 @@ export default function SettingsPage() {
 
           {configs && configs.length > 0 && (
             <div className="space-y-3 mb-6">
-              {configs.map((c) => <ProviderCard key={c.id} config={c} />)}
+              {configs
+                .filter((c) => llmTab === "auth" ? c.authMethod === "oauth" : c.authMethod !== "oauth")
+                .map((c) => <ProviderCard key={c.id} config={c} />)}
             </div>
           )}
 
