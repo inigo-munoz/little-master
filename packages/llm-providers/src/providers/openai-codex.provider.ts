@@ -123,21 +123,21 @@ export class OpenAICodexProvider implements LLMProvider {
   async listModels(): Promise<LLMModel[]> {
     return [
       {
-        id: "gpt-5.5",
-        name: "GPT-5.5 (ChatGPT Codex)",
-        contextWindow: 200000,
-        supportsEmbeddings: false,
-      },
-      {
         id: "gpt-5.4",
-        name: "GPT-5.4 (ChatGPT Codex)",
-        contextWindow: 200000,
+        name: "GPT-5.4",
+        contextWindow: 1050000,
         supportsEmbeddings: false,
       },
       {
-        id: "gpt-5.4-mini",
-        name: "GPT-5.4-mini (ChatGPT Codex)",
-        contextWindow: 200000,
+        id: "gpt-5.3-codex",
+        name: "GPT-5.3 Codex",
+        contextWindow: 272000,
+        supportsEmbeddings: false,
+      },
+      {
+        id: "gpt-5.1-codex-mini",
+        name: "GPT-5.1 Codex Mini",
+        contextWindow: 262000,
         supportsEmbeddings: false,
       },
     ];

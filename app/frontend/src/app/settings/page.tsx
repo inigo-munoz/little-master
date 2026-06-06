@@ -77,7 +77,7 @@ const PROVIDERS = [
   {
     id: "openai-codex",
     label: "ChatGPT (OAuth)",
-    models: ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
+    models: ["gpt-5.4", "gpt-5.3-codex", "gpt-5.1-codex-mini"],
     keyUrl: null,
     pricing: "Requiere suscripción activa de ChatGPT Plus o Pro",
   },
