@@ -1060,11 +1060,13 @@ function AuthProviderForm({ onSaved }: { onSaved: () => void }) {
   }
 
   async function handleModelChange(model: string) {
+    const previous = selectedModel;
     setSelectedModel(model);
     try {
       await api.llmConfig.patchOAuthModel(model);
       onSaved();
     } catch (e: unknown) {
+      setSelectedModel(previous);
       setError(e instanceof Error ? e.message : "Error al cambiar modelo");
     }
   }
