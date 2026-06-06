@@ -560,6 +560,9 @@ function ChatInterface() {
         setError("⚙️ Sin proveedor de IA configurado. Ve a Settings → configurá OpenAI u otro proveedor.");
       } else if (code === "RATE_LIMITED") {
         setError("⏱ Límite de peticiones alcanzado. Espera unos segundos e inténtalo de nuevo.");
+      } else if (code === "CODEX_ERROR") {
+        const msg = err instanceof Error ? err.message : "";
+        setError(`🤖 Error del proveedor Codex: ${msg} — Ve a Settings → cambiá el modelo.`);
       } else {
         setError(err instanceof Error ? err.message : "Error inesperado. Revisa el terminal del backend.");
       }
