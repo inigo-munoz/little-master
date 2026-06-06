@@ -995,7 +995,9 @@ function AuthProviderForm({ onSaved }: { onSaved: () => void }) {
   const [oauthStatus, setOauthStatus] = useState<{ connected: boolean } | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
   const codexProvider = PROVIDERS.find((p) => p.id === "openai-codex");
-  const [selectedModel, setSelectedModel] = useState<string>("gpt-5.4");
+  const [selectedModel, setSelectedModel] = useState<string>(
+    () => PROVIDERS.find((p) => p.id === "openai-codex")?.models[0] ?? "gpt-5.4"
+  );
 
   useEffect(() => {
     api.llmConfig.oauthStatus().then((status) => {
