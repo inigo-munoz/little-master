@@ -86,6 +86,16 @@ export function errorHandler(
     });
   }
 
+  if (error.message?.startsWith("CODEX_ERROR:")) {
+    return reply.status(422).send({
+      success: false,
+      error: {
+        code: "CODEX_ERROR",
+        message: error.message.slice("CODEX_ERROR: ".length),
+      },
+    });
+  }
+
   // Unexpected errors — don't leak internals
   return reply.status(500).send({
     success: false,

@@ -33,7 +33,7 @@ export class OpenAICodexProvider implements LLMProvider {
 
   constructor(
     private readonly accessToken: string,
-    private readonly defaultModel: string = "gpt-5.3-codex",
+    private readonly defaultModel: string = "o4-mini",
     private readonly accountId?: string
   ) {}
 
@@ -90,6 +90,14 @@ export class OpenAICodexProvider implements LLMProvider {
           "OpenAI Codex requires an active ChatGPT Plus or Pro subscription"
         );
       }
+      if (res.status === 400) {
+        let detail = text;
+        try {
+          const parsed = JSON.parse(text) as { detail?: string };
+          if (parsed.detail) detail = parsed.detail;
+        } catch { /* keep raw text */ }
+        throw new Error(`CODEX_ERROR: ${detail}`);
+      }
       throw new Error(`Codex API error ${res.status}: ${text}`);
     }
 
@@ -116,9 +124,15 @@ export class OpenAICodexProvider implements LLMProvider {
   async listModels(): Promise<LLMModel[]> {
     return [
       {
-        id: "gpt-5.3-codex",
-        name: "GPT-5.3 Codex (ChatGPT)",
-        contextWindow: 128000,
+        id: "o4-mini",
+        name: "o4-mini (ChatGPT Codex)",
+        contextWindow: 200000,
+        supportsEmbeddings: false,
+      },
+      {
+        id: "o3",
+        name: "o3 (ChatGPT Codex)",
+        contextWindow: 200000,
         supportsEmbeddings: false,
       },
       {
