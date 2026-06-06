@@ -12,21 +12,6 @@ interface CodexMessage {
   content: CodexContentPart[];
 }
 
-interface CodexResponseDonePayload {
-  type: "response.done";
-  response: {
-    id: string;
-    model: string;
-    output: Array<{
-      content: CodexContentPart[];
-    }>;
-    usage?: {
-      input_tokens?: number;
-      output_tokens?: number;
-      total_tokens?: number;
-    };
-  };
-}
 
 export class OpenAICodexProvider implements LLMProvider {
   readonly name = "openai-codex";
@@ -180,21 +165,13 @@ async function parseCodexStream(
           continue;
         }
 
-        if (
-          typeof event === "object" &&
-          event !== null &&
-          "type" in event &&
-          (event as { type: string }).type === "response.done"
-        ) {
-          const payload = event as CodexResponseDonePayload;
-          totalTokens = payload.response.usage?.total_tokens ?? 0;
-          for (const item of payload.response.output ?? []) {
-            for (const part of item.content ?? []) {
-              if (part.type === "output_text") {
-                resultText += part.text;
-              }
-            }
-          }
+        if (typeof event !== "object" || event === null || !("type" in event)) continue;
+        const ev = event as { type: string; delta?: string; response?: { usage?: { total_tokens?: number } } };
+
+        if (ev.type === "response.output_text.delta" && ev.delta) {
+          resultText += ev.delta;
+        } else if (ev.type === "response.completed" || ev.type === "response.done") {
+          totalTokens = ev.response?.usage?.total_tokens ?? totalTokens;
         }
       }
     }
