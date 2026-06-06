@@ -133,9 +133,11 @@ export const api = {
     oauthStart: () =>
       get<{ authUrl: string }>("/api/llm-config/oauth/start"),
     oauthStatus: () =>
-      get<{ connected: boolean; provider: string | null; expiresAt: string | null }>("/api/llm-config/oauth/status"),
+      get<{ connected: boolean; provider: string | null; expiresAt: string | null; model: string | null }>("/api/llm-config/oauth/status"),
     oauthDisconnect: () =>
       post<{ disconnected: boolean }>("/api/llm-config/oauth/disconnect", {}),
+    patchOAuthModel: (model: string) =>
+      patch<{ model: string }>("/api/llm-config/oauth/model", { model }),
   },
 
   changelog: {
