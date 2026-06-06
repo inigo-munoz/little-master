@@ -77,7 +77,7 @@ const PROVIDERS = [
   {
     id: "openai-codex",
     label: "ChatGPT (OAuth)",
-    models: ["gpt-5.3-codex", "gpt-4o"],
+    models: ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
     keyUrl: null,
     pricing: "Requiere suscripción activa de ChatGPT Plus o Pro",
   },
@@ -994,9 +994,14 @@ function AuthProviderForm({ onSaved }: { onSaved: () => void }) {
   const [error, setError] = useState("");
   const [oauthStatus, setOauthStatus] = useState<{ connected: boolean } | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
+  const codexProvider = PROVIDERS.find((p) => p.id === "openai-codex");
+  const [selectedModel, setSelectedModel] = useState<string>("gpt-5.4");
 
   useEffect(() => {
-    api.llmConfig.oauthStatus().then(setOauthStatus).catch(() => {});
+    api.llmConfig.oauthStatus().then((status) => {
+      setOauthStatus(status);
+      if (status.model) setSelectedModel(status.model);
+    }).catch(() => {});
   }, []);
 
   async function handleConnect() {
@@ -1052,6 +1057,16 @@ function AuthProviderForm({ onSaved }: { onSaved: () => void }) {
     }
   }
 
+  async function handleModelChange(model: string) {
+    setSelectedModel(model);
+    try {
+      await api.llmConfig.patchOAuthModel(model);
+      onSaved();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error al cambiar modelo");
+    }
+  }
+
   return (
     <div className="border border-stone-800 bg-stone-900 rounded-xl p-6 space-y-4">
       <h3 className="font-semibold text-stone-200">Conectar con OpenAI</h3>
@@ -1063,11 +1078,25 @@ function AuthProviderForm({ onSaved }: { onSaved: () => void }) {
         <div className="space-y-3">
           <div className="flex items-center gap-2 bg-emerald-950/30 border border-emerald-800 rounded-lg p-3">
             <CheckCircle size={16} className="text-emerald-400 shrink-0" />
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-emerald-300">Conectado con OpenAI</p>
               <p className="text-xs text-stone-500 mt-0.5">Los tokens se refrescan automáticamente</p>
             </div>
           </div>
+
+          <div>
+            <label className="block text-sm text-stone-400 mb-1">Modelo</label>
+            <select
+              value={selectedModel}
+              onChange={(e) => handleModelChange(e.target.value)}
+              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+            >
+              {codexProvider?.models.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+
           <button
             onClick={handleDisconnect}
             disabled={disconnecting}
@@ -1171,7 +1200,11 @@ export default function SettingsPage() {
           {configs && configs.length > 0 && (
             <div className="space-y-3 mb-6">
               {configs
-                .filter((c) => llmTab === "auth" ? c.authMethod === "oauth" : c.authMethod !== "oauth")
+                .filter((c) =>
+                  llmTab === "auth"
+                    ? c.authMethod === "oauth" && c.provider !== "openai-codex"
+                    : c.authMethod !== "oauth"
+                )
                 .map((c) => <ProviderCard key={c.id} config={c} />)}
             </div>
           )}
