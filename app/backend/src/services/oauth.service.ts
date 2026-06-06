@@ -133,31 +133,32 @@ export const oauthService = {
     return { authUrl };
   },
 
-  async getOAuthStatus(): Promise<{ connected: boolean; provider: string | null; expiresAt: string | null }> {
+  async getOAuthStatus(): Promise<{ connected: boolean; provider: string | null; expiresAt: string | null; model: string | null }> {
     const config = await prisma.llmConfig.findFirst({
-      where: { authMethod: "oauth" },
-      select: { oauthAccessToken: true, oauthExpiresAt: true, provider: true },
+      where: { provider: "openai-codex" },
+      select: { oauthAccessToken: true, oauthExpiresAt: true, provider: true, model: true },
     });
 
     if (!config?.oauthAccessToken) {
-      return { connected: false, provider: null, expiresAt: null };
+      return { connected: false, provider: null, expiresAt: null, model: null };
     }
 
     return {
       connected: true,
       provider: config.provider,
       expiresAt: config.oauthExpiresAt?.toISOString() ?? null,
+      model: config.model,
     };
   },
 
   async disconnectOAuth(): Promise<void> {
     await prisma.llmConfig.updateMany({
-      where: { authMethod: "oauth" },
+      where: { provider: "openai-codex" },
       data: {
         oauthAccessToken: null,
         oauthRefreshToken: null,
         oauthExpiresAt: null,
-        authMethod: "apikey",
+        isActive: false,
         keyIsValid: null,
         keyValidatedAt: null,
       },
@@ -264,14 +265,14 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string): Promis
     : new Date(Date.now() + 3600_000);
 
   const existing = await prisma.llmConfig.findFirst({
-    where: { authMethod: "oauth" },
+    where: { provider: "openai-codex" },
   });
 
   const accountId = extractChatGptAccountId((tokens as { id_token?: string }).id_token);
 
   const data = {
     provider: "openai-codex",
-    model: "gpt-5.3-codex",
+    model: "gpt-5.4",
     authMethod: "oauth",
     oauthAccessToken: encrypt(tokens.access_token, env.ENCRYPTION_KEY),
     oauthRefreshToken: tokens.refresh_token

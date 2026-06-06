@@ -33,7 +33,7 @@ export class OpenAICodexProvider implements LLMProvider {
 
   constructor(
     private readonly accessToken: string,
-    private readonly defaultModel: string = "o4-mini",
+    private readonly defaultModel: string = "gpt-5.4",
     private readonly accountId?: string
   ) {}
 
@@ -124,21 +124,21 @@ export class OpenAICodexProvider implements LLMProvider {
   async listModels(): Promise<LLMModel[]> {
     return [
       {
-        id: "o4-mini",
-        name: "o4-mini (ChatGPT Codex)",
+        id: "gpt-5.5",
+        name: "GPT-5.5 (ChatGPT Codex)",
         contextWindow: 200000,
         supportsEmbeddings: false,
       },
       {
-        id: "o3",
-        name: "o3 (ChatGPT Codex)",
+        id: "gpt-5.4",
+        name: "GPT-5.4 (ChatGPT Codex)",
         contextWindow: 200000,
         supportsEmbeddings: false,
       },
       {
-        id: "gpt-4o",
-        name: "GPT-4o (ChatGPT)",
-        contextWindow: 128000,
+        id: "gpt-5.4-mini",
+        name: "GPT-5.4-mini (ChatGPT Codex)",
+        contextWindow: 200000,
         supportsEmbeddings: false,
       },
     ];
