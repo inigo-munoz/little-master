@@ -54,6 +54,8 @@ export class OpenAICodexProvider implements LLMProvider {
       "Content-Type": "application/json",
       Authorization: `Bearer ${this.accessToken}`,
       "OpenAI-Beta": "responses=experimental",
+      "Accept": "text/event-stream",
+      "originator": "codex_cli_rs",
     };
 
     if (this.accountId) {
@@ -65,11 +67,8 @@ export class OpenAICodexProvider implements LLMProvider {
       stream: true,
       store: false,
       input: codexMessages,
+      instructions: input.systemPrompt ?? "",
     };
-
-    if (input.systemPrompt) {
-      body["instructions"] = input.systemPrompt;
-    }
 
     const res = await fetch(CODEX_URL, {
       method: "POST",
