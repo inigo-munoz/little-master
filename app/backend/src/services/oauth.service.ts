@@ -112,7 +112,7 @@ export const oauthService = {
       client_id: OPENAI_CLIENT_ID,
       redirect_uri: REDIRECT_URI,
       response_type: "code",
-      scope: "openid profile email offline_access api.connectors.read api.connectors.invoke",
+      scope: "openid profile email offline_access",
       state,
       code_challenge: codeChallenge,
       code_challenge_method: "S256",
