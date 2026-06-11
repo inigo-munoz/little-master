@@ -40,6 +40,16 @@ export const rulesRoutes: FastifyPluginAsync = async (server) => {
     return { success: true, data: result };
   });
 
+  // ── Detect broken entity relations ──────────────────────────────────────
+  server.post<{ Body: unknown }>("/audit-integrity", async (request) => {
+    const { campaignId } = z
+      .object({ campaignId: z.string() })
+      .parse(request.body);
+
+    const result = await rulesEngine.auditDataIntegrity(campaignId);
+    return { success: true, data: result };
+  });
+
   // ── Get active rules for campaign (sorted by authority) ──────────────────
   server.get<{ Querystring: { campaignId: string } }>("/active", async (request) => {
     const { campaignId } = z

@@ -280,4 +280,64 @@ export const rulesEngine = {
 
     return { conflicts, issuesCreated };
   },
+
+  /**
+   * Detecta EntityRelations huérfanas (fromId o toId apuntan a entidades que
+   * ya no existen) y crea issues de tipo broken_reference para las nuevas.
+   * Evita duplicados comprobando si ya hay un issue abierto para la misma
+   * relación.
+   */
+  async auditDataIntegrity(campaignId: string): Promise<{ issuesCreated: number }> {
+    const relations = await prisma.entityRelation.findMany({
+      where: { campaignId },
+    });
+
+    const tableByType: Record<string, { findUnique: (args: { where: { id: string } }) => Promise<unknown> }> = {
+      npc: prisma.npc,
+      location: prisma.location,
+      faction: prisma.faction,
+    };
+
+    let issuesCreated = 0;
+
+    for (const rel of relations) {
+      const sides = [
+        { type: rel.fromType, id: rel.fromId, label: "from" },
+        { type: rel.toType, id: rel.toId, label: "to" },
+      ] as const;
+
+      for (const side of sides) {
+        const table = tableByType[side.type];
+        if (!table) continue;
+
+        const exists = await table.findUnique({ where: { id: side.id } });
+        if (exists) continue;
+
+        const description = `Relación huérfana: la entidad ${side.type}:${side.id} (lado ${side.label}) referenciada en la relación ${rel.id} no existe.`;
+
+        const existing = await prisma.issue.findFirst({
+          where: {
+            campaignId,
+            type: "broken_reference",
+            status: { in: ["open", "in_progress"] },
+            description: { contains: rel.id },
+          },
+        });
+
+        if (!existing) {
+          await issueService.create({
+            campaignId,
+            type: "broken_reference",
+            severity: "major",
+            description,
+            relatedEntityType: "relation",
+            relatedEntityId: rel.id,
+          });
+          issuesCreated++;
+        }
+      }
+    }
+
+    return { issuesCreated };
+  },
 };
