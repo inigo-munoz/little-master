@@ -270,9 +270,7 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string): Promis
 
   const accountId = extractChatGptAccountId((tokens as { id_token?: string }).id_token);
 
-  const data = {
-    provider: "openai-codex",
-    model: "gpt-5.4",
+  const tokenData = {
     authMethod: "oauth",
     oauthAccessToken: encrypt(tokens.access_token, env.ENCRYPTION_KEY),
     oauthRefreshToken: tokens.refresh_token
@@ -286,9 +284,12 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string): Promis
   };
 
   if (existing) {
-    await prisma.llmConfig.update({ where: { id: existing.id }, data });
+    // No machacamos `model`: el usuario pudo haberlo cambiado vía PATCH /oauth/model
+    await prisma.llmConfig.update({ where: { id: existing.id }, data: tokenData });
   } else {
-    await prisma.llmConfig.create({ data });
+    await prisma.llmConfig.create({
+      data: { provider: "openai-codex", model: "gpt-5.4", ...tokenData },
+    });
   }
 
   await prisma.llmConfig.updateMany({
