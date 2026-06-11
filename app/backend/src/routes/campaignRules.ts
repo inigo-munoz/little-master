@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../db/prisma.js";
 import { changeLogService } from "../services/changeLog.service.js";
+import { rulesEngine } from "../services/rulesEngine.service.js";
 import { AppError, ErrorCode } from "@dnd/shared";
 
 export const campaignRuleRoutes: FastifyPluginAsync = async (server) => {
@@ -99,6 +100,11 @@ export const campaignRuleRoutes: FastifyPluginAsync = async (server) => {
       authorType: "user",
     });
 
+    // Fire-and-forget: si hay conflictos con la nueva regla, genera issues
+    rulesEngine.auditRules(data.campaignId).catch((err: unknown) => {
+      console.warn("[rules] auditRules tras create falló:", err instanceof Error ? err.message : String(err));
+    });
+
     return reply.status(201).send({ success: true, data: rule });
   });
 
@@ -127,6 +133,11 @@ export const campaignRuleRoutes: FastifyPluginAsync = async (server) => {
         reason: `Rule ${updated.active ? "activated" : "deactivated"}`,
         source: "user",
         authorType: "user",
+      });
+
+      // Fire-and-forget: re-auditar conflictos tras cambio de estado activo
+      rulesEngine.auditRules(rule.campaignId).catch((err: unknown) => {
+        console.warn("[rules] auditRules tras toggle falló:", err instanceof Error ? err.message : String(err));
       });
 
       return { success: true, data: updated };
