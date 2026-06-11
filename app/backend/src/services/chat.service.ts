@@ -39,17 +39,23 @@ export const chatService = {
         )
       : [];
 
-    // 3. Obtener estado de campaña vía MCP para modos que lo necesitan
+    // 3. Obtener estado de campaña directamente de la BD para modos que lo
+    // necesitan (antes pasaba por el MCP server vía HTTP, que en desktop no
+    // está arrancado y pagaba timeout en cada chat)
     const toolsUsed: string[] = [];
     let campaignStateContext = "";
 
     if (input.campaignId && MODES_WITH_CAMPAIGN_STATE.includes(input.mode)) {
-      const result = await mcpService.callTool("get_campaign_state", {
-        campaignId: input.campaignId,
-      });
-      if (result.success && result.data) {
-        campaignStateContext = mcpService.formatCampaignState(result.data);
+      try {
+        const state = await mcpService.getCampaignState(input.campaignId);
+        campaignStateContext = mcpService.formatCampaignState(state);
         toolsUsed.push("get_campaign_state");
+      } catch (err: unknown) {
+        // El chat continúa sin estado de campaña, pero el fallo queda logueado
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn(
+          `[chat] No se pudo obtener el estado de la campaña ${input.campaignId} (modo ${input.mode}): ${message}`
+        );
       }
     }
 
