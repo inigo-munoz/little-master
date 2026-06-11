@@ -4,9 +4,19 @@
  * Permite al chat.service.ts llamar a las tools del MCP server vía HTTP.
  * Si el MCP server no está disponible, las llamadas fallan silenciosamente
  * (graceful degradation): el chat continúa sin tools.
+ *
+ * Además expone `getCampaignState`, que obtiene el estado de campaña
+ * DIRECTAMENTE de la BD (vía Prisma/servicios) con el mismo shape que la
+ * tool `get_campaign_state` del MCP server. El chat usa este camino directo
+ * para evitar el bucle backend → :3002 → :3001 → backend (que en la app
+ * desktop pagaba timeout porque el MCP server no se lanza).
  */
 
 import { env } from "../config/env.js";
+import { prisma } from "../db/prisma.js";
+import { AppError, ErrorCode } from "@dnd/shared";
+import { npcService } from "./npc.service.js";
+import { issueService } from "./issue.service.js";
 
 const TIMEOUT_MS = 5_000; // 5 segundos máx por tool call
 const HEALTH_TIMEOUT_MS = 2_000;
@@ -84,6 +94,41 @@ export const mcpService = {
     } catch {
       return [];
     }
+  },
+
+  /**
+   * Obtiene el estado de campaña directamente de la BD, sin pasar por el
+   * MCP server. Mismo shape que la tool `get_campaign_state` del MCP server:
+   * campaña, últimas 3 sesiones, NPCs activos (no muertos), issues abiertas
+   * y jugadores. Lanza AppError NOT_FOUND si la campaña no existe.
+   */
+  async getCampaignState(campaignId: string) {
+    const [campaign, recentSessions, npcs, openIssues, players] = await Promise.all([
+      prisma.campaign.findUnique({ where: { id: campaignId } }),
+      prisma.session.findMany({
+        where: { campaignId },
+        orderBy: { sessionNumber: "desc" },
+        take: 3,
+      }),
+      npcService.listByCampaign(campaignId),
+      issueService.listByCampaign(campaignId, "open"),
+      prisma.player.findMany({
+        where: { campaignId },
+        orderBy: { name: "asc" },
+      }),
+    ]);
+
+    if (!campaign) {
+      throw AppError.notFound(ErrorCode.CAMPAIGN_NOT_FOUND, `Campaign ${campaignId} not found`);
+    }
+
+    return {
+      campaign,
+      recentSessions,
+      activeNpcs: npcs.filter((n) => n.status !== "dead"),
+      openIssues,
+      players,
+    };
   },
 
   /**

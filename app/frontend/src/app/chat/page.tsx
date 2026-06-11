@@ -504,6 +504,15 @@ function ChatInterface() {
 
   const effectiveCampaignId = campaignId ?? activeCampaign?.id;
 
+  // Badge de estado de campaña: ¿el último mensaje asistente usó get_campaign_state?
+  const lastAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant");
+  const hasCampaignState =
+    lastAssistantMsg?.toolsUsed?.includes("get_campaign_state") ?? false;
+  const showCampaignStateBadge =
+    effectiveCampaignId !== undefined &&
+    messages.some((m) => m.role === "assistant") &&
+    ["session_director", "designer"].includes(chatMode);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -687,6 +696,21 @@ function ChatInterface() {
                 </Link>{" "}
                 y haz clic en tu campaña.
               </span>
+            </div>
+          )}
+          {showCampaignStateBadge && (
+            <div className="mb-2 flex items-center gap-1.5">
+              {hasCampaignState ? (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-900/40 border border-emerald-700/60 text-xs text-emerald-400">
+                  <Shield size={10} />
+                  Contexto de campaña activo
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-stone-800 border border-stone-700 text-xs text-stone-500">
+                  <Shield size={10} />
+                  Sin contexto de campaña
+                </span>
+              )}
             </div>
           )}
           <div className="flex items-end gap-3">
