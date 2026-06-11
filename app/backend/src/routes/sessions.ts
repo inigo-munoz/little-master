@@ -110,7 +110,22 @@ export const sessionRoutes: FastifyPluginAsync = async (server) => {
   server.delete<{ Params: { id: string } }>("/:id", async (request, reply) => {
     const existing = await prisma.session.findUnique({ where: { id: request.params.id } });
     if (!existing) throw AppError.notFound(ErrorCode.SESSION_NOT_FOUND, "Session not found");
-    await prisma.session.delete({ where: { id: request.params.id } });
+    await prisma.$transaction(async (tx) => {
+      await changeLogService.log(
+        {
+          campaignId: existing.campaignId,
+          entityType: "session",
+          entityId: existing.id,
+          beforeJson: JSON.stringify(existing),
+          afterJson: null,
+          reason: "Session deleted",
+          source: "user",
+          authorType: "user",
+        },
+        tx
+      );
+      await tx.session.delete({ where: { id: request.params.id } });
+    });
     return reply.status(204).send();
   });
 };

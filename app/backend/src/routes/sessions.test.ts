@@ -106,3 +106,31 @@ describe("POST /api/sessions — authorType", () => {
     expect(res.body.error.message).toContain("número");
   });
 });
+
+describe("DELETE /api/sessions/:id", () => {
+  it("→ 204, borra la sesión y registra changelog con beforeJson", async () => {
+    const session = await prisma.session.create({
+      data: { campaignId, title: "Sesión a Borrar", sessionNumber: 99 },
+    });
+
+    const res = await request.delete(`/api/sessions/${session.id}`);
+    expect(res.status).toBe(204);
+
+    const deleted = await prisma.session.findUnique({ where: { id: session.id } });
+    expect(deleted).toBeNull();
+
+    // El changelog se escribe en la misma transacción que el delete
+    const log = await prisma.changeLog.findFirst({
+      where: { entityType: "session", entityId: session.id },
+    });
+    expect(log).not.toBeNull();
+    expect(log?.reason).toBe("Session deleted");
+    expect(log?.afterJson).toBeNull();
+    expect(JSON.parse(log?.beforeJson ?? "{}").title).toBe("Sesión a Borrar");
+  });
+
+  it("con id inexistente → 404", async () => {
+    const res = await request.delete("/api/sessions/no-existe");
+    expect(res.status).toBe(404);
+  });
+});
