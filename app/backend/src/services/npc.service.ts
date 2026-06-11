@@ -127,20 +127,25 @@ export const npcService = {
   async delete(id: string) {
     const existing = await this.getById(id);
 
-    await changeLogService.log({
-      campaignId: existing.campaignId,
-      entityType: "npc",
-      entityId: id,
-      beforeJson: JSON.stringify(existing),
-      afterJson: null,
-      reason: "NPC deleted",
-      source: "user",
-      authorType: "user",
-    });
+    await prisma.$transaction(async (tx) => {
+      await changeLogService.log(
+        {
+          campaignId: existing.campaignId,
+          entityType: "npc",
+          entityId: id,
+          beforeJson: JSON.stringify(existing),
+          afterJson: null,
+          reason: "NPC deleted",
+          source: "user",
+          authorType: "user",
+        },
+        tx
+      );
 
-    await prisma.entityRelation.deleteMany({
-      where: { OR: [{ fromId: id }, { toId: id }] },
+      await tx.entityRelation.deleteMany({
+        where: { OR: [{ fromId: id }, { toId: id }] },
+      });
+      await tx.npc.delete({ where: { id } });
     });
-    await prisma.npc.delete({ where: { id } });
   },
 };

@@ -1,4 +1,5 @@
 import { prisma } from "../db/prisma.js";
+import type { Prisma } from "@prisma/client";
 import type { EntityType, AuthorType } from "@dnd/shared";
 
 interface LogChangeInput {
@@ -13,8 +14,10 @@ interface LogChangeInput {
 }
 
 export const changeLogService = {
-  async log(input: LogChangeInput) {
-    return prisma.changeLog.create({
+  // Acepta un TransactionClient opcional para participar en transacciones del caller
+  async log(input: LogChangeInput, tx?: Prisma.TransactionClient) {
+    const client = tx ?? prisma;
+    return client.changeLog.create({
       data: {
         campaignId: input.campaignId ?? null,
         entityType: input.entityType,

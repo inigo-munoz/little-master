@@ -118,40 +118,52 @@ export async function importPhb2024(
       const absolutePath = path.join(dataDir, "documents", relativePath);
       await fs.writeFile(absolutePath, content, "utf-8");
 
-      // Registro en la BD
-      const document = await prisma.document.create({
-        data: {
-          id: docId,
-          title: doc.title,
-          path: relativePath,
-          contentType: "markdown",
-          sourceType: "official",
-          authorityLevel: "high",
-          version: "2024",
-          campaignId: null,
-          isIndexed: false,
-          chunkCount: 0,
-        },
-      });
-
-      // Crear chunks (sin embeddings — se generan después vía Settings)
+      // Registro en la BD + chunks de forma atómica (sin embeddings — se generan después vía Settings)
       const chunks = chunkText(content);
-      await prisma.documentChunk.createMany({
-        data: chunks.map((chunkContent, i) => ({
-          documentId: document.id,
-          campaignId: null,
-          content: chunkContent,
-          chunkIndex: i,
-          sourceType: "official",
-          authorityLevel: "high",
-          embeddingJson: null,
-        })),
-      });
+      try {
+        await prisma.$transaction(
+        async (tx) => {
+          const document = await tx.document.create({
+            data: {
+              id: docId,
+              title: doc.title,
+              path: relativePath,
+              contentType: "markdown",
+              sourceType: "official",
+              authorityLevel: "high",
+              version: "2024",
+              campaignId: null,
+              isIndexed: false,
+              chunkCount: 0,
+            },
+          });
 
-      await prisma.document.update({
-        where: { id: document.id },
-        data: { isIndexed: true, chunkCount: chunks.length },
-      });
+          await tx.documentChunk.createMany({
+            data: chunks.map((chunkContent, i) => ({
+              documentId: document.id,
+              campaignId: null,
+              content: chunkContent,
+              chunkIndex: i,
+              sourceType: "official",
+              authorityLevel: "high",
+              embeddingJson: null,
+            })),
+          });
+
+          await tx.document.update({
+            where: { id: document.id },
+            data: { isIndexed: true, chunkCount: chunks.length },
+          });
+        },
+        { timeout: 30000 } // los documentos grandes generan muchos chunks
+        );
+      } catch (txErr) {
+        // Compensación: la BD hizo rollback — borrar el fichero recién escrito para no dejarlo huérfano
+        await fs.unlink(absolutePath).catch((unlinkErr: unknown) => {
+          console.warn(`[phb-import] No se pudo borrar el fichero huérfano ${absolutePath}:`, unlinkErr);
+        });
+        throw txErr;
+      }
 
       log(`  ✓ Importado: ${doc.title} (${chunks.length} chunks)`);
       results.imported++;

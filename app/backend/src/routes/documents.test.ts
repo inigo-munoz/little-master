@@ -57,9 +57,9 @@ describe("POST /api/documents", () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.title).toBe("Reglas de la Mazmorra");
     expect(res.body.data.contentType).toBe("markdown");
-    // El documento se crea con isIndexed false; la indexación es asíncrona
-    expect(res.body.data.isIndexed).toBe(false);
-    expect(res.body.data.chunkCount).toBe(0);
+    // La indexación (chunking) es síncrona dentro del create; el embedding sigue siendo asíncrono
+    expect(res.body.data.isIndexed).toBe(true);
+    expect(res.body.data.chunkCount).toBeGreaterThan(0);
   });
 
   it("sin título → 400", async () => {
@@ -150,7 +150,7 @@ describe("POST /api/documents/upload", () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.title).toBe("Reglas de Combate");
     expect(res.body.data.contentType).toBe("markdown");
-    expect(res.body.data.isIndexed).toBe(false);
+    expect(res.body.data.isIndexed).toBe(true);
   });
 
   it("con archivo demasiado grande → 413", async () => {

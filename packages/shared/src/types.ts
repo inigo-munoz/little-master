@@ -44,6 +44,7 @@ export const EntityTypeSchema = z.enum([
   "location",
   "faction",
   "document",
+  "encounter",
   "rule_source",
   "campaign_rule",
   "llm_config",

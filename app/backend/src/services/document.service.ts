@@ -63,36 +63,75 @@ export const documentService = {
     await fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await fs.writeFile(absolutePath, input.content, "utf-8");
 
-    // Save metadata to DB
-    const doc = await prisma.document.create({
-      data: {
-        id: docId,
-        title: input.title,
-        description: input.description ?? null,
-        path: relativePath,
-        contentType: input.contentType,
-        sourceType: input.sourceType,
-        authorityLevel: input.authorityLevel,
-        version: input.version ?? "1.0",
-        campaignId: input.campaignId ?? null,
-        isIndexed: false,
-        chunkCount: 0,
-      },
-    });
+    // Chunking is pure CPU work — do it before the transaction so the
+    // transaction holds the DB lock only for actual DB operations
+    const chunks = this.chunkText(input.content, CHUNK_SIZE, CHUNK_OVERLAP);
 
-    // Index then embed — async, do not block the response
-    void this.indexAndEmbed(doc.id, input.content);
+    // Save metadata + chunks atomically: a created document always has its
+    // chunks, or the create fails clean and the DB rolls back
+    let doc;
+    try {
+      doc = await prisma.$transaction(async (tx) => {
+        const created = await tx.document.create({
+          data: {
+            id: docId,
+            title: input.title,
+            description: input.description ?? null,
+            path: relativePath,
+            contentType: input.contentType,
+            sourceType: input.sourceType,
+            authorityLevel: input.authorityLevel,
+            version: input.version ?? "1.0",
+            campaignId: input.campaignId ?? null,
+            isIndexed: false,
+            chunkCount: 0,
+          },
+        });
 
-    await changeLogService.log({
-      campaignId: input.campaignId ?? null,
-      entityType: "document",
-      entityId: doc.id,
-      beforeJson: null,
-      afterJson: JSON.stringify({ id: doc.id, title: doc.title, sourceType: doc.sourceType }),
-      reason: "Document created",
-      source: "user",
-      authorType: "user",
-    });
+        // Index synchronously (local, fast)
+        await tx.documentChunk.createMany({
+          data: chunks.map((chunkContent, i) => ({
+            documentId: created.id,
+            campaignId: input.campaignId ?? null,
+            content: chunkContent,
+            chunkIndex: i,
+            sourceType: input.sourceType,
+            authorityLevel: input.authorityLevel,
+            embeddingJson: null,
+          })),
+        });
+
+        const indexed = await tx.document.update({
+          where: { id: created.id },
+          data: { isIndexed: true, chunkCount: chunks.length },
+        });
+
+        await changeLogService.log(
+          {
+            campaignId: input.campaignId ?? null,
+            entityType: "document",
+            entityId: created.id,
+            beforeJson: null,
+            afterJson: JSON.stringify({ id: created.id, title: created.title, sourceType: created.sourceType }),
+            reason: "Document created",
+            source: "user",
+            authorType: "user",
+          },
+          tx
+        );
+
+        return indexed;
+      });
+    } catch (err) {
+      // DB rolled back — remove the orphaned file so disk and DB stay consistent
+      await fs.unlink(absolutePath).catch((unlinkErr: unknown) => {
+        console.warn(`[document] Failed to unlink orphaned file ${absolutePath} after create rollback:`, unlinkErr);
+      });
+      throw err;
+    }
+
+    // Embed asynchronously (slow, calls OpenAI) — never silent on failure
+    if (doc.chunkCount > 0) this.embedAsync(doc.id);
 
     return doc;
   },
@@ -101,33 +140,40 @@ export const documentService = {
     const doc = await this.getById(id);
     const fullPath = path.join(env.DOCUMENTS_DIR, doc.path);
 
-    await changeLogService.log({
-      campaignId: doc.campaignId ?? null,
-      entityType: "document",
-      entityId: id,
-      beforeJson: JSON.stringify({ id: doc.id, title: doc.title, sourceType: doc.sourceType }),
-      afterJson: null,
-      reason: "Document deleted",
-      source: "user",
-      authorType: "user",
+    await prisma.$transaction(async (tx) => {
+      await changeLogService.log(
+        {
+          campaignId: doc.campaignId ?? null,
+          entityType: "document",
+          entityId: id,
+          beforeJson: JSON.stringify({ id: doc.id, title: doc.title, sourceType: doc.sourceType }),
+          afterJson: null,
+          reason: "Document deleted",
+          source: "user",
+          authorType: "user",
+        },
+        tx
+      );
+
+      await tx.documentChunk.deleteMany({ where: { documentId: id } });
+      await tx.document.delete({ where: { id } });
     });
 
-    await prisma.documentChunk.deleteMany({ where: { documentId: id } });
-    await prisma.document.delete({ where: { id } });
-    await fs.unlink(fullPath).catch(() => {});
+    // File cleanup outside the transaction — DB is already consistent if this fails
+    await fs.unlink(fullPath).catch((err: unknown) => {
+      console.warn(`[document] Failed to unlink file ${fullPath} for deleted doc=${id}:`, err);
+    });
   },
 
-  async indexAndEmbed(documentId: string, content: string) {
-    try {
-      const chunkCount = await this.indexDocument(documentId, content);
-      if (chunkCount > 0) {
-        const { embeddingService } = await import('./embedding.service.js');
-        const result = await embeddingService.embedDocument(documentId);
-        console.log(`[embed] doc=${documentId} embedded=${result.embedded} failed=${result.failed}`);
-      }
-    } catch (err: unknown) {
+  // Fire-and-forget embedding with explicit error logging (never silent)
+  embedAsync(documentId: string): void {
+    void (async () => {
+      const { embeddingService } = await import('./embedding.service.js');
+      const result = await embeddingService.embedDocument(documentId);
+      console.log(`[embed] doc=${documentId} embedded=${result.embedded} failed=${result.failed}`);
+    })().catch((err: unknown) => {
       console.error('[embed] Failed for doc=' + documentId + ':', err);
-    }
+    });
   },
 
   async indexDocument(documentId: string, content: string) {

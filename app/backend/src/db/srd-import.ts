@@ -110,40 +110,52 @@ export async function importSrd(
     const absolutePath = path.join(dataDir, "documents", relativePath);
     await fs.writeFile(absolutePath, content, "utf-8");
 
-    // Create document record
-    const doc = await prisma.document.create({
-      data: {
-        id: docId,
-        title: section.title,
-        path: relativePath,
-        contentType: "plaintext",
-        sourceType: "srd",
-        authorityLevel: "high",
-        version: "5.2.1",
-        campaignId: null,
-        isIndexed: false,
-        chunkCount: 0,
-      },
-    });
-
-    // Chunk and store
+    // Create document record + chunks atomically
     const chunks = chunkText(content);
-    await prisma.documentChunk.createMany({
-      data: chunks.map((chunkContent, i) => ({
-        documentId: doc.id,
-        campaignId: null,
-        content: chunkContent,
-        chunkIndex: i,
-        sourceType: "srd",
-        authorityLevel: "high",
-        embeddingJson: null,
-      })),
-    });
+    try {
+      await prisma.$transaction(
+      async (tx) => {
+        const doc = await tx.document.create({
+          data: {
+            id: docId,
+            title: section.title,
+            path: relativePath,
+            contentType: "plaintext",
+            sourceType: "srd",
+            authorityLevel: "high",
+            version: "5.2.1",
+            campaignId: null,
+            isIndexed: false,
+            chunkCount: 0,
+          },
+        });
 
-    await prisma.document.update({
-      where: { id: doc.id },
-      data: { isIndexed: true, chunkCount: chunks.length },
-    });
+        await tx.documentChunk.createMany({
+          data: chunks.map((chunkContent, i) => ({
+            documentId: doc.id,
+            campaignId: null,
+            content: chunkContent,
+            chunkIndex: i,
+            sourceType: "srd",
+            authorityLevel: "high",
+            embeddingJson: null,
+          })),
+        });
+
+        await tx.document.update({
+          where: { id: doc.id },
+          data: { isIndexed: true, chunkCount: chunks.length },
+        });
+      },
+      { timeout: 30000 } // los documentos grandes generan muchos chunks
+      );
+    } catch (err) {
+      // Compensación: la BD hizo rollback — borrar el fichero recién escrito para no dejarlo huérfano
+      await fs.unlink(absolutePath).catch((unlinkErr: unknown) => {
+        console.warn(`[srd-import] No se pudo borrar el fichero huérfano ${absolutePath}:`, unlinkErr);
+      });
+      throw err;
+    }
 
     log(`  ✓ Imported: ${section.title} (${chunks.length} chunks)`);
     results.imported++;
