@@ -10,45 +10,20 @@ import {
   saveVaultPath,
 } from "../services/obsidian.service.js";
 import { prisma } from "../db/prisma.js";
-import { AppError, ErrorCode } from "@dnd/shared";
 
 const isWindows = process.platform === "win32";
 
 /**
- * Verifica que una ruta esté dentro de los directorios permitidos para la
- * navegación del vault: home del usuario y puntos de montaje del sistema.
- * Previene path traversal (CWE-22) resolviendo la ruta y comprobando el prefijo.
- * Retorna la ruta resuelta (absoluta y normalizada).
+ * Normaliza una ruta para la navegación del vault.
+ *
+ * Little Master es una app de escritorio local de un solo usuario: el usuario ya
+ * tiene acceso completo a su sistema de archivos a través del SO, por lo que el
+ * navegador permite recorrer todo el árbol (subir hasta la raíz, otras unidades,
+ * etc.). `resolve()` colapsa segmentos relativos (`..`) y devuelve una ruta
+ * absoluta y normalizada para alimentar las operaciones de filesystem.
  */
-function validateVaultPath(dirPath: string): string {
-  const resolved = resolve(dirPath);
-
-  const allowedBases: string[] = [homedir()];
-
-  if (process.platform === "linux") {
-    allowedBases.push("/media", "/mnt");
-  } else if (process.platform === "darwin") {
-    allowedBases.push("/Volumes");
-  } else if (process.platform === "win32") {
-    // Permite cualquier raíz de unidad: C:\, D:\, etc.
-    for (const letter of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
-      allowedBases.push(`${letter}:\\`);
-    }
-  }
-
-  const isAllowed = allowedBases.some(
-    (base) => resolved === base || resolved.startsWith(base + sep)
-  );
-
-  if (!isAllowed) {
-    throw new AppError(
-      ErrorCode.VALIDATION_ERROR,
-      "Path is outside the allowed scope",
-      400
-    );
-  }
-
-  return resolved;
+function normalizeBrowsePath(dirPath: string): string {
+  return resolve(dirPath);
 }
 
 export const obsidianRoutes: FastifyPluginAsync = async (server) => {
@@ -58,10 +33,9 @@ export const obsidianRoutes: FastifyPluginAsync = async (server) => {
       .object({ path: z.string().optional() })
       .parse(request.query);
 
-    // Valida y resuelve la ruta antes de cualquier operación de filesystem (CWE-22).
-    // Si dirPath está fuera del scope permitido, validateVaultPath lanza AppError 400
-    // que escapa del try/catch y es manejado por el errorHandler global de Fastify.
-    const targetPath = dirPath ? validateVaultPath(dirPath) : homedir();
+    // Normaliza la ruta antes de cualquier operación de filesystem. Sin ruta,
+    // arranca en el home del usuario.
+    const targetPath = dirPath ? normalizeBrowsePath(dirPath) : homedir();
 
     try {
       const entries = await fs.readdir(targetPath, { withFileTypes: true });

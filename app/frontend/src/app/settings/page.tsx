@@ -14,7 +14,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { clsx } from "clsx";
-import { api } from "../../lib/api";
+import { api, ApiError } from "../../lib/api";
 import type { LlmConfigPublic } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
 
@@ -393,8 +393,15 @@ function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
     try {
       const result = await api.obsidian.browse(path);
       setBrowse(result);
-    } catch {
-      setError("No se puede conectar con el backend. Verifica que está corriendo.");
+    } catch (err) {
+      // Un ApiError significa que el backend respondió con un error real (ej.
+      // permisos, ruta inexistente): mostramos su mensaje. Cualquier otro error
+      // (TypeError de fetch) sí es un fallo de conexión.
+      if (err instanceof ApiError) {
+        setError(`No se pudo abrir la carpeta: ${err.message}`);
+      } else {
+        setError("No se puede conectar con el backend. Verifica que está corriendo.");
+      }
     } finally {
       setLoading(false);
     }
