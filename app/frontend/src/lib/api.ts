@@ -8,7 +8,7 @@
 
 import { getBackendUrl } from "./backend-url";
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(
     public readonly code: string,
     message: string,
