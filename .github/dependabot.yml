@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # Keep the SHA-pinned GitHub Actions current (they are pinned to commit SHAs
+  # for supply-chain safety; Dependabot bumps the SHA and updates the # vN comment).
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(ci)"
