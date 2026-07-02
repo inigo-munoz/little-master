@@ -1,6 +1,6 @@
 [package]
 name = "little-master"
-version = "1.1.17"
+version = "1.1.19"
 description = "Little Master — Desktop App"
 authors = ["Íñigo Muñoz"]
 license = "MIT"
