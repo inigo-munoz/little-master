@@ -10,6 +10,7 @@ import { execSync } from "node:child_process";
 import { env } from "./config/env.js";
 import { prisma } from "./db/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { makeHostGuard } from "./middleware/hostGuard.js";
 import { healthRoutes } from "./routes/health.js";
 import { campaignRoutes } from "./routes/campaigns.js";
 import { sessionRoutes } from "./routes/sessions.js";
@@ -177,6 +178,8 @@ async function bootstrap() {
   await seedCoreRulesIfNeeded(env.DATA_DIR, env.SEED_DIR);
 
   // ── Security plugins ─────────────────────────────────────────────────────
+  // Reject non-loopback Host headers before anything else runs (DNS-rebinding defense).
+  server.addHook("onRequest", makeHostGuard(env.ALLOWED_HOSTS.split(",")));
   await server.register(helmet, { contentSecurityPolicy: false });
   await server.register(cors, {
     origin: [

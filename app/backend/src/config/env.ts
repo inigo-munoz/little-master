@@ -71,6 +71,10 @@ const EnvSchema = z.object({
   // CORS - only allow local frontend
   CORS_ORIGIN: z.string().default("http://localhost:3000"),
 
+  // DNS-rebinding defense: comma-separated Host header hostnames the backend accepts.
+  // Defaults to loopback only; override if fronting the service with a real hostname.
+  ALLOWED_HOSTS: z.string().default("127.0.0.1,localhost,::1"),
+
   // Seed directory (Tauri bundles SRD content here)
   SEED_DIR: z.string().optional(),
 });
