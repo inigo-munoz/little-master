@@ -12,6 +12,10 @@ dist/
 /data/embeddings/
 /data/logs/
 
+# Auto-generated master key that decrypts all stored API keys / OAuth tokens
+.encryption-key
+/data/.encryption-key
+
 # SQLite db files
 *.db
 *.db-journal

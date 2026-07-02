@@ -2,7 +2,16 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { documentService } from "../services/document.service.js";
 import { AppError, ErrorCode } from "@dnd/shared";
-import type { SourceType, AuthorityLevel } from "@dnd/shared";
+
+const sourceTypeEnum = z.enum([
+  "official",
+  "srd",
+  "campaign",
+  "homebrew_external",
+  "homebrew_user",
+  "ai_inferred",
+]);
+const authorityLevelEnum = z.enum(["high", "medium", "low"]);
 
 export const documentRoutes: FastifyPluginAsync = async (server) => {
   server.get<{ Querystring: { campaignId?: string } }>("/", async (request) => {
@@ -27,9 +36,9 @@ export const documentRoutes: FastifyPluginAsync = async (server) => {
       description: z.string().max(1000).optional(),
       content: z.string().min(1),
       contentType: z.enum(["markdown", "plaintext"]),
-      sourceType: z.enum(["official", "srd", "campaign", "homebrew_external", "homebrew_user", "ai_inferred"]),
-      authorityLevel: z.enum(["high", "medium", "low"]),
-      campaignId: z.string().optional(),
+      sourceType: sourceTypeEnum,
+      authorityLevel: authorityLevelEnum,
+      campaignId: z.string().min(1).optional(),
       version: z.string().optional(),
     });
 
@@ -91,20 +100,31 @@ export const documentRoutes: FastifyPluginAsync = async (server) => {
 
     const title = fields.title?.trim() || filename.replace(/\.[^.]+$/, "");
     const description = fields.description?.trim() || undefined;
-    const sourceType = (fields.sourceType as SourceType) ?? "homebrew_user";
-    const authorityLevel = (fields.authorityLevel as AuthorityLevel) ?? "medium";
-    const campaignId = fields.campaignId || undefined;
-    const version = fields.version || "1.0";
+
+    // Validate the trust-level metadata just like the JSON route: an unchecked
+    // sourceType:"official" would otherwise be treated as authoritative core-book
+    // content in retrieval, bypassing the source hierarchy.
+    const meta = z
+      .object({
+        sourceType: sourceTypeEnum.default("homebrew_user"),
+        authorityLevel: authorityLevelEnum.default("medium"),
+        campaignId: z.string().min(1).optional(),
+      })
+      .parse({
+        sourceType: fields.sourceType || undefined,
+        authorityLevel: fields.authorityLevel || undefined,
+        campaignId: fields.campaignId || undefined,
+      });
 
     const doc = await documentService.create({
       title,
       description,
       content,
       contentType,
-      sourceType,
-      authorityLevel,
-      campaignId,
-      version,
+      sourceType: meta.sourceType,
+      authorityLevel: meta.authorityLevel,
+      campaignId: meta.campaignId,
+      version: fields.version || "1.0",
     });
 
     return reply.status(201).send({ success: true, data: doc });

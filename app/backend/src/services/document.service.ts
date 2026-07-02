@@ -59,6 +59,13 @@ export const documentService = {
     const relativePath = path.join(scope, `${docId}.${ext}`);
     const absolutePath = path.join(env.DOCUMENTS_DIR, relativePath);
 
+    // Defense-in-depth: campaignId flows into the on-disk path. A value like "../../.."
+    // would escape DOCUMENTS_DIR, so assert the resolved path stays inside the root.
+    const documentsRoot = path.resolve(env.DOCUMENTS_DIR);
+    if (!path.resolve(absolutePath).startsWith(documentsRoot + path.sep)) {
+      throw new AppError(ErrorCode.VALIDATION_ERROR, "Invalid document scope", 400);
+    }
+
     // Ensure directory exists
     await fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await fs.writeFile(absolutePath, input.content, "utf-8");

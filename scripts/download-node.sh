@@ -26,6 +26,38 @@ if [ -n "$RUNNER_OS" ] && [ "$1" = "" ]; then
   esac
 fi
 
+# Verify a downloaded artifact against Node's official SHASUMS256.txt.
+# The full archive is downloaded to disk and its SHA-256 checked BEFORE extraction, so a
+# corrupted or MITM'd binary never reaches the bundle. SHASUMS256.txt is fetched over TLS
+# from nodejs.org; for stronger guarantees, also verify SHASUMS256.txt.sig with GPG against
+# the Node.js release keys (https://github.com/nodejs/release-keys).
+verify_checksum() {
+  local file=$1          # absolute path to the downloaded archive
+  local archive_name=$2  # basename as listed in SHASUMS256.txt
+  local shasums=$3       # absolute path to SHASUMS256.txt
+
+  local expected actual
+  expected=$(grep " ${archive_name}\$" "$shasums" | awk '{print $1}')
+  if [ -z "$expected" ]; then
+    echo "✗ No checksum found for ${archive_name} in SHASUMS256.txt" >&2
+    exit 1
+  fi
+
+  if command -v sha256sum >/dev/null 2>&1; then
+    actual=$(sha256sum "$file" | awk '{print $1}')
+  else
+    actual=$(shasum -a 256 "$file" | awk '{print $1}')
+  fi
+
+  if [ "$expected" != "$actual" ]; then
+    echo "✗ Checksum mismatch for ${archive_name}" >&2
+    echo "  expected: ${expected}" >&2
+    echo "  actual:   ${actual}" >&2
+    exit 1
+  fi
+  echo "  ✓ checksum verified (${archive_name})"
+}
+
 download_node() {
   local node_platform=$1
   local target_triple=$2
@@ -35,16 +67,24 @@ download_node() {
   local tmpdir
   tmpdir=$(mktemp -d)
 
+  # Fetch the signed checksum manifest once per download.
+  curl -fsL "https://nodejs.org/dist/${NODE_VERSION}/SHASUMS256.txt" -o "$tmpdir/SHASUMS256.txt"
+
   if [ "$ext" = "zip" ]; then
-    curl -sL "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-${node_platform}.zip" \
-      -o "$tmpdir/node.zip"
-    unzip -qo "$tmpdir/node.zip" "node-${NODE_VERSION}-${node_platform}/node.exe" -d "$tmpdir/"
+    local archive="node-${NODE_VERSION}-${node_platform}.zip"
+    curl -fsL "https://nodejs.org/dist/${NODE_VERSION}/${archive}" -o "$tmpdir/$archive"
+    verify_checksum "$tmpdir/$archive" "$archive" "$tmpdir/SHASUMS256.txt"
+
+    unzip -qo "$tmpdir/$archive" "node-${NODE_VERSION}-${node_platform}/node.exe" -d "$tmpdir/"
     cp "$tmpdir/node-${NODE_VERSION}-${node_platform}/node.exe" \
       "${BINARIES_DIR}/node-${target_triple}.exe"
   else
-    curl -sL "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-${node_platform}.tar.gz" \
-      | tar xz --strip-components=2 -C "$tmpdir" \
-        "node-${NODE_VERSION}-${node_platform}/bin/node"
+    local archive="node-${NODE_VERSION}-${node_platform}.tar.gz"
+    curl -fsL "https://nodejs.org/dist/${NODE_VERSION}/${archive}" -o "$tmpdir/$archive"
+    verify_checksum "$tmpdir/$archive" "$archive" "$tmpdir/SHASUMS256.txt"
+
+    tar xz --strip-components=2 -C "$tmpdir" \
+      -f "$tmpdir/$archive" "node-${NODE_VERSION}-${node_platform}/bin/node"
     cp "$tmpdir/node" "${BINARIES_DIR}/node-${target_triple}"
     chmod +x "${BINARIES_DIR}/node-${target_triple}"
   fi
