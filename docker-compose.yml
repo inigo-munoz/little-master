@@ -3,8 +3,10 @@ services:
     build:
       context: .
       dockerfile: app/backend/Dockerfile
+    # Bind to host loopback only: the backend has no auth (single-user MVP_USER_ID).
+    # Never publish on 0.0.0.0 — that would expose full read/write campaign access to the network.
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     volumes:
       - ./data:/data
     environment:
@@ -34,7 +36,7 @@ services:
       args:
         NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3001}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       NODE_ENV: production
     networks:
@@ -48,8 +50,9 @@ services:
     build:
       context: .
       dockerfile: app/mcp-server/Dockerfile
-    ports:
-      - "3002:3002"
+    # No host port mapping: the MCP server mutates campaign data via unauthenticated
+    # POST /tools/:toolName. It only needs to be reachable from `backend` over the
+    # internal dnd-net bridge (MCP_SERVER_URL=http://mcp-server:3002), never from the host.
     environment:
       NODE_ENV: production
       PORT: "3002"
