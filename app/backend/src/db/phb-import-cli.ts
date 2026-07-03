@@ -9,6 +9,7 @@ import { config } from "dotenv";
 config();
 
 import { PrismaClient } from "@prisma/client";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { importPhb2024 } from "./phb-import.js";
@@ -23,6 +24,16 @@ const force = process.argv.includes("--force") || process.env["PHB_FORCE_REIMPOR
 
 async function main() {
   console.log("\n📚 PHB 2024 Import\n");
+
+  // Standalone CLI: fail fast if the private content directory is missing.
+  const phbDir = path.join(DATA_DIR, "private", "phb2024");
+  if (!existsSync(phbDir)) {
+    console.error(
+      `[phb-import] Private content directory not found: ${phbDir}\n` +
+        `Place your own PHB 2024 markdown files there. This content is personal and must never be committed.`
+    );
+    process.exit(1);
+  }
 
   if (force) {
     console.log("  --force: eliminando documentos PHB existentes...");

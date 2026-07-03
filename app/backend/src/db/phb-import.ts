@@ -74,11 +74,12 @@ export async function importPhb2024(
   const results = { imported: 0, skipped: 0, errors: [] as string[] };
 
   if (!existsSync(phbDir)) {
-    console.error(
-      `[phb-import] Private content directory not found: ${phbDir}\n` +
-        `Place your own PHB 2024 markdown files there. This content is personal and must never be committed.`
-    );
-    process.exit(1);
+    const msg =
+      `Private content directory not found: ${phbDir}. ` +
+      `Place your own PHB 2024 markdown files there. This content is personal and must never be committed.`;
+    results.errors.push(msg);
+    log(`  ✗ ${msg}`);
+    return results;
   }
 
   await fs.mkdir(documentsDir, { recursive: true });
