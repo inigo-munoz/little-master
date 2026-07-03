@@ -22,6 +22,7 @@
     "mm:import:force": "npx tsx src/db/monster-import-cli.ts --force",
     "rules:import": "npx tsx src/db/import-core-rules.ts",
     "rules:import:force": "npx tsx src/db/import-core-rules.ts --force",
+    "srd:build-spells": "npx tsx src/db/build-srd-spells-cli.ts",
     "test": "vitest run"
   },
   "dependencies": {
