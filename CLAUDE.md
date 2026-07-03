@@ -24,9 +24,9 @@ pnpm typecheck
 pnpm lint               # Frontend only (ESLint CLI + flat config)
 
 # Tests
-cd app/frontend && pnpm test   # Vitest — ~155 tests unitarios del frontend
-cd app/backend  && pnpm test   # Vitest — ~130 tests unitarios del backend
-# Total: ~285 tests
+cd app/frontend && pnpm test   # Vitest — ~176 tests unitarios del frontend (requiere Node ≥20.19 o ≥22.12)
+cd app/backend  && pnpm test   # Vitest — ~102 tests unitarios del backend
+# Total: ~278 tests
 
 # Database
 pnpm db:migrate         # Run Prisma migrations
@@ -146,11 +146,20 @@ Endpoints: `GET /api/embeddings/status` (incluye `bySourceType` y `byAuthorityLe
 - `lib/npc-parser.ts` — extrae NPC (nombre, descripción, rol) rechazando headings de localización/facción
 - `lib/entity-parser.ts` — `parseLocationFromResponse`, `parseFactionFromResponse`, `parseGenericEntityFromResponse`
 
-## Contenido PHB 2024
+## Contenido y licencias
 
-Los archivos en `data/phb2024/` contienen el contenido oficial del PHB 2024. Se importan automáticamente en el setup del proyecto (`npx tsx src/db/setup.ts`).
+**Regla permanente: el contenido de manuales con copyright JAMÁS se commitea.** El repo es público (MIT) y su seed es exclusivamente SRD 5.2.1 (CC-BY-4.0, en inglés). El contenido personal del usuario vive en `data/private/` (gitignorado):
 
-Archivos disponibles:
+- `data/private/phb2024/` — PHB 2024 del usuario; se importa con `pnpm phb:import` (falla con mensaje claro si el directorio no existe; el setup degrada limpio sin él)
+- `data/private/mm2024/monster-data.json` — datos completos de monstruos del usuario; los endpoints `/api/srd/monsters` y `/api/srd/monsters/:name` los superponen al SRD cuando el fichero existe (entradas `source: "mm"`); se importan a documentos con `pnpm mm:import`
+- El fichero de hechizos del seed es `data/srd/en/09_Spells.md`, GENERADO con `pnpm srd:build-spells` desde el texto SRD (307/339 hechizos; issue #6 rastrea los ausentes por corrupción del PDF fuente)
+- `MonsterPicker` consume la API (SRD público + overlay privado), no ficheros empaquetados
+
+## Contenido PHB 2024 (privado)
+
+Los archivos en `data/private/phb2024/` contienen el contenido del PHB 2024 del usuario. El setup (`npx tsx src/db/setup.ts`) los importa si existen y continúa sin error si no.
+
+Archivos esperados:
 - `clases.md` — 12 clases con subclases
 - `especies.md` — 10 especies
 - `trasfondos.md` — 16 trasfondos
