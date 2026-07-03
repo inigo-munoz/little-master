@@ -27,6 +27,34 @@ const FIELD_RE = /^(Casting Time|Range|Components|Duration):\s*(.*)$/;
 const HIGHER_MARKER = "Using a Higher-Level Spell Slot.";
 const CANTRIP_MARKER = "Cantrip Upgrade.";
 
+// Long class lists sometimes wrap the closing paren onto the next line,
+// e.g. "Level 5 Abjuration (Bard, Cleric, Druid, Paladin," / "Ranger)".
+// TYPE_RE never matches either fragment on its own, so the whole spell
+// block would otherwise be silently skipped as "corrupted".
+const TYPE_OPEN_RE = /^(?:Level \d+ [A-Za-z]+|[A-Za-z]+ Cantrip)\s*\([^)]*$/;
+
+function mergeWrappedTypeLines(lines: string[]): string[] {
+  const merged: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (TYPE_OPEN_RE.test(line)) {
+      let j = i + 1;
+      while (j < lines.length && lines[j] === "") j++;
+      const closing = lines[j];
+      if (closing !== undefined && /^[^(]*\)$/.test(closing)) {
+        const combined = `${line} ${closing}`;
+        if (TYPE_RE.test(combined)) {
+          merged.push(combined);
+          i = j;
+          continue;
+        }
+      }
+    }
+    merged.push(line);
+  }
+  return merged;
+}
+
 export function extractSpellSection(raw: string): string[] {
   const lines = raw.split(/\r?\n/).map((l) => l.trim());
   const start = lines.indexOf(SECTION_START);
@@ -35,7 +63,8 @@ export function extractSpellSection(raw: string): string[] {
     start + 1,
     end === -1 ? undefined : end
   );
-  return section.filter((l) => !NOISE_RE.test(l));
+  const withoutNoise = section.filter((l) => !NOISE_RE.test(l));
+  return mergeWrappedTypeLines(withoutNoise);
 }
 
 export function parseSpells(lines: string[]): ParsedSpell[] {

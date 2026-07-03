@@ -78,6 +78,47 @@ describe("extractSpellSection", () => {
   });
 });
 
+// Real SRD data wraps long class lists onto a second line, e.g.
+// "Level 2 Abjuration (Bard, Cleric, Druid, Paladin," / "Ranger)".
+// Without merging, TYPE_RE never matches either fragment and the whole
+// spell block is silently skipped.
+const WRAPPED_TYPE_FIXTURE = `Spell Descriptions
+Aid
+
+Level 2 Abjuration (Bard, Cleric, Druid, Paladin,
+Ranger)
+Casting Time: Action
+Range: 30 feet
+Components: V, S, M (a tiny strip of white cloth)
+Duration: 8 hours
+
+Your spell bolsters your allies with toughness and
+resolve.
+
+Rules Glossary
+`;
+
+describe("extractSpellSection with a wrapped class list", () => {
+  it("merges the two-line type header into one line", () => {
+    const lines = extractSpellSection(WRAPPED_TYPE_FIXTURE);
+    expect(lines).toContain(
+      "Level 2 Abjuration (Bard, Cleric, Druid, Paladin, Ranger)"
+    );
+    expect(lines).not.toContain("Ranger)");
+  });
+});
+
+describe("parseSpells with a wrapped class list", () => {
+  it("parses the spell instead of skipping it", () => {
+    const spells = parseSpells(extractSpellSection(WRAPPED_TYPE_FIXTURE));
+    expect(spells).toHaveLength(1);
+    expect(spells[0]!.name).toBe("Aid");
+    expect(spells[0]!.level).toBe(2);
+    expect(spells[0]!.classes).toBe("Bard, Cleric, Druid, Paladin, Ranger");
+    expect(spells[0]!.castingTime).toBe("Action");
+  });
+});
+
 describe("parseSpells", () => {
   const spells = parseSpells(extractSpellSection(FIXTURE));
 
