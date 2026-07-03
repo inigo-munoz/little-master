@@ -40,4 +40,21 @@ describe("parseSpellDocument with the generated English SRD file", () => {
     const bolt = spells["Fire Bolt"];
     expect(bolt!.level).toBe(0);
   });
+
+  // The builder must drop corrupted PDF-extraction blocks rather than
+  // fabricate a heading from a stray sentence fragment or a type line.
+  // See srd-spells-builder.ts's isPlausibleSpellName.
+  const SPELL_NAME_RE = /^[A-Z][A-Za-z0-9'’\-/]*(?: [A-Za-z0-9'’\-/]+){0,5}$/;
+
+  it("has only plausible spell names as keys", () => {
+    for (const name of Object.keys(spells)) {
+      expect(name).toMatch(SPELL_NAME_RE);
+    }
+  });
+
+  it("has no spell with an empty description", () => {
+    for (const [name, spell] of Object.entries(spells)) {
+      expect(spell.description.trim(), `"${name}" has an empty description`).not.toBe("");
+    }
+  });
 });

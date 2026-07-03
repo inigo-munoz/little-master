@@ -195,3 +195,128 @@ describe("buildSpellsMarkdown", () => {
     expect(markdown.split("\n## ").length - 1).toBe(4);
   });
 });
+
+// Reproduces the "Blight" corruption in 06_Trasfondos_y_Equipo.txt: the
+// source repeats a type line twice ("Level 4 Conjuration (Wizard)" then
+// "Level 4 Necromancy (...)"). The first repetition is itself a TYPE_RE
+// match, so it would otherwise be picked up as the spell "name" for the
+// second type line, fabricating a "## Level 4 Conjuration (Wizard)" entry.
+const FABRICATED_NAME_FROM_TYPE_LINE_FIXTURE = `Spell Descriptions
+Blight
+
+Level 4 Conjuration (Wizard)
+
+Level 4 Necromancy (Druid, Sorcerer, Warlock, Wizard)
+
+Casting Time: Action
+Range: 90 feet
+Components: V, S, M (a tentacle)
+Duration: Concentration, up to 1 minute
+
+Squirming, ebony tentacles fill a 20-foot square.
+
+Blade Barrier
+
+Level 6 Evocation (Cleric)
+Casting Time: Action
+Range: 90 feet
+Components: V, S
+Duration: Concentration, up to 10 minutes
+
+You create a wall of whirling blades.
+
+Rules Glossary
+`;
+
+// Reproduces the "Antipathy/Sympathy" corruption: a stray sentence
+// fragment sits directly above a type line, and the current "nearest
+// non-blank line above" heuristic picks it up as the spell name.
+const FABRICATED_NAME_FROM_SENTENCE_FRAGMENT_FIXTURE = `Spell Descriptions
+Antipathy/Sympathy
+
+Level 8 Abjuration (Wizard)
+Casting Time: Action
+Range: Self
+Components: V, S
+Duration: Instantaneous
+
+An aura of antimagic surrounds you.
+
+to pass through the barrier, the spell ends.
+
+Level 8 Enchantment (Bard, Druid, Wizard)
+Casting Time: 1 hour
+Range: 60 feet
+Components: V, S, M (a mix of vinegar and honey)
+Duration: 10 days
+
+As you cast the spell, choose whether it creates antipathy or sympathy.
+
+Blade Barrier
+
+Level 6 Evocation (Cleric)
+Casting Time: Action
+Range: 90 feet
+Components: V, S
+Duration: Concentration, up to 10 minutes
+
+You create a wall of whirling blades.
+
+Rules Glossary
+`;
+
+// Reproduces the "Bless" corruption: type/stats lines are intact but the
+// body region between this spell's Duration line and the next spell's
+// name line is empty, so the description ends up "" after trimming.
+const EMPTY_DESCRIPTION_FIXTURE = `Spell Descriptions
+Bless
+
+Level 1 Enchantment (Cleric, Paladin)
+Casting Time: Action
+Range: 30 feet
+Components: V, S, M (a Holy Symbol worth 5+ GP)
+Duration: Concentration, up to 1 minute
+
+Blindness/Deafness
+
+Level 2 Transmutation (Bard, Cleric, Sorcerer, Wizard)
+Casting Time: Action
+Range: 120 feet
+Components: V
+Duration: 1 minute
+
+One creature that you can see within range must succeed on a Constitution saving throw.
+
+Rules Glossary
+`;
+
+describe("parseSpells drops corrupted blocks instead of fabricating entries", () => {
+  it("drops a block whose candidate name is itself a type line", () => {
+    const spells = parseSpells(
+      extractSpellSection(FABRICATED_NAME_FROM_TYPE_LINE_FIXTURE)
+    );
+    expect(spells.map((s) => s.name)).not.toContain(
+      "Level 4 Conjuration (Wizard)"
+    );
+    expect(spells.map((s) => s.name)).toEqual(["Blade Barrier"]);
+  });
+
+  it("drops a block whose candidate name is a stray sentence fragment", () => {
+    const spells = parseSpells(
+      extractSpellSection(FABRICATED_NAME_FROM_SENTENCE_FRAGMENT_FIXTURE)
+    );
+    expect(spells.map((s) => s.name)).not.toContain(
+      "to pass through the barrier, the spell ends."
+    );
+    expect(spells.map((s) => s.name)).toEqual([
+      "Antipathy/Sympathy",
+      "Blade Barrier",
+    ]);
+  });
+
+  it("drops a block with a valid name/type/stats but an empty description", () => {
+    const spells = parseSpells(extractSpellSection(EMPTY_DESCRIPTION_FIXTURE));
+    expect(spells.map((s) => s.name)).not.toContain("Bless");
+    expect(spells.map((s) => s.name)).toEqual(["Blindness/Deafness"]);
+  });
+});

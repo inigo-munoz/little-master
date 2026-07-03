@@ -70,12 +70,6 @@ Casting Time: Action | Range: Self | Components: V, S, M (iron filings) | Durati
 An aura of antimagic surrounds you in 10-foot Emanation. No one can cast spells, take Magic actions, or create other magical effects inside the aura, and those things can’t target or otherwise affect anything inside it. Magical properties of magic items don’t work inside the aura or on anything inside it. Areas of effect created by spells or other magic can’t extend into the aura, and no one can teleport into or out of it or use planar travel there. Portals close temporarily while in the aura. Ongoing spells, except those cast by an Artifact or a deity, are suppressed in the area. While an effect is suppressed, it doesn’t function, but the time it spends suppressed counts against its duration. Dispel Magic has no effect on the aura, and the auras created by different Antimagic Field spells don’t nullify each other. Antipathy/Sympathy MOD SAVE Immunities Poison, Psychic; Charmed, Exhaustion, Frightened, Paralyzed, Poisoned Senses Blindsight 30 ft.; Passive Perception 6 Languages Understands the languages you know CR None (XP 0; PB equals your Proficiency Bonus) or make attacks with Ranged or Reach weapons through the barrier. If you move so that an affected creature is forced
 
 
-## to pass through the barrier, the spell ends.
-Level 8, Enchantment (Bard, Druid, Wizard)
-Casting Time: 1 hour | Range: 60 feet | Components: V, S, M (a mix of vinegar and honey) | Duration: 10 days
-As you cast the spell, choose whether it creates antipathy or sympathy, and target one creature or object that is Huge or smaller. Then specify a kind of creature, such as red dragons, goblins, or vampires. A creature of the chosen kind makes a Wisdom saving throw when it comes within 120 feet of the target. Your choice of antipathy or sympathy determines what happens to a creature when it fails that save: Antipathy. The creature has the Frightened condition. The Frightened creature must use its movement on its turns to get as far away as possible from the target, moving by the safest route. Sympathy. The creature has the Charmed condition. The Charmed creature must use its movement on its turns to get as close as possible to the target, moving by the safest route. If the creature is within 5 feet of the target, the creature can’t willingly move away. If the target damages the Charmed creature, that creature can make a Wisdom saving throw to end the effect, as described below. Ending the Effect. If the Frightened or Charmed creature ends its turn more than 120 feet away from the target, the creature makes a Wisdom saving throw. On a successful save, the creature is no longer affected by the target. A creature that successfully saves against this effect is immune to it for 1 minute, after which it can be affected again.
-
-
 ## Arcane Eye
 Level 4, Divination (Wizard) [C]
 Casting Time: Action | Range: 30 feet | Components: V, S, M (a bit of bat fur) | Duration: Concentration, up to 1 hour
@@ -170,23 +164,10 @@ You touch a creature, which must succeed on a Wisdom saving throw or become curs
 *Higher Level:* If you cast this spell using a level 4 spell slot, you can maintain Concentration on it for up to 10 minutes. If you use a level 5+ spell slot, the spell doesn’t require Concentration, and the duration becomes 8 hours (level 5–6 slot) or 24 hours (level 7–8 slot). If you use a level 9 spell slot, the spell lasts until dispelled. Black Tentacles You bless up to three creatures within range. Whenever a target makes an attack roll or a saving throw before the spell ends, the target adds 1d4 to the attack roll or save. Using a Higher-Level Spell Slot. You can target one additional creature for each spell slot level above 1.
 
 
-## Level 4 Conjuration (Wizard)
-Level 4, Necromancy (Druid, Sorcerer, Warlock, Wizard) [C]
-Casting Time: Action | Range: 90 feet | Components: V, S, M (a tentacle) | Duration: Concentration, up to 1 minute
-Casting Time: Action Range: 30 feet Components: V, S Duration: Instantaneous Squirming, ebony tentacles fill a 20-foot square on ground that you can see within range. For the duration, these tentacles turn the ground in that area into Difficult Terrain. Each creature in that area makes a Strength saving throw. On a failed save, it takes 3d6 Bludgeoning damage, and it has the Restrained condition until the spell ends. A creature also makes that save if it enters the area or ends it turn there. A creature makes that save only once per turn. A Restrained creature can take an action to make a Strength (Athletics) check against your spell save DC, ending the condition on itself on a success. A creature that you can see within range makes a Constitution saving throw, taking 8d8 Necrotic damage on a failed save or half as much damage on a successful one. A Plant creature automatically fails the save. Alternatively, target a nonmagical plant that isn’t a creature, such as a tree or shrub. It doesn’t make a save; it simply withers and dies.
-*Higher Level:* The damage increases by 1d8 for each spell slot level above 4.
-
-
 ## Blade Barrier
 Level 6, Evocation (Cleric) [C]
 Casting Time: Action | Range: 90 feet | Components: V, S | Duration: Concentration, up to 10 minutes
 You create a wall of whirling blades made of magical energy. The wall appears within range and lasts for the duration. You make a straight wall up to 100 feet long, 20 feet high, and 5 feet thick, or a ringed wall up to 60 feet in diameter, 20 feet high, and 5 feet thick. The wall provides Three-Quarters Cover, and its space is Difficult Terrain. Any creature in the wall’s space makes a Dexterity saving throw, taking 6d10 Force damage on a failed save or half as much damage on a successful one. A creature also makes that save if it enters the wall’s space or ends it turn there. A creature makes that save only once per turn.
-
-
-## Bless
-Level 1, Enchantment (Cleric, Paladin) [C]
-Casting Time: Action | Range: 30 feet | Components: V, S, M (a Holy Symbol worth 5+ GP) | Duration: Concentration, up to 1 minute
-
 
 
 ## Blindness/Deafness
@@ -287,12 +268,6 @@ You touch a creature or at least 1 cubic inch of its flesh. An inert duplicate o
 Level 1, Illusion (Bard, Sorcerer, Wizard)
 Casting Time: Action | Range: Self | Components: V, S, M (a pinch of colorful sand) | Duration: Instantaneous
 You launch a dazzling array of flashing, colorful light. Each creature in a 15-foot Cone originating from you must succeed on a Constitution saving throw or have the Blinded condition until the end of your next turn.
-
-
-## Command
-Level 1, Enchantment (Bard, Cleric, Paladin) [Ritual]
-Casting Time: 1 minute or Ritual | Range: Self | Components: V, S, M (incense) | Duration: 1 minute
-
 
 
 ## Commune
@@ -900,22 +875,10 @@ You inscribe a glyph that later unleashes a magical effect. You inscribe it eith
 *Higher Level:* The damage of an explosive rune increases by 1d8 for each spell slot level above 3. If you create a spell glyph, you can store any spell of up to the same level as the spell slot you use for the Glyph of Warding. A creature you touch has the Invisible condition until the spell ends. Goodberry • 1 Exhaustion level • The Charmed or Petrified condition • A curse, including the target’s Attunement to a cursed magic item • Any reduction to one of the target’s ability scores
 
 
-## Level 1 Conjuration (Druid, Ranger)
-Level 4, Conjuration (Cleric)
-Casting Time: Action | Range: Self | Components: V, S, M (a sprig of mistletoe) | Duration: 24 hours
-Casting Time: Action Range: 30 feet Components: V Duration: 8 hours Ten berries appear in your hand and are infused with magic for the duration. A creature can take a Bonus Action to eat one berry. Eating a berry restores 1 Hit Point, and the berry provides enough nourishment to sustain a creature for one day. Uneaten berries disappear when the spell ends. A Large spectral guardian appears and hovers for the duration in an unoccupied space that you can see within range. The guardian occupies that space and is invulnerable, and it appears in a form appropriate for your deity or pantheon. Any enemy that moves to a space within 10 feet of the guardian for the first time on a turn or starts its turn there makes a Dexterity saving throw, taking 20 Radiant damage on a failed save or half as much damage on a successful one. The guardian vanishes when it has dealt a total of 60 damage.
-
-
 ## Grease
 Level 1, Conjuration (Sorcerer, Wizard)
 Casting Time: Action | Range: 60 feet | Components: V, S, M (a bit of pork rind or butter) | Duration: 1 minute
 Nonflammable grease covers the ground in a 10foot square centered on a point within range and turns it into Difficult Terrain for the duration. When the grease appears, each creature standing in its area must succeed on a Dexterity saving throw or have the Prone condition. A creature that enters the area or ends its turn there must also succeed on that save or fall Prone.
-
-
-## Greater Invisibility
-Level 4, Illusion (Bard, Sorcerer, Wizard) [C]
-Casting Time: Action | Range: Touch | Components: V, S | Duration: Concentration, up to 1 minute
-
 
 
 ## Greater Restoration
@@ -1442,12 +1405,6 @@ Casting Time: Action | Range: 60 feet | Components: V, S, M (a caterpillar cocoo
 You attempt to transform a creature that you can see within range into a Beast. The target must succeed on a Wisdom saving throw or shape-shift into a Beast form for the duration. That form can be any Beast you choose that has a Challenge Rating equal to or less than the target’s (or the target’s level if it doesn’t have a Challenge Rating). The target’s game statistics are replaced by the stat block of the chosen Beast, but the target retains its alignment, personality, creature type, Hit Points, and Hit Point Dice. See the “Animals” section of “Monsters” for a sample of Beast stat blocks. The target gains a number of Temporary Hit Points equal to the Hit Points of the Beast form. These Temporary Hit Points vanish if any remain when the spell ends. The spell ends early on the target if it has no Temporary Hit Points left. The target is limited in the actions it can perform by the anatomy of its new form, and it can’t speak or cast spells. The target’s gear melds into the new form. The creature can’t use or otherwise benefit from any of that equipment. Power Word Heal
 
 
-## Level 9 Enchantment (Bard, Cleric)
-Cantrip, Transmutation (Bard, Sorcerer, Warlock, Wizard)
-Casting Time: Action | Range: 60 feet Component: V | Components:  | Duration: Instantaneous
-Casting Time: Action Range: 10 feet Components: V, S Duration: Up to 1 hour A wave of healing energy washes over one creature you can see within range. The target regains all its Hit Points. If the creature has the Charmed, Frightened, Paralyzed, Poisoned, or Stunned condition, the condition ends. If the creature has the Prone condition, it can use its Reaction to stand up. You create a magical effect within range. Choose the effect from the options below. If you cast this spell multiple times, you can have up to three of its non-instantaneous effects active at a time. Sensory Effect. You create an instantaneous, harmless sensory effect, such as a shower of sparks, a puff of wind, faint musical notes, or an odd odor. Fire Play. You instantaneously light or snuff out a candle, a torch, or a small campfire. Clean or Soil. You instantaneously clean or soil an object no larger than 1 cubic foot. Minor Sensation. You chill, warm, or flavor up to 1 cubic foot of nonliving material for 1 hour. Magic Mark. You make a color, a small mark, or a symbol appear on an object or a surface for 1 hour. Minor Creation. You create a nonmagical trinket or an illusory image that can fit in your hand. It lasts until the end of your next turn. A trinket can deal no damage and has no monetary worth.
-
-
 ## Power Word Kill
 Level 9, Enchantment (Bard, Sorcerer, Warlock, Wizard)
 Casting Time: Action | Range: 60 feet Component: V | Components:  | Duration: Instantaneous
@@ -1484,12 +1441,6 @@ Cantrip, Conjuration (Druid)
 Casting Time: Bonus Action | Range: Self | Components: V, S | Duration: 10 minutes
 A flickering flame appears in your hand and remains there for the duration. While there, the flame emits no heat and ignites nothing, and it sheds Bright Light in a 20-foot radius and Dim Light for an additional 20 feet. The spell ends if you cast it again. Until the spell ends, you can take a Magic action to hurl fire at a creature or an object within 60 feet of you. Make a ranged spell attack. On a hit, the target takes 1d8 Fire damage.
 *Cantrip Upgrade:* The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8).
-
-
-## Programmed Illusion
-Level 6, Illusion (Bard, Wizard) [C]
-Casting Time: Action | Range: 500 miles | Components: V, S, M (a statuette of yourself worth 5+ GP) | Duration: Concentration, up to 1 day
-
 
 
 ## Project Image
@@ -1554,12 +1505,6 @@ Casting Time: 1 hour | Range: Touch | Components: V, S, M (rare oils worth 1,000
 You touch a dead Humanoid or a piece of one. If the creature has been dead no longer than 10 days, the spell forms a new body for it and calls the soul to enter that body. Roll 1d10 and consult the table below to determine the body’s species, or the GM chooses another playable species. 1d10 Species 1d10 Species Roll again. Goliath Dragonborn Halfling Dwarf Human Elf Orc Gnome Tiefling The reincarnated creature makes any choices that a species’ description offers, and the creature recalls its former life. It retains the capabilities it had in its original form, except it loses the traits of its previous species and gains the traits of its new one.
 
 
-## Remove Curse
-Level 3, Abjuration (Cleric, Paladin, Warlock, Wizard) [C]
-Casting Time: Action | Range: 30 feet | Components: V, S, M (a glass sphere) | Duration: Concentration, up to 1 minute
-
-
-
 ## Resilient Sphere
 Level 4, Abjuration (Wizard) [C]
 Casting Time: Action | Range: 30 feet | Components: V, S, M (a glass sphere) | Duration: Concentration, up to 1 minute
@@ -1583,18 +1528,6 @@ With a touch, you revive a dead creature that has been dead for no more than a c
 Level 3, Necromancy (Cleric, Druid, Paladin, Ranger)
 Casting Time: Action | Range: Touch | Components: V, S, M (a diamond worth 300+ GP, which the spell consumes) | Duration: Instantaneous
 You touch a creature that has died within the last minute. That creature revives with 1 Hit Point. This spell can’t revive a creature that has died of old age, nor does it restore any missing body parts.
-
-
-## Rope Trick
-Level 2, Transmutation (Wizard)
-Casting Time: Action | Range: Touch | Components: V, S, M (a segment of rope) | Duration: 1 hour
-
-
-
-## Sacred Flame
-Cantrip, Evocation (Cleric)
-Casting Time: Action | Range: 60 feet | Components: V, S | Duration: Instantaneous
-
 
 
 ## Sanctuary

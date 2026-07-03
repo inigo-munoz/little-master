@@ -27,6 +27,22 @@ const FIELD_RE = /^(Casting Time|Range|Components|Duration):\s*(.*)$/;
 const HIGHER_MARKER = "Using a Higher-Level Spell Slot.";
 const CANTRIP_MARKER = "Cantrip Upgrade.";
 
+// A plausible spell name: 1-6 words, starts uppercase, and contains only
+// characters that legitimately appear in SRD spell names (letters, digits,
+// spaces, apostrophes — straight or curly —, hyphens, slashes). Notably
+// this excludes periods, which structurally rules out sentence fragments.
+const SPELL_NAME_RE = /^[A-Z][A-Za-z0-9'’\-/]*(?: [A-Za-z0-9'’\-/]+){0,5}$/;
+
+// Source corruption sometimes leaves a type line or a stat-field line as
+// the "nearest non-blank line above" a real type line, which would
+// otherwise be fabricated into a spell name. Reject those, plus anything
+// that doesn't look like a real spell name.
+function isPlausibleSpellName(name: string): boolean {
+  if (TYPE_RE.test(name)) return false;
+  if (FIELD_RE.test(name)) return false;
+  return SPELL_NAME_RE.test(name);
+}
+
 // Long class lists sometimes wrap the closing paren onto the next line,
 // e.g. "Level 5 Abjuration (Bard, Cleric, Druid, Paladin," / "Ranger)".
 // TYPE_RE never matches either fragment on its own, so the whole spell
@@ -87,6 +103,7 @@ export function parseSpells(lines: string[]): ParsedSpell[] {
     const t = typeIdx[k]!;
     if (nameIdx[k]! < 0) continue;
     const name = lines[nameIdx[k]!]!;
+    if (!isPlausibleSpellName(name)) continue; // fabricated/corrupted name, skip
     const m = lines[t]!.match(TYPE_RE)!;
     const level = m[1] ? Number(m[1]) : 0;
     const school = (m[2] ?? m[3])!;
@@ -140,6 +157,8 @@ export function parseSpells(lines: string[]): ParsedSpell[] {
       description = body.slice(0, ci).trim();
       cantripUpgrade = body.slice(ci + CANTRIP_MARKER.length).trim();
     }
+
+    if (description.trim() === "") continue; // corrupted block, skip
 
     spells.push({
       name,
