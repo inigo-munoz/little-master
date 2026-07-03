@@ -14,7 +14,7 @@ import { useAppStore } from "../../store/app.store";
 import { DND_CLASSES, DND_SPECIES, SAVING_THROWS_BY_CLASS, HIT_DIE_BY_CLASS, LANGUAGES_BY_SPECIES, baseSpeedForSpecies } from "../../lib/dnd-2024-data";
 import { abilityModifier, proficiencyBonus } from "../../lib/player-calcs";
 import { MonsterPicker } from "../../components/ui/MonsterPicker";
-import { formatCR } from "../../lib/monster-types";
+import { formatCR, xpToNumber } from "../../lib/monster-types";
 import { getPdfUrl } from "../../lib/backend-url";
 
 function parseTags(raw: string): string[] {
@@ -299,8 +299,8 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
     setImmunities([m.immunities, m.conditionImmunities ? `Condiciones: ${m.conditionImmunities}` : ""].filter(Boolean).join("; "));
     setSenses(m.senses);
     setLangs(m.languages);
-    const xpNumber = m.xp ? parseInt(m.xp, 10) || 0 : undefined;
-    setCr(xpNumber !== undefined ? formatCR(m.cr, xpNumber) : m.cr);
+    // xp arrives as "22,000 XP" / "700 XP" — xpToNumber strips separators and suffix
+    setCr(m.xp ? formatCR(m.cr, xpToNumber(m.xp)) : m.cr);
     setTraits(m.traits);
     setActions(m.actions);
     setBonusActions(m.bonusActions);

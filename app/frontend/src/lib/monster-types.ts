@@ -8,3 +8,12 @@ export function crToNumber(cr: string): number {
 export function formatCR(cr: string, xp: number): string {
   return `${cr} (${xp.toLocaleString("es-ES")} XP)`;
 }
+
+/**
+ * Parses an XP string like "22,000 XP", "1,800" or "700 XP" into a number.
+ * Strips thousands separators and the " XP" suffix; returns 0 if no digits.
+ */
+export function xpToNumber(xp: string): number {
+  const digits = xp.replace(/[^\d]/g, "");
+  return digits ? parseInt(digits, 10) : 0;
+}
