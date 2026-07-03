@@ -9,6 +9,7 @@ import { config } from "dotenv";
 config();
 
 import { PrismaClient } from "@prisma/client";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { importMonsters } from "./monster-import.js";
@@ -19,15 +20,22 @@ const DATA_DIR = process.env["DATA_DIR"]
   ? path.resolve(process.env["DATA_DIR"])
   : path.resolve(__dirname, "../../../../data");
 
-const MONSTER_JSON = path.resolve(
-  __dirname,
-  "../../../frontend/src/lib/monster-data.json"
-);
+const MONSTER_JSON = path.join(DATA_DIR, "private", "mm2024", "monster-data.json");
 
 const force = process.argv.includes("--force");
 
 async function main() {
   console.log("\n🐉 Monster Manual 2024 Import\n");
+
+  // Standalone CLI: fail fast if the private content file is missing —
+  // before any --force deleteMany, so a missing file never wipes existing docs.
+  if (!existsSync(MONSTER_JSON)) {
+    console.error(
+      `[monster-import] Private content file not found: ${MONSTER_JSON}\n` +
+        `Place your own Monster Manual 2024 JSON there. This content is personal and must never be committed.`
+    );
+    process.exit(1);
+  }
 
   if (force) {
     console.log("  --force: eliminando documentos MM existentes...");

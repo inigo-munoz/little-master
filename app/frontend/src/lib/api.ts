@@ -240,7 +240,7 @@ export const api = {
         coverage: number;
       }>("/api/srd/custom-rules"),
     monsters: (q?: string) =>
-      get<{ name: string; cr: string; type: string; size: string; source?: "srd" | "phb" }[]>(
+      get<SrdMonsterSummary[]>(
         `/api/srd/monsters${q ? `?q=${encodeURIComponent(q)}` : ""}`
       ),
     monsterDetail: (name: string) =>
@@ -683,6 +683,17 @@ export interface CreatePlayer {
 }
 
 export type UpdatePlayer = Record<string, string | number | boolean | null | undefined>;
+
+export interface SrdMonsterSummary {
+  name: string;
+  cr: string;
+  type: string;
+  size: string;
+  source?: "srd" | "phb" | "mm";
+  // Present only on private-overlay ("mm") entries.
+  ac?: number;
+  hp?: number;
+}
 
 export interface MonsterDetail {
   name: string;

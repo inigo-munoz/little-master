@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, X, ChevronDown } from "lucide-react";
+import useSWR from "swr";
+import { Search, X, ChevronDown, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
-import type { MonsterEntry } from "../../lib/monster-types";
+import { api } from "../../lib/api";
+import type { MonsterDetail } from "../../lib/api";
 import { crToNumber } from "../../lib/monster-types";
-import monstersRaw from "../../lib/monster-data.json";
-
-const monsters = monstersRaw as MonsterEntry[];
 
 const CR_OPTIONS = [
   "0", "1/8", "1/4", "1/2",
@@ -17,28 +16,39 @@ const CR_OPTIONS = [
 ];
 
 interface MonsterPickerProps {
-  onSelect: (monster: MonsterEntry) => void;
+  onSelect: (monster: MonsterDetail) => void;
 }
 
 export function MonsterPicker({ onSelect }: MonsterPickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [crFilter, setCrFilter] = useState("");
+  const [loadingName, setLoadingName] = useState<string | null>(null);
+
+  const { data: monsters } = useSWR("/api/srd/monsters", () => api.srd.monsters());
 
   const filtered = useMemo(() => {
     const s = search.toLowerCase().trim();
-    return monsters.filter(m => {
+    return (monsters ?? []).filter(m => {
       if (crFilter && m.cr !== crFilter) return false;
       if (s && !m.name.toLowerCase().includes(s) && !m.type.toLowerCase().includes(s)) return false;
       return true;
     });
-  }, [search, crFilter]);
+  }, [monsters, search, crFilter]);
 
-  function handleSelect(m: MonsterEntry) {
-    onSelect(m);
-    setOpen(false);
-    setSearch("");
-    setCrFilter("");
+  async function handleSelect(name: string) {
+    setLoadingName(name);
+    try {
+      const detail = await api.srd.monsterDetail(name);
+      if (detail) {
+        onSelect(detail);
+        setOpen(false);
+        setSearch("");
+        setCrFilter("");
+      }
+    } finally {
+      setLoadingName(null);
+    }
   }
 
   if (!open) {
@@ -49,7 +59,7 @@ export function MonsterPicker({ onSelect }: MonsterPickerProps) {
         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold border border-dashed border-violet-700 text-violet-400 hover:border-violet-500 hover:text-violet-300 transition-colors"
       >
         <Search size={14} />
-        Importar desde Monster Manual ({monsters.length} criaturas)
+        Importar desde el SRD{monsters ? ` (${monsters.length} criaturas)` : ""}
       </button>
     );
   }
@@ -57,7 +67,7 @@ export function MonsterPicker({ onSelect }: MonsterPickerProps) {
   return (
     <div className="border border-violet-700/50 rounded-lg bg-stone-950/80 p-3 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-violet-400">Monster Manual 2024</span>
+        <span className="text-xs font-semibold text-violet-400">SRD 5.2.1</span>
         <button type="button" onClick={() => setOpen(false)} className="text-stone-500 hover:text-stone-300">
           <X size={14} />
         </button>
@@ -91,15 +101,18 @@ export function MonsterPicker({ onSelect }: MonsterPickerProps) {
       </div>
 
       <div className="max-h-56 overflow-y-auto space-y-0.5">
-        {filtered.length === 0 ? (
+        {!monsters ? (
+          <p className="text-xs text-stone-600 text-center py-4">Cargando criaturas...</p>
+        ) : filtered.length === 0 ? (
           <p className="text-xs text-stone-600 text-center py-4">Sin resultados</p>
         ) : (
           filtered.slice(0, 50).map(m => (
             <button
               key={m.name}
               type="button"
-              onClick={() => handleSelect(m)}
-              className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded hover:bg-stone-800 transition-colors group"
+              disabled={loadingName !== null}
+              onClick={() => handleSelect(m.name)}
+              className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded hover:bg-stone-800 transition-colors group disabled:opacity-50"
             >
               <span className={clsx(
                 "text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0",
@@ -111,7 +124,10 @@ export function MonsterPicker({ onSelect }: MonsterPickerProps) {
               </span>
               <span className="text-xs text-stone-200 group-hover:text-stone-100 truncate flex-1">{m.name}</span>
               <span className="text-[10px] text-stone-600 shrink-0">{m.type} · {m.size}</span>
-              <span className="text-[10px] text-stone-600 shrink-0">CA {m.ac} · PG {m.hp}</span>
+              {m.ac !== undefined && m.hp !== undefined && (
+                <span className="text-[10px] text-stone-600 shrink-0">CA {m.ac} · PG {m.hp}</span>
+              )}
+              {loadingName === m.name && <Loader2 size={12} className="animate-spin text-violet-400 shrink-0" />}
             </button>
           ))
         )}

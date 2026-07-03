@@ -383,7 +383,7 @@ interface Monster {
 const CSV_PATH = "/home/inigo/Downloads/Dungeon and Dragons 2024 Monster Stats - All.csv";
 const OUT_PATH = path.resolve(
   __dirname,
-  "../app/frontend/src/lib/monster-data.json"
+  "../data/private/mm2024/monster-data.json"
 );
 
 const raw = fs.readFileSync(CSV_PATH, "utf-8");

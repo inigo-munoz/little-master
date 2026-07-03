@@ -6,7 +6,7 @@ Asistente de escritorio para Dungeon Masters. Compatible con las reglas 5E (2024
 
 - Gestión completa de campañas: sesiones, NPCs, jugadores, localizaciones y facciones
 - Fichas de personaje compatibles con las reglas 5E (2024) (habilidades, hechizos, combate, dones, ASI)
-- Monster Manual 2024 integrado (607 criaturas con stats completos)
+- Picker de criaturas contra el SRD (196 monstruos con stats completos)
 - Generador de encuentros con cálculo de dificultad por CR
 - Asistente IA con 5 modos: Rule Reviewer, Archivista, Designer, Auditor, Session Director
 - Búsqueda semántica sobre documentos, reglas y monstruos
@@ -69,7 +69,7 @@ pnpm dev              # backend + frontend en paralelo
 
 ```bash
 cd app/backend
-pnpm mm:import        # Monster Manual 2024 (607 criaturas, incluido en el repo)
+pnpm mm:import        # Indexa tu Monster Manual 2024 desde data/private/ (ver Contenido propio)
 pnpm phb:import       # Importa tus propios manuales desde data/private/ (ver Contenido propio)
 ```
 
@@ -107,11 +107,12 @@ data/             Datos locales del usuario (gitignored)
 
 ## Contenido propio
 
-El repositorio solo incluye contenido bajo licencia SRD 5.2.1 (CC-BY-4.0). Si querés indexar tus propios manuales de reglas en markdown, colocá los archivos en `data/private/phb2024/` — ese directorio está en `.gitignore` y nunca se commitea. Después importalos con:
+El repositorio solo incluye contenido bajo licencia SRD 5.2.1 (CC-BY-4.0). El picker de criaturas usa el SRD (196 monstruos); si querés indexar tus propios manuales de reglas en markdown o tu propio Monster Manual 2024 en JSON, colocá los archivos en `data/private/phb2024/` o `data/private/mm2024/monster-data.json` respectivamente — ese directorio está en `.gitignore` y nunca se commitea. El picker de criaturas detecta automáticamente `data/private/mm2024/monster-data.json` si existe y muestra esas entradas junto a las del SRD. Después importalos con:
 
 ```bash
 cd app/backend
 pnpm phb:import
+pnpm mm:import
 ```
 
 Ese contenido es solo para tu uso local: no lo compartas ni lo subas al repositorio.

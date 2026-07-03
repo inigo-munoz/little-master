@@ -10,6 +10,7 @@ export default defineConfig({
       ENCRYPTION_KEY: "a".repeat(64), // 64 hex chars válidos para el schema Zod
       NODE_ENV: "test",
       DOCUMENTS_DIR: "/tmp/dnd-test-documents",
+      DATA_DIR: "/tmp/dnd-test-data",
     },
     globalSetup: ["./src/test/global-setup.ts"],
     // Los tests comparten una DB SQLite — ejecutar archivos secuencialmente

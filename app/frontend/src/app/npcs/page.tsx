@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Users, Plus, Pencil, Trash2, X, Search, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
-import type { Npc, UpdateNpc, StatBlockEntry } from "../../lib/api";
+import type { Npc, UpdateNpc, StatBlockEntry, MonsterDetail } from "../../lib/api";
 import { AppShell } from "../../components/layout/AppShell";
 import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
@@ -14,7 +14,6 @@ import { useAppStore } from "../../store/app.store";
 import { DND_CLASSES, DND_SPECIES, SAVING_THROWS_BY_CLASS, HIT_DIE_BY_CLASS, LANGUAGES_BY_SPECIES, baseSpeedForSpecies } from "../../lib/dnd-2024-data";
 import { abilityModifier, proficiencyBonus } from "../../lib/player-calcs";
 import { MonsterPicker } from "../../components/ui/MonsterPicker";
-import type { MonsterEntry } from "../../lib/monster-types";
 import { formatCR } from "../../lib/monster-types";
 import { getPdfUrl } from "../../lib/backend-url";
 
@@ -279,28 +278,33 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
     }
   }
 
-  function applyMonster(m: MonsterEntry) {
+  function numOrEmpty(n: number | null): string {
+    return n != null ? String(n) : "";
+  }
+
+  function applyMonster(m: MonsterDetail) {
     setNpcType("monster");
-    setAc(String(m.ac));
-    setHp(String(m.hp));
+    setAc(m.ac);
+    setHp(m.hp);
     setSpd(m.speed);
-    setStr(String(m.str));
-    setDex(String(m.dex));
-    setCon(String(m.con));
-    setInt(String(m.int));
-    setWis(String(m.wis));
-    setCha(String(m.cha));
+    setStr(numOrEmpty(m.str));
+    setDex(numOrEmpty(m.dex));
+    setCon(numOrEmpty(m.con));
+    setInt(numOrEmpty(m.int));
+    setWis(numOrEmpty(m.wis));
+    setCha(numOrEmpty(m.cha));
     setSaves(m.savingThrows);
     setSkillsField(m.skills);
     setResistances([m.resistances, m.vulnerabilities ? `Vulnerabilidades: ${m.vulnerabilities}` : ""].filter(Boolean).join("; "));
-    setImmunities([m.damageImmunities, m.conditionImmunities ? `Condiciones: ${m.conditionImmunities}` : ""].filter(Boolean).join("; "));
-    setSenses(m.senses ? `${m.senses}, percepción pasiva ${m.passivePerception}` : `percepción pasiva ${m.passivePerception}`);
+    setImmunities([m.immunities, m.conditionImmunities ? `Condiciones: ${m.conditionImmunities}` : ""].filter(Boolean).join("; "));
+    setSenses(m.senses);
     setLangs(m.languages);
-    setCr(formatCR(m.cr, m.xp));
-    setTraits(m.traits ? m.traits.split(", ").map(t => ({ name: t.trim(), description: "" })) : []);
+    const xpNumber = m.xp ? parseInt(m.xp, 10) || 0 : undefined;
+    setCr(xpNumber !== undefined ? formatCR(m.cr, xpNumber) : m.cr);
+    setTraits(m.traits);
     setActions(m.actions);
-    setBonusActions(m.bonusAction ? [{ name: "Acción adicional", description: m.bonusAction }] : []);
-    setReactions(m.reaction ? [{ name: "Reacción", description: m.reaction }] : []);
+    setBonusActions(m.bonusActions);
+    setReactions(m.reactions);
     setStatExpanded(true);
   }
 

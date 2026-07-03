@@ -107,7 +107,7 @@ interface MonsterEntry {
   count: number;
   expanded: boolean;
   npcStatBlock?: NpcStatBlockDisplay | null;
-  source?: "srd" | "phb" | null;
+  source?: "srd" | "phb" | "mm" | null;
 }
 
 const DIFFICULTY_CONFIG = {
@@ -131,7 +131,7 @@ interface ValidationResult {
 
 // ─── Monster Autocomplete ─────────────────────────────────────────────────────
 
-interface SrdMonster { name: string; cr: string; type: string; size: string; source?: "srd" | "phb"; }
+interface SrdMonster { name: string; cr: string; type: string; size: string; source?: "srd" | "phb" | "mm"; }
 
 function MonsterAutocomplete({
   value,
@@ -141,7 +141,7 @@ function MonsterAutocomplete({
 }: {
   value: string;
   onChange: (v: string) => void;
-  onSelectMonster: (name: string, cr: string, npcStatBlock?: NpcStatBlockDisplay | null, source?: "srd" | "phb") => void;
+  onSelectMonster: (name: string, cr: string, npcStatBlock?: NpcStatBlockDisplay | null, source?: "srd" | "phb" | "mm") => void;
   campaignNpcs?: Npc[];
 }) {
   const [open, setOpen] = useState(false);
@@ -348,7 +348,7 @@ function NpcStatBlockPanel({ data }: { data: NpcStatBlockDisplay }) {
   );
 }
 
-function MonsterStatBlockPanel({ name, npcStatBlock, source }: { name: string; npcStatBlock?: NpcStatBlockDisplay | null; source?: "srd" | "phb" | null }) {
+function MonsterStatBlockPanel({ name, npcStatBlock, source }: { name: string; npcStatBlock?: NpcStatBlockDisplay | null; source?: "srd" | "phb" | "mm" | null }) {
   // Hook always called (Rules of Hooks). Key is null when NPC data is already available.
   const { data, isLoading } = useSWR(
     !npcStatBlock && name ? `/srd/monster-detail/${name}` : null,
@@ -533,7 +533,7 @@ export default function EncounterPage() {
     setMonsters((m) => m.map((x) => x.id === id ? { ...x, [field]: value } : x));
   }
 
-  function selectMonster(id: string, name: string, cr: string, npcStatBlock?: NpcStatBlockDisplay | null, source?: "srd" | "phb") {
+  function selectMonster(id: string, name: string, cr: string, npcStatBlock?: NpcStatBlockDisplay | null, source?: "srd" | "phb" | "mm") {
     setMonsters((m) => m.map((x) => x.id === id ? { ...x, name, cr, npcStatBlock: npcStatBlock ?? null, source: source ?? null } : x));
   }
 

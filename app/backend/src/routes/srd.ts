@@ -72,7 +72,15 @@ function isValidName(line: string): boolean {
   return true;
 }
 
-interface SrdMonster { name: string; cr: string; type: string; size: string; source?: "srd" | "phb" }
+interface SrdMonster {
+  name: string;
+  cr: string;
+  type: string;
+  size: string;
+  source?: "srd" | "phb" | "mm";
+  ac?: number;
+  hp?: number;
+}
 
 function extractMonstersFromText(text: string): SrdMonster[] {
   const lines = text.split("\n").map((l) => l.trim());
@@ -623,6 +631,114 @@ function extractMonsterStatBlock(text: string, targetName: string): MonsterDetai
   };
 }
 
+// ─── Private monster overlay (data/private/mm2024/monster-data.json) ────────
+//
+// Optional, gitignored, user-supplied content — never present in the repo.
+// Read lazily on every request and tolerant of a missing/unparseable file:
+// the overlay must NEVER turn a request into an error, it just stays empty.
+
+interface MonsterEntry {
+  name: string;
+  source: string;
+  size: string;
+  type: string;
+  alignment: string;
+  cr: string;
+  xp: number;
+  pb: number;
+  ac: number;
+  hp: number;
+  speed: string;
+  str: number;
+  dex: number;
+  con: number;
+  int: number;
+  wis: number;
+  cha: number;
+  savingThrows: string;
+  skills: string;
+  vulnerabilities: string;
+  resistances: string;
+  conditionImmunities: string;
+  damageImmunities: string;
+  senses: string;
+  passivePerception: number;
+  languages: string;
+  traits: string;
+  legendaryResistances: number;
+  actions: { name: string; description: string }[];
+  spellcasting: string | null;
+  bonusAction: string;
+  reaction: string;
+  legendaryActions: string;
+  lair: boolean;
+}
+
+async function loadPrivateMonsters(): Promise<MonsterEntry[]> {
+  try {
+    const filePath = join(env.DATA_DIR, "private", "mm2024", "monster-data.json");
+    const raw = await readFile(filePath, "utf-8");
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as MonsterEntry[]) : [];
+  } catch {
+    // Missing file, unreadable, or malformed JSON: overlay stays empty.
+    return [];
+  }
+}
+
+function privateMonsterToSummary(m: MonsterEntry): SrdMonster {
+  return { name: m.name, cr: m.cr, type: m.type, size: m.size, source: "mm", ac: m.ac, hp: m.hp };
+}
+
+function privateMonsterToDetail(m: MonsterEntry): MonsterDetail {
+  const traits: { name: string; description: string }[] = (m.traits ? m.traits.split(",") : [])
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, description: "" }));
+
+  if (m.spellcasting) {
+    traits.push({ name: "Spellcasting", description: m.spellcasting });
+  }
+
+  const bonusActions = m.bonusAction ? [{ name: "Acción Adicional", description: m.bonusAction }] : [];
+  const reactions = m.reaction ? [{ name: "Reacción", description: m.reaction }] : [];
+  const legendaryActions = m.legendaryActions ? [{ name: "Acción Legendaria", description: m.legendaryActions }] : [];
+
+  return {
+    name: m.name,
+    size: m.size,
+    type: m.type,
+    alignment: m.alignment,
+    ac: String(m.ac),
+    hp: String(m.hp),
+    speed: m.speed,
+    initiative: "",
+    str: m.str,
+    dex: m.dex,
+    con: m.con,
+    int: m.int,
+    wis: m.wis,
+    cha: m.cha,
+    savingThrows: m.savingThrows,
+    skills: m.skills,
+    resistances: m.resistances,
+    immunities: m.damageImmunities,
+    conditionImmunities: m.conditionImmunities,
+    vulnerabilities: m.vulnerabilities,
+    senses: m.senses ? `${m.senses}, percepción pasiva ${m.passivePerception}` : `percepción pasiva ${m.passivePerception}`,
+    languages: m.languages,
+    cr: m.cr,
+    xp: `${m.xp} XP`,
+    profBonus: m.pb >= 0 ? `+${m.pb}` : `${m.pb}`,
+    traits,
+    actions: m.actions,
+    bonusActions,
+    reactions,
+    legendaryActions,
+    rawText: "",
+  };
+}
+
 export const srdRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get("/status", async (_req, reply) => {
     const docs = await prisma.document.findMany({
@@ -684,15 +800,31 @@ export const srdRoutes: FastifyPluginAsync = async (fastify) => {
       ...phbMonsters.filter((m) => !srdNames.has(m.name.toLowerCase())),
     ].sort((a, b) => a.name.localeCompare(b.name));
 
+    // Private overlay (data/private/mm2024/monster-data.json), if present, wins on duplicates
+    const privateMonsters = await loadPrivateMonsters();
+    const privateSummaries = privateMonsters.map(privateMonsterToSummary);
+    const privateNames = new Set(privateSummaries.map((m) => m.name.toLowerCase()));
+    const withOverlay = [
+      ...merged.filter((m) => !privateNames.has(m.name.toLowerCase())),
+      ...privateSummaries,
+    ].sort((a, b) => a.name.localeCompare(b.name));
+
     const result = q
-      ? merged.filter((m) => m.name.toLowerCase().includes(q.toLowerCase()))
-      : merged;
+      ? withOverlay.filter((m) => m.name.toLowerCase().includes(q.toLowerCase()))
+      : withOverlay;
 
     return reply.send({ success: true, data: result });
   });
 
   fastify.get<{ Params: { name: string } }>("/monsters/:name", async (req, reply) => {
     const { name } = req.params;
+
+    // 0. Private overlay wins on duplicates
+    const privateMonsters = await loadPrivateMonsters();
+    const privateMatch = privateMonsters.find((m) => m.name.toLowerCase() === name.toLowerCase());
+    if (privateMatch) {
+      return reply.send({ success: true, data: privateMonsterToDetail(privateMatch) });
+    }
 
     // 1. Try SRD first
     const srdDoc = await prisma.document.findFirst({

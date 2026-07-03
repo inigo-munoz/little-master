@@ -1,9 +1,10 @@
 /**
  * Monster Manual 2024 Import
  *
- * Reads monster-data.json (608 creatures) and imports them as documents
- * into the DB, grouped by CR range. This makes monsters available for
- * semantic search by the AI assistant.
+ * Reads the private data/private/mm2024/monster-data.json (user-supplied,
+ * gitignored, never committed) and imports its creatures as documents into
+ * the DB, grouped by CR range. This makes monsters available for semantic
+ * search by the AI assistant.
  *
  * Usage: npx tsx src/db/monster-import-cli.ts [--force]
  */
@@ -205,7 +206,7 @@ export async function importMonsters(
   const results = { imported: 0, skipped: 0, totalMonsters: 0, errors: [] as string[] };
 
   if (!existsSync(monsterJsonPath)) {
-    results.errors.push(`monster-data.json no encontrado: ${monsterJsonPath}`);
+    results.errors.push(`monster-data.json privado no encontrado: ${monsterJsonPath}`);
     return results;
   }
 
@@ -213,7 +214,7 @@ export async function importMonsters(
   const monsters: Monster[] = JSON.parse(raw);
   results.totalMonsters = monsters.length;
 
-  log(`  Cargados ${monsters.length} monstruos de monster-data.json`);
+  log(`  Cargados ${monsters.length} monstruos de ${monsterJsonPath}`);
 
   await fs.mkdir(documentsDir, { recursive: true });
 

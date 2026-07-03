@@ -8,7 +8,10 @@ import { errorHandler } from "../middleware/errorHandler.js";
 import { prisma } from "../db/prisma.js";
 
 const DOCUMENTS_DIR = process.env["DOCUMENTS_DIR"] ?? "/tmp/dnd-test-documents";
+const DATA_DIR = process.env["DATA_DIR"] ?? "/tmp/dnd-test-data";
 const TEST_FILE_PATH = "global/srd-monsters-test.txt";
+const PRIVATE_MONSTER_DIR = join(DATA_DIR, "private", "mm2024");
+const PRIVATE_MONSTER_PATH = join(PRIVATE_MONSTER_DIR, "monster-data.json");
 
 // Contenido de prueba en el formato real del SRD 5.2.1
 const TEST_MONSTER_FILE = `Monsters A–Z
@@ -176,5 +179,186 @@ describe("GET /api/srd/monsters", () => {
     const res = await request.get("/api/srd/monsters");
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual([]);
+  });
+});
+
+// ─── Overlay privado (data/private/mm2024/monster-data.json) ────────────────
+
+const PRIVATE_NEW_MONSTER = {
+  name: "Umbral Wraith",
+  source: "MM 2024",
+  size: "Medium",
+  type: "Undead",
+  alignment: "Chaotic Evil",
+  cr: "3",
+  xp: 700,
+  pb: 2,
+  ac: 14,
+  hp: 60,
+  speed: "9 m, fly 18 m",
+  str: 6,
+  dex: 16,
+  con: 16,
+  int: 12,
+  wis: 14,
+  cha: 15,
+  savingThrows: "DES +5",
+  skills: "Sigilo +5",
+  vulnerabilities: "",
+  resistances: "Necrotic",
+  conditionImmunities: "Exhaustion",
+  damageImmunities: "Poison",
+  senses: "Darkvision 18 m",
+  passivePerception: 12,
+  languages: "Common",
+  traits: "Incorporeal Movement, Sunlight Sensitivity",
+  legendaryResistances: 0,
+  actions: [{ name: "Life Drain", description: "Melee Attack Roll: +5. Hit: 21 (4d8 + 3) Necrotic damage." }],
+  spellcasting: "The wraith casts Invisibility at will.",
+  bonusAction: "Shadow Step: teleports between shadows it can see within 9 m.",
+  reaction: "Dodge: avoids an incoming attack.",
+  legendaryActions: "Move: the wraith moves up to half its speed.",
+  lair: false,
+};
+
+// Same name as the SRD fixture's "Goblin" (cr 1/4, Humanoid, no ac/hp exposed
+// on the list). The private version must win on duplicates.
+const PRIVATE_DUPLICATE_MONSTER = {
+  name: "Goblin",
+  source: "MM 2024 Reskin",
+  size: "Large",
+  type: "Fiend",
+  alignment: "Chaotic Evil",
+  cr: "5",
+  xp: 1800,
+  pb: 3,
+  ac: 99,
+  hp: 999,
+  speed: "9 m",
+  str: 18,
+  dex: 14,
+  con: 18,
+  int: 8,
+  wis: 10,
+  cha: 12,
+  savingThrows: "",
+  skills: "",
+  vulnerabilities: "",
+  resistances: "",
+  conditionImmunities: "",
+  damageImmunities: "",
+  senses: "",
+  passivePerception: 10,
+  languages: "",
+  traits: "",
+  legendaryResistances: 0,
+  actions: [],
+  spellcasting: null,
+  bonusAction: "",
+  reaction: "",
+  legendaryActions: "",
+  lair: false,
+};
+
+async function writePrivateMonsterFile(content: unknown) {
+  await fs.mkdir(PRIVATE_MONSTER_DIR, { recursive: true });
+  await fs.writeFile(PRIVATE_MONSTER_PATH, JSON.stringify(content), "utf-8");
+}
+
+describe("Overlay privado de monstruos (data/private/mm2024/monster-data.json)", () => {
+  afterEach(async () => {
+    await fs.rm(PRIVATE_MONSTER_DIR, { recursive: true, force: true });
+  });
+
+  it("sin fichero privado, GET /monsters devuelve solo SRD (comportamiento actual intacto)", async () => {
+    const res = await request.get("/api/srd/monsters");
+
+    expect(res.status).toBe(200);
+    const names = res.body.data.map((m: { name: string }) => m.name);
+    expect(names).toContain("Goblin");
+
+    const goblin = res.body.data.find((m: { name: string }) => m.name === "Goblin");
+    expect(goblin.cr).toBe("1/4");
+    expect(goblin.source).toBe("srd");
+    expect(goblin.ac).toBeUndefined();
+    expect(goblin.hp).toBeUndefined();
+
+    expect(res.body.data.some((m: { source?: string }) => m.source === "mm")).toBe(false);
+  });
+
+  it("con fichero privado, GET /monsters incluye la entrada nueva etiquetada 'mm' y el duplicado lo sirve la versión privada", async () => {
+    await writePrivateMonsterFile([PRIVATE_NEW_MONSTER, PRIVATE_DUPLICATE_MONSTER]);
+
+    const res = await request.get("/api/srd/monsters");
+    expect(res.status).toBe(200);
+
+    const wraith = res.body.data.find((m: { name: string }) => m.name === "Umbral Wraith");
+    expect(wraith).toBeDefined();
+    expect(wraith.source).toBe("mm");
+    expect(wraith.ac).toBe(14);
+    expect(wraith.hp).toBe(60);
+
+    const goblinEntries = res.body.data.filter((m: { name: string }) => m.name === "Goblin");
+    expect(goblinEntries).toHaveLength(1);
+    expect(goblinEntries[0].source).toBe("mm");
+    expect(goblinEntries[0].cr).toBe("5");
+    expect(goblinEntries[0].type).toBe("Fiend");
+    expect(goblinEntries[0].ac).toBe(99);
+    expect(goblinEntries[0].hp).toBe(999);
+  });
+
+  it("un fichero privado ausente o no parseable produce overlay vacío sin error", async () => {
+    await fs.mkdir(PRIVATE_MONSTER_DIR, { recursive: true });
+    await fs.writeFile(PRIVATE_MONSTER_PATH, "{ esto no es JSON válido", "utf-8");
+
+    const res = await request.get("/api/srd/monsters");
+    expect(res.status).toBe(200);
+    expect(res.body.data.some((m: { source?: string }) => m.source === "mm")).toBe(false);
+    const names = res.body.data.map((m: { name: string }) => m.name);
+    expect(names).toContain("Goblin");
+  });
+
+  it("GET /monsters/:name de una entrada privada devuelve el stat block completo mapeado", async () => {
+    await writePrivateMonsterFile([PRIVATE_NEW_MONSTER, PRIVATE_DUPLICATE_MONSTER]);
+
+    const res = await request.get("/api/srd/monsters/Umbral%20Wraith");
+    expect(res.status).toBe(200);
+    const data = res.body.data;
+    expect(data).toBeDefined();
+
+    expect(data.name).toBe("Umbral Wraith");
+    expect(data.size).toBe("Medium");
+    expect(data.type).toBe("Undead");
+    expect(data.alignment).toBe("Chaotic Evil");
+    expect(data.ac).toBe("14");
+    expect(data.hp).toBe("60");
+    expect(data.speed).toBe("9 m, fly 18 m");
+    expect(data.str).toBe(6);
+    expect(data.cha).toBe(15);
+    expect(data.savingThrows).toBe("DES +5");
+    expect(data.skills).toBe("Sigilo +5");
+    expect(data.resistances).toBe("Necrotic");
+    expect(data.immunities).toBe("Poison");
+    expect(data.conditionImmunities).toBe("Exhaustion");
+    expect(data.senses).toBe("Darkvision 18 m, percepción pasiva 12");
+    expect(data.languages).toBe("Common");
+    expect(data.cr).toBe("3");
+    expect(data.xp).toBe("700 XP");
+    expect(data.profBonus).toBe("+2");
+
+    expect(data.traits).toEqual([
+      { name: "Incorporeal Movement", description: "" },
+      { name: "Sunlight Sensitivity", description: "" },
+      { name: "Spellcasting", description: "The wraith casts Invisibility at will." },
+    ]);
+    expect(data.actions).toEqual([
+      { name: "Life Drain", description: "Melee Attack Roll: +5. Hit: 21 (4d8 + 3) Necrotic damage." },
+    ]);
+    expect(data.bonusActions).toHaveLength(1);
+    expect(data.bonusActions[0].description).toBe("Shadow Step: teleports between shadows it can see within 9 m.");
+    expect(data.reactions).toHaveLength(1);
+    expect(data.reactions[0].description).toBe("Dodge: avoids an incoming attack.");
+    expect(data.legendaryActions).toHaveLength(1);
+    expect(data.legendaryActions[0].description).toBe("Move: the wraith moves up to half its speed.");
   });
 });
