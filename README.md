@@ -1,6 +1,6 @@
 # Little Master
 
-Asistente de escritorio para Dungeon Masters. Compatible con las reglas 5E (2024). Gestiona campañas, NPCs, sesiones, encuentros y reglas con ayuda de IA. Tus datos nunca salen de tu máquina.
+Asistente de escritorio para Game Masters. Compatible con las reglas 5E (2024). Gestiona campañas, NPCs, sesiones, encuentros y reglas con ayuda de IA. Tus datos nunca salen de tu máquina.
 
 ## Funcionalidades
 
@@ -107,7 +107,7 @@ data/             Datos locales del usuario (gitignored)
 
 ## Contenido propio
 
-El repositorio solo incluye contenido bajo licencia SRD 5.2.1 (CC-BY-4.0). El picker de criaturas usa el SRD (196 monstruos); si querés indexar tus propios manuales de reglas en markdown o tu propio Monster Manual 2024 en JSON, colocá los archivos en `data/private/phb2024/` o `data/private/mm2024/monster-data.json` respectivamente — ese directorio está en `.gitignore` y nunca se commitea. El picker de criaturas detecta automáticamente `data/private/mm2024/monster-data.json` si existe y muestra esas entradas junto a las del SRD. Después importalos con:
+El repositorio solo incluye contenido bajo licencia SRD 5.2.1 (CC-BY-4.0). El picker de criaturas usa el SRD (196 monstruos); si quieres indexar tus propios manuales de reglas en markdown o tu propio Monster Manual 2024 en JSON, coloca los archivos en `data/private/phb2024/` o `data/private/mm2024/monster-data.json` respectivamente — ese directorio está en `.gitignore` y nunca se commitea. El picker de criaturas detecta automáticamente `data/private/mm2024/monster-data.json` si existe y muestra esas entradas junto a las del SRD. Después impórtalos con:
 
 ```bash
 cd app/backend

@@ -1,5 +1,5 @@
 /**
- * Datos oficiales del Player's Handbook D&D 2024.
+ * Reference data compatible with the 5E (2024) rules.
  * Fuente de verdad para todos los desplegables de la ficha de personaje.
  */
 
