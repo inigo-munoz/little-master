@@ -11,6 +11,7 @@ dist/
 /data/documents/
 /data/embeddings/
 /data/logs/
+/data/private/
 
 # Auto-generated master key that decrypts all stored API keys / OAuth tokens
 .encryption-key

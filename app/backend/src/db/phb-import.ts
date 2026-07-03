@@ -2,7 +2,7 @@
  * PHB 2024 Import
  *
  * Imports the D&D 2024 Player's Handbook content into the document store.
- * Files must be present in data/phb2024/ relative to the project root.
+ * Files must be present in data/private/phb2024/ relative to the project root.
  *
  * Usage: npx tsx src/db/phb-import.ts
  *        PHB_FORCE_REIMPORT=true npx tsx src/db/phb-import.ts
@@ -66,16 +66,19 @@ export async function importPhb2024(
   opts: { forceReimport?: boolean; verbose?: boolean } = {}
 ): Promise<{ imported: number; skipped: number; errors: string[] }> {
   const { forceReimport = false, verbose = true } = opts;
-  const phbDir = path.join(dataDir, "phb2024");
+  // User-provided content (never committed): data/private/<source>/
+  const phbDir = path.join(dataDir, "private", "phb2024");
   const documentsDir = path.join(dataDir, "documents", "global");
 
   const log = verbose ? console.log : () => {};
   const results = { imported: 0, skipped: 0, errors: [] as string[] };
 
   if (!existsSync(phbDir)) {
-    results.errors.push(`PHB directory not found: ${phbDir}`);
-    log(`  ✗ Directorio PHB no encontrado: ${phbDir}`);
-    return results;
+    console.error(
+      `[phb-import] Private content directory not found: ${phbDir}\n` +
+        `Place your own PHB 2024 markdown files there. This content is personal and must never be committed.`
+    );
+    process.exit(1);
   }
 
   await fs.mkdir(documentsDir, { recursive: true });
@@ -176,4 +179,3 @@ export async function importPhb2024(
 
   return results;
 }
-
