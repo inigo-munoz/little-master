@@ -27,16 +27,18 @@ Repositorio y releases públicos sin ningún contenido con copyright de WotC, ma
 
 ### 2. Seed limpio (antes de la purga)
 
-- Nuevo script versionado `scripts/build-srd-spells.ts` que regenera `data/srd/en/09_Hechizos.md` en **inglés** a partir de los `.txt` del SRD 5.2.1 incluidos en el repo.
-- Mantiene el formato actual (headers `##`, stats en una línea, tags `[C]`/`[Ritual]`) para no romper el parser del seed ni el contrato de `SpellFullData`.
+- Nuevo generador versionado (`app/backend/src/db/srd-spells-builder.ts` + CLI) que produce un fichero de hechizos en **inglés** a partir de `data/srd/en/06_Trasfondos_y_Equipo.txt` (sección "Spell Descriptions", la única fuente SRD con descripciones completas; `04`/`05_Hechizos_*.txt` no las contienen pese a su nombre).
+- El fichero generado usa un **nombre nuevo**: `data/srd/en/09_Spells.md`. Esto desacopla la purga (la ruta vieja `09_Hechizos.md` se elimina completa del historial) del fichero limpio (que se commitea con normalidad, sin coreografía post-reescritura). `SRD_SECTIONS` en `srd-import.ts` se actualiza al nuevo filename.
+- Mantiene el formato que espera `parseSpellDocument` (headers `##`, línea de tipo, stats en una línea, tags `[C]`/`[Ritual]`, `*Higher Level:*`/`*Cantrip Upgrade:*`) — el parser ya es bilingüe, la rama inglesa existe.
 - Header del fichero con atribución CC-BY-4.0 correcta y sin mención a traducciones PHB.
-- Criterio de aceptación: los tests de backend y el smoke test de seed pasan; `GET /api/spells/Fireball` devuelve datos completos.
+- Se añaden tests del parser de hechizos (hoy inexistentes) y del generador.
+- Criterio de aceptación: los tests de backend y el smoke test de seed pasan; `GET /api/spells/Fireball` devuelve datos completos en inglés.
 
 ### 3. Purga del historial
 
-- Herramienta: `git-filter-repo` (ejecutado sobre un clon fresco).
-- Rutas a eliminar de todo el historial: `data/phb2024/` (completo) y `data/srd/en/09_Hechizos.md` (todas las versiones — la versión limpia regenerada se commitea DESPUÉS de la reescritura, para que el filtrado por ruta no la elimine).
-- Force-push de `main` y de los tags reescritos a `origin`.
+- Herramienta: `git-filter-repo` (con backup previo en git bundle).
+- Rutas a eliminar de todo el historial: `data/phb2024/` (completo) y `data/srd/en/09_Hechizos.md` (todas las versiones — el reemplazo limpio vive en la ruta nueva `09_Spells.md`, así que el filtrado por ruta no lo afecta).
+- Force-push de `main` a `origin`. Los tags antiguos NO se re-publican: las releases v1.1.x se eliminan con sus tags y la numeración continúa en v1.2.0 sobre el historial limpio.
 - Verificación posterior: `git log --all` sin rastro de las rutas purgadas; búsqueda de texto PHB conocido en todo el historial con resultado vacío.
 
 ### 4. Releases
@@ -61,13 +63,12 @@ Repositorio y releases públicos sin ningún contenido con copyright de WotC, ma
 ## Orden de ejecución
 
 1. Backup (git bundle + copia privada del contenido PHB).
-2. Preparar en local (sin commitear a `main` todavía): script `build-srd-spells.ts`, `09_Hechizos.md` regenerado en inglés, mecanismo `data/private/` con migración del import PHB, LICENSE, NOTICE y ajustes de README. Tests verdes en local.
-3. Purga del historial con `git-filter-repo` sobre un clon fresco.
-4. Commitear sobre el historial reescrito los cambios preparados en el paso 2 (incluida la versión limpia de `09_Hechizos.md`).
-5. Force-push de `main` y tags a `origin`.
-6. Borrado de releases contaminadas (v1.1.16–v1.1.20) + release limpia v1.2.0.
+2. Preparar y commitear en local (SIN push): generador + `09_Spells.md` en inglés + tests, retirada de `09_Hechizos.md` y `data/phb2024/` del árbol, mecanismo `data/private/` con migración del import PHB, LICENSE, NOTICE y ajustes de README. Tests verdes en local.
+3. Purga del historial con `git-filter-repo` (los commits del paso 2 no tocan las rutas purgadas, así que sobreviven intactos).
+4. Force-push de `main` a `origin`.
+5. Borrado de TODAS las releases y tags antiguos (sus binarios embeben PHB) + release limpia v1.2.0.
 
-La preparación (paso 2) va antes de la purga para que entre el force-push y la release limpia no haya una ventana con el repo roto; la versión limpia de `09_Hechizos.md` se commitea después de la reescritura para que el filtrado por ruta no la elimine.
+La regla operativa clave: **ningún push a origin hasta después de la purga.**
 
 ## Riesgos y mitigaciones
 
