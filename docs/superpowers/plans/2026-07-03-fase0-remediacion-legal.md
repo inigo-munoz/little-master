@@ -905,10 +905,11 @@ Expected: la segunda orden con salida VACÍA.
 
 ```bash
 cd /tmp/lm-verify
-git grep -l "[probe-redacted]" $(git rev-list --all) 2>/dev/null | head -5 || echo "CLEAN"
+PROBE="hoja de rui"; PROBE="${PROBE}barbo"
+git grep -l "$PROBE" $(git rev-list --all) 2>/dev/null | head -5 || echo "CLEAN"
 git grep -l "Mind Flayer" $(git rev-list --all) -- app/frontend 2>/dev/null | head -5 || echo "CLEAN-MM"
 ```
-("[probe-redacted]" es una cadena única de la traducción PHB de Acid Arrow; "Mind Flayer" es Product Identity del monster-data.json purgado.)
+(La cadena del probe se construye por concatenación para que este documento no la contenga literalmente; es un fragmento único de la traducción PHB de Acid Arrow. "Mind Flayer" es Product Identity del monster-data.json purgado.)
 Expected: `CLEAN` y `CLEAN-MM`.
 
 - [ ] **Step 2: Smoke funcional local**
