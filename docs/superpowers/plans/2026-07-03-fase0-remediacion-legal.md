@@ -723,6 +723,36 @@ git commit -m "docs(legal): licencia MIT, NOTICE con atribución SRD CC-BY-4.0 y
 
 ---
 
+### Task 9: Monster data — picker vía API SRD, overlay privado y retirada del JSON (SE EJECUTA ENTRE LA 5 Y LA 6)
+
+**Contexto:** `app/frontend/src/lib/monster-data.json` (802 KB, 607 criaturas) es contenido íntegramente con copyright (MM 2024 + productos tie-in), se empaqueta en el bundle del frontend y lo consume `MonsterPicker.tsx` por import estático. El backend ya sirve monstruos SRD legales: `GET /api/srd/monsters` (resumen `{name, cr, type, size, source?}`, ~196 monstruos) y `GET /api/srd/monsters/:name` (stat block completo `MonsterDetail`). `monster-import-cli.ts` lee el JSON desde la ruta del frontend; `scripts/parse-monsters-csv.ts` lo genera desde un CSV local nunca commiteado.
+
+**Files:**
+- Modify: `app/backend/src/routes/srd.ts` (overlay privado en `GET /monsters` y `GET /monsters/:name`)
+- Test: `app/backend/src/routes/srd.test.ts` (nuevos tests del overlay, TDD)
+- Modify: `app/backend/src/db/monster-import-cli.ts` (leer de `data/private/mm2024/monster-data.json`; check fatal ANTES del deleteMany de `--force`, mismo patrón que `phb-import-cli.ts`)
+- Modify: `app/backend/src/db/monster-import.ts` (mensajes/comentarios de ruta)
+- Modify: `scripts/parse-monsters-csv.ts` (`OUT_PATH` → `data/private/mm2024/monster-data.json`)
+- Modify: `app/frontend/src/components/ui/MonsterPicker.tsx` (fetch a la API en vez de import estático)
+- Modify: `app/frontend/src/app/npcs/page.tsx` (`applyMonster` consume el detalle de la API)
+- Modify: `app/frontend/src/lib/api.ts` (métodos `srd.monsters(q?)` y `srd.monster(name)` si no existen)
+- Modify: `README.md` (líneas ~9 y ~72: el MM ya no está "incluido en el repo"; documentar mecanismo privado como el del PHB)
+- Delete: `app/frontend/src/lib/monster-data.json` (tras copiarlo a `data/private/mm2024/`)
+
+**Interfaces:**
+- Consumes: mecanismo `data/private/` (Task 4); endpoints SRD existentes en `srd.ts`.
+- Produces: endpoints `/api/srd/monsters` y `/api/srd/monsters/:name` con overlay de `data/private/mm2024/monster-data.json` cuando existe (entradas privadas etiquetadas `source: "mm"`, ganan al SRD en duplicados por nombre; sin fichero privado el comportamiento es EXACTAMENTE el actual). Resumen ampliado con `ac?: number; hp?: number` opcionales (solo presentes en entradas privadas).
+
+- [ ] **Step 1 (TDD): tests del overlay en `srd.test.ts`** — replicar el patrón de entorno del propio fichero (env vars + ficheros temporales). Casos: (a) sin fichero privado, `GET /monsters` devuelve solo SRD (comportamiento actual intacto); (b) con un fichero privado temporal de 2 entradas (una con nombre nuevo, otra duplicando un monstruo SRD del fixture), la lista incluye la nueva etiquetada `source: "mm"` y el duplicado lo sirve la versión privada; (c) `GET /monsters/:name` de una entrada privada devuelve el stat block completo mapeado (ver Step 2). RED antes de implementar.
+- [ ] **Step 2: implementar el overlay en `srd.ts`** — leer `join(env.DATA_DIR, "private", "mm2024", "monster-data.json")` de forma perezosa y tolerante (si no existe o no parsea → overlay vacío, sin error). Mapear la forma del JSON privado (`MonsterEntry`: campos planos, `traits` como string separado por comas, `actions[]`, `bonusAction`/`reaction`/`legendaryActions` como strings, `spellcasting` string|null) a las formas de respuesta existentes (`SrdMonster` para lista con `ac`/`hp` opcionales; `MonsterDetail` para detalle: `traits` → array `{name, description:""}`, `bonusAction`/`reaction` → arrays de un elemento si no vacíos, `spellcasting` no nulo → trait adicional `{name: "Spellcasting", description}`). GREEN + suite backend completa.
+- [ ] **Step 3: mover el JSON al mecanismo privado** — `mkdir -p data/private/mm2024 && cp app/frontend/src/lib/monster-data.json data/private/mm2024/ && git rm app/frontend/src/lib/monster-data.json`. Actualizar `monster-import-cli.ts` (ruta nueva + check fatal antes del deleteMany), `monster-import.ts` (mensajes), `parse-monsters-csv.ts` (OUT_PATH). Verificar `pnpm mm:import:force` end-to-end desde la ruta privada (10 documentos "MM 2024 — Monstruos …").
+- [ ] **Step 4: frontend** — `MonsterPicker.tsx`: eliminar el import estático; cargar la lista vía `api.srd.monsters()` (SWR, como el resto de componentes), mantener búsqueda y filtro de CR en cliente; columnas AC/PV solo si la entrada las trae (privadas sí, SRD no). Al seleccionar: fetch del detalle `api.srd.monster(name)` y `applyMonster` adaptado a `MonsterDetail` (mapear `traits[]`/`actions[]`/`bonusActions[]`/`reactions[]` ya estructurados; conservar `formatCR`). `monster-types.ts`: conservar solo lo aún usado (`crToNumber`, `formatCR`, y `MonsterEntry` si el backend/CLI lo referencia — NO borrar tipos que el import privado siga necesitando).
+- [ ] **Step 5: README** — líneas ~9 y ~72: retirar "incluido en el repo"/"integrado"; documentar que el picker usa el SRD (196 criaturas) y que quien tenga datos propios puede colocarlos en `data/private/mm2024/monster-data.json` para verlos integrados (mismo espíritu que la sección de contenido propio).
+- [ ] **Step 6: verificación completa** — `pnpm typecheck` raíz; tests frontend (`cd app/frontend && pnpm test`) y backend verdes; `pnpm lint` frontend; levantar el backend y verificar con curl: `GET /api/srd/monsters` (con y sin fichero privado presente — renombrarlo temporalmente para el caso "sin") y `GET /api/srd/monsters/Zombie` (SRD) + un monstruo solo-privado.
+- [ ] **Step 7: commit** — `feat(monstruos): picker vía API SRD con overlay privado y retirada del JSON con copyright` (un solo commit; sin push).
+
+---
+
 ### Task 6: Purga del historial y force-push
 
 **Files:**
@@ -748,8 +778,11 @@ Expected: `git-filter-repo --version` responde.
 cd "/media/inigo/Loki/Mis Repos/dnd-assistant"
 git filter-repo --force --invert-paths \
   --path data/phb2024 \
-  --path data/srd/en/09_Hechizos.md
+  --path data/srd/en/09_Hechizos.md \
+  --path app/frontend/src/lib/monster-data.json
 ```
+
+(`monster-data.json` nació en un único commit `65f3b15` sin renames previos — verificado con `git log --follow`.)
 
 Nota: `git filter-repo` ELIMINA el remote `origin` como medida de seguridad — se re-añade en el Step 4.
 
@@ -757,12 +790,12 @@ Nota: `git filter-repo` ELIMINA el remote `origin` como medida de seguridad — 
 
 ```bash
 cd "/media/inigo/Loki/Mis Repos/dnd-assistant"
-git log --all --oneline -- data/phb2024 data/srd/en/09_Hechizos.md
+git log --all --oneline -- data/phb2024 data/srd/en/09_Hechizos.md app/frontend/src/lib/monster-data.json
 ```
 Expected: salida VACÍA.
 
 ```bash
-git rev-list --all | head -50 | while read c; do git ls-tree -r --name-only "$c" | rg -q "phb2024|09_Hechizos" && echo "CONTAMINADO: $c"; done; echo "scan done"
+git rev-list --all | head -50 | while read c; do git ls-tree -r --name-only "$c" | rg -q "phb2024|09_Hechizos|monster-data" && echo "CONTAMINADO: $c"; done; echo "scan done"
 ```
 Expected: solo `scan done`, ningún `CONTAMINADO`.
 
@@ -873,9 +906,10 @@ Expected: la segunda orden con salida VACÍA.
 ```bash
 cd /tmp/lm-verify
 git grep -l "[probe-redacted]" $(git rev-list --all) 2>/dev/null | head -5 || echo "CLEAN"
+git grep -l "Mind Flayer" $(git rev-list --all) -- app/frontend 2>/dev/null | head -5 || echo "CLEAN-MM"
 ```
-("[probe-redacted]" es una cadena única de la traducción PHB de Acid Arrow.)
-Expected: `CLEAN`.
+("[probe-redacted]" es una cadena única de la traducción PHB de Acid Arrow; "Mind Flayer" es Product Identity del monster-data.json purgado.)
+Expected: `CLEAN` y `CLEAN-MM`.
 
 - [ ] **Step 2: Smoke funcional local**
 
