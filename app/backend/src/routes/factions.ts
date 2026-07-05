@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../db/prisma.js";
 import { changeLogService } from "../services/changeLog.service.js";
+import { deleteWithChangeLog } from "../db/delete-with-changelog.js";
 import { AppError, ErrorCode } from "@dnd/shared";
 
 export const factionRoutes: FastifyPluginAsync = async (server) => {
@@ -100,24 +101,14 @@ export const factionRoutes: FastifyPluginAsync = async (server) => {
   server.delete<{ Params: { id: string } }>("/:id", async (request, reply) => {
     const existing = await prisma.faction.findUnique({ where: { id: request.params.id } });
     if (!existing) throw AppError.notFound(ErrorCode.NOT_FOUND, "Faction not found");
-    await prisma.$transaction(async (tx) => {
-      await changeLogService.log(
-        {
-          campaignId: existing.campaignId,
-          entityType: "faction",
-          entityId: existing.id,
-          beforeJson: JSON.stringify(existing),
-          afterJson: null,
-          reason: "Faction deleted",
-          source: "user",
-          authorType: "user",
-        },
-        tx
-      );
-      await tx.entityRelation.deleteMany({
-        where: { OR: [{ fromId: existing.id }, { toId: existing.id }] },
-      });
-      await tx.faction.delete({ where: { id: request.params.id } });
+    await deleteWithChangeLog({
+      prisma,
+      existing,
+      campaignId: existing.campaignId,
+      entityType: "faction",
+      reason: "Faction deleted",
+      cleanupEntityRelations: true,
+      deleteEntity: (tx) => tx.faction.delete({ where: { id: request.params.id } }),
     });
     return reply.status(204).send();
   });

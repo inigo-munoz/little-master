@@ -13,9 +13,8 @@ import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { PrismaClient } from "@prisma/client";
-
-const CHUNK_SIZE = 1500;
-const CHUNK_OVERLAP = 200;
+import { abilityModifier, parseCR } from "@dnd/domain";
+import { chunkText } from "./chunk-text.js";
 
 const SOURCE_TYPE = "official";
 const AUTHORITY_LEVEL = "high";
@@ -82,15 +81,8 @@ const CR_GROUPS: CrGroup[] = [
   { label: "CR 21–30",   min: 21,   max: 30 },
 ];
 
-function crToNumeric(cr: string): number {
-  if (cr === "1/8") return 0.125;
-  if (cr === "1/4") return 0.25;
-  if (cr === "1/2") return 0.5;
-  return parseFloat(cr) || 0;
-}
-
 function mod(score: number): string {
-  const m = Math.floor((score - 10) / 2);
+  const m = abilityModifier(score);
   return m >= 0 ? `+${m}` : `${m}`;
 }
 
@@ -173,26 +165,6 @@ function monsterToMarkdown(m: Monster): string {
   return lines.join("\n");
 }
 
-function chunkText(text: string): string[] {
-  const chunks: string[] = [];
-  const sections = text.split(/\n(?=## )/);
-
-  let current = "";
-  for (const section of sections) {
-    if ((current + section).length > CHUNK_SIZE && current.length > 0) {
-      chunks.push(current.trim());
-      const words = current.split(" ");
-      const overlapWords = words.slice(-Math.ceil(CHUNK_OVERLAP / 6));
-      current = overlapWords.join(" ") + "\n" + section;
-    } else {
-      current = current ? current + "\n" + section : section;
-    }
-  }
-
-  if (current.trim()) chunks.push(current.trim());
-  return chunks.filter((c) => c.length > 0);
-}
-
 export async function importMonsters(
   prisma: PrismaClient,
   dataDir: string,
@@ -220,7 +192,7 @@ export async function importMonsters(
 
   for (const group of CR_GROUPS) {
     const groupMonsters = monsters.filter((m) => {
-      const cr = crToNumeric(m.cr);
+      const cr = parseCR(m.cr);
       return cr >= group.min && cr <= group.max;
     });
 
@@ -264,7 +236,11 @@ export async function importMonsters(
         },
       });
 
-      const chunks = chunkText(content);
+      const chunks = chunkText(content, {
+        splitPattern: /\n(?=## )/,
+        joiner: "\n",
+        overlapJoiner: "\n",
+      });
       await prisma.documentChunk.createMany({
         data: chunks.map((chunkContent, i) => ({
           documentId: document.id,

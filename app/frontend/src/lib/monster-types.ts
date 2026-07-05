@@ -1,3 +1,22 @@
+import type { StatBlockEntry } from "./api";
+
+/**
+ * Parses a stat-block entries field (traits/actions/bonusActions/reactions),
+ * which may arrive as an already-parsed array or as a JSON-encoded string
+ * (e.g. from a raw DB row). Returns [] for empty/invalid input.
+ */
+export function parseStatBlockEntries(
+  raw: StatBlockEntry[] | string | null | undefined
+): StatBlockEntry[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try {
+    return JSON.parse(raw) as StatBlockEntry[];
+  } catch {
+    return [];
+  }
+}
+
 export function crToNumber(cr: string): number {
   if (cr === "1/8") return 0.125;
   if (cr === "1/4") return 0.25;

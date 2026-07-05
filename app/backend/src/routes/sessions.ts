@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../db/prisma.js";
 import { changeLogService } from "../services/changeLog.service.js";
+import { deleteWithChangeLog } from "../db/delete-with-changelog.js";
 import { AppError, ErrorCode } from "@dnd/shared";
 
 export const sessionRoutes: FastifyPluginAsync = async (server) => {
@@ -110,21 +111,13 @@ export const sessionRoutes: FastifyPluginAsync = async (server) => {
   server.delete<{ Params: { id: string } }>("/:id", async (request, reply) => {
     const existing = await prisma.session.findUnique({ where: { id: request.params.id } });
     if (!existing) throw AppError.notFound(ErrorCode.SESSION_NOT_FOUND, "Session not found");
-    await prisma.$transaction(async (tx) => {
-      await changeLogService.log(
-        {
-          campaignId: existing.campaignId,
-          entityType: "session",
-          entityId: existing.id,
-          beforeJson: JSON.stringify(existing),
-          afterJson: null,
-          reason: "Session deleted",
-          source: "user",
-          authorType: "user",
-        },
-        tx
-      );
-      await tx.session.delete({ where: { id: request.params.id } });
+    await deleteWithChangeLog({
+      prisma,
+      existing,
+      campaignId: existing.campaignId,
+      entityType: "session",
+      reason: "Session deleted",
+      deleteEntity: (tx) => tx.session.delete({ where: { id: request.params.id } }),
     });
     return reply.status(204).send();
   });

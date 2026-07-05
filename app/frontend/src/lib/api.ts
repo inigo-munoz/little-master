@@ -7,6 +7,9 @@
  */
 
 import { getBackendUrl } from "./backend-url";
+import type { AssistantMode } from "@dnd/domain";
+
+export type { AssistantMode };
 
 export class ApiError extends Error {
   constructor(
@@ -495,13 +498,6 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
-
-export type AssistantMode =
-  | "archivista"
-  | "designer"
-  | "rule_reviewer"
-  | "auditor"
-  | "session_director";
 
 export interface ChatResponse {
   content: string;

@@ -17,9 +17,7 @@ import { promises as fs, existsSync } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { PrismaClient } from "@prisma/client";
-
-const CHUNK_SIZE = 1500;
-const CHUNK_OVERLAP = 200;
+import { chunkText } from "./chunk-text.js";
 
 interface PhbDocument {
   title: string;
@@ -39,26 +37,6 @@ const PHB_DOCUMENTS: PhbDocument[] = [
   { title: "PHB 2024 — Glosario de Reglas",            filename: "glosario.md" },
   { title: "PHB 2024 — Hechizos (Descripciones Completas A-Z)", filename: "hechizos-completos.md" },
 ];
-
-function chunkText(text: string): string[] {
-  const chunks: string[] = [];
-  const paragraphs = text.split(/\n\n+/);
-  let current = "";
-
-  for (const para of paragraphs) {
-    if ((current + para).length > CHUNK_SIZE && current.length > 0) {
-      chunks.push(current.trim());
-      const words = current.split(" ");
-      const overlapWords = words.slice(-Math.ceil(CHUNK_OVERLAP / 6));
-      current = overlapWords.join(" ") + " " + para;
-    } else {
-      current = current ? current + "\n\n" + para : para;
-    }
-  }
-
-  if (current.trim()) chunks.push(current.trim());
-  return chunks.filter((c) => c.length > 0);
-}
 
 export async function importPhb2024(
   prisma: PrismaClient,

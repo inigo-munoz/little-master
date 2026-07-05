@@ -12,9 +12,9 @@ import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { useAppStore } from "../../store/app.store";
 import { DND_CLASSES, DND_SPECIES, SAVING_THROWS_BY_CLASS, HIT_DIE_BY_CLASS, LANGUAGES_BY_SPECIES, baseSpeedForSpecies } from "../../lib/dnd-2024-data";
-import { abilityModifier, proficiencyBonus } from "../../lib/player-calcs";
+import { abilityModifier, formatModifier, proficiencyBonus } from "../../lib/player-calcs";
 import { MonsterPicker } from "../../components/ui/MonsterPicker";
-import { formatCR, xpToNumber } from "../../lib/monster-types";
+import { formatCR, xpToNumber, parseStatBlockEntries } from "../../lib/monster-types";
 import { getPdfUrl } from "../../lib/backend-url";
 
 function parseTags(raw: string): string[] {
@@ -28,17 +28,13 @@ interface NpcFormProps {
   onSaved: () => void;
 }
 
-function parseEntriesField(raw: StatBlockEntry[] | string | null | undefined): StatBlockEntry[] {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw;
-  try { return JSON.parse(raw) as StatBlockEntry[]; } catch { return []; }
-}
-
-function modStr(score: string): string {
-  const n = parseInt(score, 10);
-  if (isNaN(n)) return "";
-  const m = Math.floor((n - 10) / 2);
-  return m >= 0 ? `(+${m})` : `(${m})`;
+/**
+ * Formats an ability-score input string as "(+X)"/"(X)" for inline display,
+ * or "" if the input doesn't parse to a number.
+ */
+function formatAbilityInput(raw: string): string {
+  const n = parseInt(raw, 10);
+  return isNaN(n) ? "" : `(${formatModifier(n)})`;
 }
 
 function EntryListEditor({
@@ -143,10 +139,10 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
   const [npcClass, setNpcClass] = useState(initial?.npcClass ?? "");
   const [npcLevel, setNpcLevel] = useState(initial?.npcLevel != null ? String(initial.npcLevel) : "");
   const [npcSpecies, setNpcSpecies] = useState(initial?.npcSpecies ?? "");
-  const [traits, setTraits] = useState<StatBlockEntry[]>(parseEntriesField(initial?.traits));
-  const [actions, setActions] = useState<StatBlockEntry[]>(parseEntriesField(initial?.actions));
-  const [bonusActions, setBonusActions] = useState<StatBlockEntry[]>(parseEntriesField(initial?.bonusActions));
-  const [reactions, setReactions] = useState<StatBlockEntry[]>(parseEntriesField(initial?.reactions));
+  const [traits, setTraits] = useState<StatBlockEntry[]>(parseStatBlockEntries(initial?.traits));
+  const [actions, setActions] = useState<StatBlockEntry[]>(parseStatBlockEntries(initial?.actions));
+  const [bonusActions, setBonusActions] = useState<StatBlockEntry[]>(parseStatBlockEntries(initial?.bonusActions));
+  const [reactions, setReactions] = useState<StatBlockEntry[]>(parseStatBlockEntries(initial?.reactions));
 
   useEffect(() => {
     if (npcType !== "player" || !npcClass || !npcLevel) return;
@@ -222,10 +218,10 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
     setNpcClass(initial?.npcClass ?? "");
     setNpcLevel(initial?.npcLevel != null ? String(initial.npcLevel) : "");
     setNpcSpecies(initial?.npcSpecies ?? "");
-    setTraits(parseEntriesField(initial?.traits));
-    setActions(parseEntriesField(initial?.actions));
-    setBonusActions(parseEntriesField(initial?.bonusActions));
-    setReactions(parseEntriesField(initial?.reactions));
+    setTraits(parseStatBlockEntries(initial?.traits));
+    setActions(parseStatBlockEntries(initial?.actions));
+    setBonusActions(parseStatBlockEntries(initial?.bonusActions));
+    setReactions(parseStatBlockEntries(initial?.reactions));
   }, [initial]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -474,7 +470,7 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
                             onChange={(e) => set(e.target.value)}
                             className="w-full bg-stone-800 border border-stone-700 rounded px-1 py-1.5 text-stone-100 text-sm text-center focus:outline-none focus:border-amber-500"
                           />
-                          <p className="text-xs text-stone-500 mt-0.5">{val ? modStr(val) : ""}</p>
+                          <p className="text-xs text-stone-500 mt-0.5">{val ? formatAbilityInput(val) : ""}</p>
                         </div>
                       ))}
                     </div>

@@ -14,9 +14,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { PrismaClient } from "@prisma/client";
-
-const CHUNK_SIZE = 1500;
-const CHUNK_OVERLAP = 200;
+import { chunkText } from "./chunk-text.js";
 
 interface SrdSection {
   filename: string;
@@ -35,26 +33,6 @@ const SRD_SECTIONS: SrdSection[] = [
   { filename: "08_Monstruos.txt",                title: "SRD 5.2.1 — Monsters",                    lang: "en" },
   { filename: "09_Spells.md",                     title: "SRD 5.2.1 — Spells",                      lang: "en" },
 ];
-
-function chunkText(text: string): string[] {
-  const chunks: string[] = [];
-  const paragraphs = text.split(/\n\n+/);
-  let current = "";
-
-  for (const para of paragraphs) {
-    if ((current + para).length > CHUNK_SIZE && current.length > 0) {
-      chunks.push(current.trim());
-      const words = current.split(" ");
-      const overlapWords = words.slice(-Math.ceil(CHUNK_OVERLAP / 6));
-      current = overlapWords.join(" ") + " " + para;
-    } else {
-      current = current ? current + "\n\n" + para : para;
-    }
-  }
-
-  if (current.trim()) chunks.push(current.trim());
-  return chunks.filter((c) => c.length > 0);
-}
 
 export async function importSrd(
   prisma: PrismaClient,

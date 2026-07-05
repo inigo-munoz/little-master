@@ -6,6 +6,8 @@ import { clsx } from "clsx";
 import { StatusBadge } from "./Badge";
 import { WikiMarkdown } from "./WikiMarkdown";
 import { RelationsPanel } from "./RelationsPanel";
+import { formatModifier } from "../../lib/player-calcs";
+import { parseStatBlockEntries } from "../../lib/monster-types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type ModalEntity =
@@ -242,24 +244,13 @@ function cleanNpcDescription(description: string | null): string {
 }
 
 
-function parseEntries(raw: StatBlockEntry[] | string | null | undefined): StatBlockEntry[] {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw;
-  try { return JSON.parse(raw) as StatBlockEntry[]; } catch { return []; }
-}
-
-function modStr(score: number | null | undefined): string {
-  if (score == null) return "—";
-  const m = Math.floor((score - 10) / 2);
-  return m >= 0 ? `+${m}` : `${m}`;
-}
 
 function AbilityBox({ label, score }: { label: string; score: number | null | undefined }) {
   return (
     <div className="text-center bg-stone-950 rounded p-2">
       <p className="text-xs text-amber-500 font-bold uppercase mb-0.5">{label}</p>
       <p className="text-sm font-bold text-stone-100">{score ?? "—"}</p>
-      <p className="text-xs text-stone-400">{modStr(score)}</p>
+      <p className="text-xs text-stone-400">{score == null ? "—" : formatModifier(score)}</p>
     </div>
   );
 }
@@ -295,10 +286,10 @@ function NpcStatBlockDisplay({ data }: { data: NpcData }) {
   const hasStats = data.armorClass != null || data.hitPoints || data.strength != null;
   if (!hasStats) return null;
 
-  const traits = parseEntries(data.traits);
-  const actions = parseEntries(data.actions);
-  const bonusActions = parseEntries(data.bonusActions);
-  const reactions = parseEntries(data.reactions);
+  const traits = parseStatBlockEntries(data.traits);
+  const actions = parseStatBlockEntries(data.actions);
+  const bonusActions = parseStatBlockEntries(data.bonusActions);
+  const reactions = parseStatBlockEntries(data.reactions);
 
   const subtitle = data.npcType === "player" && data.npcClass
     ? `${data.npcClass}${data.npcLevel ? ` nivel ${data.npcLevel}` : ""}`

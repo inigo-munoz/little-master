@@ -282,6 +282,17 @@ export const AssistantRunSchema = z.object({
 });
 export type AssistantRun = z.infer<typeof AssistantRunSchema>;
 
+// ─── Ability Score Helpers ──────────────────────────────────────────────────────
+
+/**
+ * D&D 5E ability modifier formula: floor((score - 10) / 2).
+ * Single source of truth — used by frontend character sheet calcs and
+ * backend monster import.
+ */
+export function abilityModifier(score: number): number {
+  return Math.floor((score - 10) / 2);
+}
+
 // ─── Encounter / Monster ──────────────────────────────────────────────────────
 
 /**

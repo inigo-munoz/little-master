@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../db/prisma.js";
 import { changeLogService } from "../services/changeLog.service.js";
+import { deleteWithChangeLog } from "../db/delete-with-changelog.js";
 import { AppError, ErrorCode } from "@dnd/shared";
 
 export const encounterRoutes: FastifyPluginAsync = async (server) => {
@@ -82,21 +83,13 @@ export const encounterRoutes: FastifyPluginAsync = async (server) => {
   server.delete<{ Params: { id: string } }>("/:id", async (request, reply) => {
     const existing = await prisma.encounter.findUnique({ where: { id: request.params.id } });
     if (!existing) throw AppError.notFound(ErrorCode.NOT_FOUND, "Encounter not found");
-    await prisma.$transaction(async (tx) => {
-      await changeLogService.log(
-        {
-          campaignId: existing.campaignId,
-          entityType: "encounter",
-          entityId: existing.id,
-          beforeJson: JSON.stringify(existing),
-          afterJson: null,
-          reason: "Encounter deleted",
-          source: "user",
-          authorType: "user",
-        },
-        tx
-      );
-      await tx.encounter.delete({ where: { id: request.params.id } });
+    await deleteWithChangeLog({
+      prisma,
+      existing,
+      campaignId: existing.campaignId,
+      entityType: "encounter",
+      reason: "Encounter deleted",
+      deleteEntity: (tx) => tx.encounter.delete({ where: { id: request.params.id } }),
     });
     return reply.status(204).send();
   });

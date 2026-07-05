@@ -151,71 +151,33 @@ function CharacterSheetContent() {
     });
   }
 
+  // NOTE: this closure is re-created on every render, so it can safely reuse
+  // the render-scope derived values below (classes, feats, finalDex..finalCha,
+  // calcedAC, calcedHpMax, level, pb, calcedInitiative, calcDC, calcAttack,
+  // passivePerception, currentSpecies) instead of recomputing them — they're
+  // already up to date with `form` by the time the user can click "Guardar".
   async function handleSave() {
     setSaving(true);
     setSaveError(null);
     try {
-      const cls: PlayerClassEntry[] = parseJson(form.classes ?? "[]", []);
-      const rolls: HpRollEntry[]    = parseJson(form.hpRolls ?? "[]", []);
-      const fts: FeatEntry[]        = parseJson(form.feats ?? "[]", []);
+      const hitDice = classes.map(c => `${c.level}d${HIT_DIE_BY_CLASS[c.class] ?? 8}`).join(" + ");
+      const calcedSpeed = calcSpeed(currentSpecies, classes, feats);
+      const speed = form.speed != null ? (form.speed as number) : calcedSpeed;
 
-      const fDex = finalAbilityScore(form.dexterity    ?? 10, "dexterity",    fts);
-      const fCon = finalAbilityScore(form.constitution ?? 10, "constitution", fts);
-      const fWis = finalAbilityScore(form.wisdom        ?? 10, "wisdom",       fts);
-
-      const ac    = calcAC(form.equippedArmor ?? null, fDex, form.shield ?? false, fCon, fWis);
-      const hpMax = calcHpMaxFromRolls(rolls, cls, fCon, form.hpUseAverage ?? true);
-      const lvl   = totalLevel(cls) || 1;
-      const pb    = proficiencyBonus(lvl);
-      const hitDice = cls.map(c => `${c.level}d${HIT_DIE_BY_CLASS[c.class] ?? 8}`).join(" + ");
-      const initiative      = calcInitiative(fDex, fts);
-      const raceStrSave = (form.race as string) ?? "";
-      const raceMatchSave = raceStrSave.match(/^(.+?) \((.+)\)$/);
-      const speciesSave = raceMatchSave ? (raceMatchSave[1] ?? raceStrSave) : raceStrSave;
-      const calcedSpeedSave = calcSpeed(speciesSave, cls, fts);
-      const speed = form.speed != null ? (form.speed as number) : calcedSpeedSave;
-
-      const fInt = finalAbilityScore(form.intelligence ?? 10, "intelligence", fts);
-      const fCha = finalAbilityScore(form.charisma     ?? 10, "charisma",     fts);
-      const spellClsSave     = cls.filter(c => isClassSpellcaster(c.class, c.subclass));
-      const primarySpellSave = spellClsSave.length > 0
-        ? spellClsSave.reduce((a, b) => a.level >= b.level ? a : b)
-        : null;
-      const detectedAbilitySave = primarySpellSave
-        ? (SPELLCASTING_ABILITY_BY_CLASS[primarySpellSave.class]
-           ?? (THIRD_CASTER_SUBCLASSES[primarySpellSave.class] === primarySpellSave.subclass
-               ? (primarySpellSave.class === "Guerrero" ? "intelligence" : "charisma")
-               : null))
-        : null;
-      const resolvedAbilitySave = ((form.spellcastingAbility || detectedAbilitySave) ?? null) as "wisdom" | "intelligence" | "charisma" | null;
-      const spellScoreSave =
-        resolvedAbilitySave === "wisdom"       ? fWis :
-        resolvedAbilitySave === "intelligence" ? fInt :
-        resolvedAbilitySave === "charisma"     ? fCha : null;
-      const spellSaveDC      = spellScoreSave !== null ? calcSpellSaveDC(spellScoreSave, lvl)      : undefined;
-      const spellAttackBonus = spellScoreSave !== null ? calcSpellAttackBonus(spellScoreSave, lvl) : undefined;
-
-      const skillProfsForSave: string[]  = parseJson(form.skillProficiencies ?? "[]", []);
-      const skillExpertForSave: string[] = parseJson(form.skillExpertise     ?? "[]", []);
-      const passivePerception = calcPassivePerception(
-        fWis,
-        lvl,
-        skillProfsForSave.includes("Perception"),
-        skillExpertForSave.includes("Perception"),
-      );
-
-      const firstClass = cls[0];
+      const firstClass = classes[0];
 
       await api.players.update(params.id, {
         ...form,
-        ac,
-        hpMax,
-        initiative,
+        ac: calcedAC,
+        hpMax: calcedHpMax,
+        initiative: calcedInitiative,
         speed,
         passivePerception,
-        spellSaveDC,
-        spellAttackBonus,
-        level:            lvl,
+        // calcDC/calcAttack are `null` (not `undefined`) when there's no
+        // spellcasting ability — convert to match the API's "omit field" contract.
+        spellSaveDC: calcDC ?? undefined,
+        spellAttackBonus: calcAttack ?? undefined,
+        level,
         proficiencyBonus: pb,
         hitDice:          hitDice || undefined,
         class:            firstClass?.class   ?? undefined,
@@ -274,6 +236,12 @@ function CharacterSheetContent() {
 
   const skillProfs: string[] = parseJson(form.skillProficiencies ?? "[]", []);
   const skillExpert: string[] = parseJson(form.skillExpertise ?? "[]", []);
+  const passivePerception = calcPassivePerception(
+    finalWis,
+    level,
+    skillProfs.includes("Perception"),
+    skillExpert.includes("Perception"),
+  );
   const saveProfs: string[] = parseJson(form.savingThrows ?? "[]", []);
   const classSaves: string[] = [...new Set(classes.flatMap(c => SAVING_THROWS_BY_CLASS[c.class] ?? []))];
 

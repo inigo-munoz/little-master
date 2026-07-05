@@ -12,6 +12,8 @@ import { AppShell } from "../../components/layout/AppShell";
 import { useAppStore } from "../../store/app.store";
 import { api } from "../../lib/api";
 import type { Encounter, Npc, StatBlockEntry } from "../../lib/api";
+import { crToNumber, parseStatBlockEntries } from "../../lib/monster-types";
+import { formatModifier } from "../../lib/player-calcs";
 
 // NPC stat block data shaped for display in the encounter panel
 interface NpcStatBlockDisplay {
@@ -46,12 +48,6 @@ function parseCrFromChallengeRating(cr: string | null | undefined): string {
   return m ? m[1]! : cr;
 }
 
-function parseNpcEntries(raw: StatBlockEntry[] | string | null | undefined): StatBlockEntry[] {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw;
-  try { return JSON.parse(raw) as StatBlockEntry[]; } catch { return []; }
-}
-
 function npcToStatBlockDisplay(npc: Npc): NpcStatBlockDisplay {
   return {
     name: npc.name,
@@ -73,10 +69,10 @@ function npcToStatBlockDisplay(npc: Npc): NpcStatBlockDisplay {
     senses: npc.senses,
     languages: npc.languages,
     challengeRating: npc.challengeRating,
-    traits: parseNpcEntries(npc.traits),
-    actions: parseNpcEntries(npc.actions),
-    bonusActions: parseNpcEntries(npc.bonusActions),
-    reactions: parseNpcEntries(npc.reactions),
+    traits: parseStatBlockEntries(npc.traits),
+    actions: parseStatBlockEntries(npc.actions),
+    bonusActions: parseStatBlockEntries(npc.bonusActions),
+    reactions: parseStatBlockEntries(npc.reactions),
   };
 }
 
@@ -86,19 +82,6 @@ const CR_OPTIONS = [
   "11","12","13","14","15","16","17","18","19","20",
   "21","22","23","24","25","26","27","28","29","30",
 ];
-
-function crToNumber(cr: string): number {
-  if (cr === "1/8") return 0.125;
-  if (cr === "1/4") return 0.25;
-  if (cr === "1/2") return 0.5;
-  return parseFloat(cr);
-}
-
-function modStr(score: number | null | undefined): string {
-  if (score == null) return "—";
-  const m = Math.floor((score - 10) / 2);
-  return m >= 0 ? `+${m}` : `${m}`;
-}
 
 interface MonsterEntry {
   id: string;
@@ -255,7 +238,7 @@ function AbilityCell({ label, score }: { label: string; score: number | null }) 
     <div className="text-center">
       <p className="text-xs text-amber-500 font-bold uppercase">{label}</p>
       <p className="text-sm font-bold text-stone-100">{score ?? "—"}</p>
-      <p className="text-xs text-stone-400">{modStr(score)}</p>
+      <p className="text-xs text-stone-400">{score == null ? "—" : formatModifier(score)}</p>
     </div>
   );
 }
@@ -307,7 +290,7 @@ function NpcStatBlockPanel({ data }: { data: NpcStatBlockDisplay }) {
             <div key={label as string} className="text-center">
               <p className="text-xs text-amber-500 font-bold uppercase">{label}</p>
               <p className="text-sm font-bold text-stone-100">{score ?? "—"}</p>
-              <p className="text-xs text-stone-400">{modStr(score as number | null)}</p>
+              <p className="text-xs text-stone-400">{score == null ? "—" : formatModifier(score as number)}</p>
             </div>
           ))}
         </div>
@@ -434,55 +417,6 @@ function MonsterStatBlockPanel({ name, npcStatBlock, source }: { name: string; n
         <pre className="text-stone-500 text-xs whitespace-pre-wrap font-mono border-t border-stone-700 pt-2 overflow-auto max-h-64">
           {data.rawText}
         </pre>
-      )}
-    </div>
-  );
-}
-
-// ─── Saved Encounter Monster Row ─────────────────────────────────────────────
-
-function SavedEncounterMonsterRow({
-  monster,
-  campaignNpcs,
-}: {
-  monster: { name: string; cr: string; count: number };
-  campaignNpcs?: Npc[];
-}) {
-  const [expanded, setExpanded] = useState(false);
-
-  const matchingNpc = campaignNpcs?.find(
-    (n) => n.name.toLowerCase() === monster.name.toLowerCase()
-  );
-  const npcStatBlock = matchingNpc ? npcToStatBlockDisplay(matchingNpc) : null;
-
-  return (
-    <div>
-      <div className="flex items-center justify-between gap-2 py-0.5">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm text-stone-300 truncate">{monster.name}</span>
-          <span className="text-stone-500 text-sm shrink-0">×{monster.count}</span>
-          {matchingNpc && (
-            <span className="bg-purple-900/60 text-purple-300 border border-purple-700/50 px-1.5 py-0.5 rounded text-xs shrink-0">NPC</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs text-amber-400 font-mono">CR {monster.cr}</span>
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            title="Ver bloque de estadísticas"
-            className={clsx(
-              "p-1 rounded transition-colors",
-              expanded
-                ? "text-amber-400 bg-amber-900/30"
-                : "text-stone-600 hover:text-stone-400"
-            )}
-          >
-            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          </button>
-        </div>
-      </div>
-      {expanded && (
-        <MonsterStatBlockPanel name={monster.name} npcStatBlock={npcStatBlock} />
       )}
     </div>
   );

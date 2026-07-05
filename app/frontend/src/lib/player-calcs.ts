@@ -14,6 +14,9 @@ import {
   SPECIES_SKILL_CHOICE_SLOTS,
   type ArmorKey,
 } from "./dnd-2024-data";
+import { abilityModifier } from "@dnd/domain";
+
+export { abilityModifier };
 
 // ─── Tipos exportados ─────────────────────────────────────────────────────────
 
@@ -54,8 +57,14 @@ export interface FeatEntry {
 
 // ─── Funciones existentes (sin cambios) ───────────────────────────────────────
 
-export function abilityModifier(score: number): number {
-  return Math.floor((score - 10) / 2);
+/**
+ * Formats an ability modifier for display: "+2", "-1", "+0".
+ * Single source of truth for the "modStr"-style helpers scattered across
+ * DetailModal, encounter page and npcs page.
+ */
+export function formatModifier(score: number): string {
+  const m = abilityModifier(score);
+  return m >= 0 ? `+${m}` : `${m}`;
 }
 
 export function proficiencyBonus(level: number): number {

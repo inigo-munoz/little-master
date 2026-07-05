@@ -5,6 +5,7 @@ import { env } from "../config/env.js";
 import { AppError, ErrorCode } from "@dnd/shared";
 import { changeLogService } from "./changeLog.service.js";
 import type { SourceType, AuthorityLevel } from "@dnd/shared";
+import { chunkText } from "../db/chunk-text.js";
 
 const MAX_DOCUMENT_SIZE = 5 * 1024 * 1024; // 5 MB
 const CHUNK_SIZE = 1500;        // chars per chunk
@@ -215,24 +216,6 @@ export const documentService = {
   },
 
   chunkText(text: string, chunkSize: number, overlap: number): string[] {
-    const chunks: string[] = [];
-    // Split on paragraph boundaries where possible
-    const paragraphs = text.split(/\n\n+/);
-    let current = "";
-
-    for (const para of paragraphs) {
-      if ((current + para).length > chunkSize && current.length > 0) {
-        chunks.push(current.trim());
-        // Start next chunk with overlap from end of current
-        const words = current.split(" ");
-        const overlapWords = words.slice(-Math.ceil(overlap / 6)); // rough word count
-        current = overlapWords.join(" ") + " " + para;
-      } else {
-        current = current ? current + "\n\n" + para : para;
-      }
-    }
-
-    if (current.trim()) chunks.push(current.trim());
-    return chunks.filter((c) => c.length > 0);
+    return chunkText(text, { chunkSize, overlap });
   },
 };
