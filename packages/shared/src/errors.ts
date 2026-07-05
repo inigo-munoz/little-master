@@ -60,8 +60,4 @@ export class AppError extends Error {
   static validation(message: string, details?: unknown): AppError {
     return new AppError(ErrorCode.VALIDATION_ERROR, message, 400, details);
   }
-
-  static forbidden(message: string): AppError {
-    return new AppError(ErrorCode.FORBIDDEN, message, 403);
-  }
 }

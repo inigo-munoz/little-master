@@ -15,12 +15,10 @@ interface AppState {
   // Chat history — persists across navigation, resets on page reload
   messages: ExtendedMessage[];
   addMessage: (message: ExtendedMessage) => void;
-  setMessages: (messages: ExtendedMessage[]) => void;
   clearMessages: () => void;
 
   // UI state
   sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
   toggleSidebar: () => void;
 
   // Hydration guard — false until localStorage has been rehydrated by persist middleware
@@ -41,11 +39,9 @@ export const useAppStore = create<AppState>()(
 
       messages: [],
       addMessage: (message) => set((s) => ({ messages: [...s.messages, message] })),
-      setMessages: (messages) => set({ messages }),
       clearMessages: () => set({ messages: [] }),
 
       sidebarOpen: true,
-      setSidebarOpen: (open) => set({ sidebarOpen: open }),
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 
       _hasHydrated: false,

@@ -357,11 +357,6 @@ export const EPIC_BOON_FEATS = [
   "Epic Boon of the Night Spirit", "Epic Boon of Truesight",
 ] as const;
 
-// Todas las dotes del PHB 2024 combinadas
-export const ALL_FEATS = [
-  ...ORIGIN_FEATS, ...GENERAL_FEATS, ...FIGHTING_STYLE_FEATS, ...EPIC_BOON_FEATS,
-] as const;
-
 // Especies que conceden una Dote de Origen a nivel 1 (PHB 2024 — "Versátil")
 export const SPECIES_WITH_ORIGIN_FEAT = new Set<string>(["Humano"]);
 
@@ -454,30 +449,6 @@ export const FULL_CASTER_SLOTS: readonly (readonly number[])[] = [
   [4,3,3,3,3,1,1,1,1],
   [4,3,3,3,3,2,1,1,1],
   [4,3,3,3,3,2,2,1,1],
-] as const;
-
-// Espacios por nivel de clase — Medio Lanzadores (índice = nivelClase - 1)
-export const HALF_CASTER_SLOTS: readonly (readonly number[])[] = [
-  [0,0,0,0,0],
-  [2,0,0,0,0],
-  [3,0,0,0,0],
-  [3,0,0,0,0],
-  [4,2,0,0,0],
-  [4,2,0,0,0],
-  [4,3,0,0,0],
-  [4,3,0,0,0],
-  [4,3,2,0,0],
-  [4,3,2,0,0],
-  [4,3,3,0,0],
-  [4,3,3,0,0],
-  [4,3,3,1,0],
-  [4,3,3,1,0],
-  [4,3,3,2,0],
-  [4,3,3,2,0],
-  [4,3,3,3,1],
-  [4,3,3,3,1],
-  [4,3,3,3,2],
-  [4,3,3,3,2],
 ] as const;
 
 // Magia de Pacto del Brujo (por nivel de Brujo)

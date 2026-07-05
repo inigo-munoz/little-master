@@ -1,5 +1,5 @@
 import { prisma } from "../db/prisma.js";
-import { AppError, ErrorCode, type AuthorType } from "@dnd/shared";
+import { AppError, ErrorCode } from "@dnd/shared";
 import type { CreateCampaign } from "@dnd/domain";
 import { changeLogService } from "./changeLog.service.js";
 

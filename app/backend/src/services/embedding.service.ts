@@ -20,7 +20,6 @@ import { selectByTier } from "./embedding-tiers.js";
 
 // text-embedding-3-small: 1536 dims, cheap, good quality
 const EMBEDDING_MODEL = "text-embedding-3-small";
-const EMBEDDING_DIMS = 1536;
 
 // ─── Cosine similarity ────────────────────────────────────────────────────────
 function cosineSimilarity(a: number[], b: number[]): number {

@@ -597,10 +597,6 @@ function extractMonsterStatBlock(text: string, targetName: string): MonsterDetai
     return parseSectionEntries(block, start + 1, end);
   };
 
-  const traits = parseSectionEntries(block, 0, block.length).length > 0
-    ? parseSectionEntries(traitsLines, 0, traitsLines.length)
-    : getSection("Traits");
-
   return {
     name,
     size,

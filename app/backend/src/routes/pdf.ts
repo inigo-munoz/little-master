@@ -12,7 +12,6 @@ import {
   FONT_BOLD,
   FONT_NORMAL,
   PAGE_WIDTH,
-  PAGE_HEIGHT,
   MARGIN,
 } from "../services/pdf.service.js";
 
@@ -171,7 +170,6 @@ export const pdfRoutes: FastifyPluginAsync = async (server) => {
           .text("TAGS", { width: PAGE_WIDTH });
         doc.moveDown(0.4);
         let x = MARGIN;
-        const y = doc.y;
         const tagPad = 8;
         const tagH = 18;
         for (const tag of displayTags) {

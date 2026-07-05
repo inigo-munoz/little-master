@@ -18,14 +18,6 @@ import { parseCR } from "@dnd/domain";
 
 // Authority ordering — lower index = higher authority
 const AUTHORITY_ORDER = ["high", "medium", "low"] as const;
-const SOURCE_AUTHORITY: Record<string, (typeof AUTHORITY_ORDER)[number]> = {
-  official: "high",
-  srd: "high",
-  campaign: "medium",
-  homebrew_external: "medium",
-  homebrew_user: "low",
-  ai_inferred: "low",
-};
 
 function authorityRank(level: string): number {
   return AUTHORITY_ORDER.indexOf(level as (typeof AUTHORITY_ORDER)[number]);

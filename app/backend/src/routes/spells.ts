@@ -175,10 +175,6 @@ async function loadSpellsFromDocuments(): Promise<Record<string, SpellFullData>>
   return merged;
 }
 
-export function invalidateSpellCache(): void {
-  _cache = null;
-}
-
 export const spellRoutes: FastifyPluginAsync = async (server) => {
   server.get<{ Params: { name: string } }>("/:name", async (request) => {
     const spells = await loadSpellsFromDocuments();

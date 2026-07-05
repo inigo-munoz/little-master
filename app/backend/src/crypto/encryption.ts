@@ -87,8 +87,3 @@ export function decrypt(ciphertext: string, encryptionKey: string): string {
 
   throw new Error("Invalid ciphertext format");
 }
-
-export function maskKey(key: string): string {
-  if (key.length <= 8) return "***";
-  return key.slice(0, 4) + "***" + key.slice(-4);
-}
