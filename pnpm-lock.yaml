@@ -16,6 +16,9 @@ importers:
       '@dnd/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@dnd/llm-providers':
+        specifier: workspace:*
+        version: link:../../packages/llm-providers
       '@dnd/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -37,9 +40,6 @@ importers:
       '@prisma/client':
         specifier: ^5.13.0
         version: 5.22.0(prisma@5.22.0)
-      '@types/pdf-parse':
-        specifier: ^1.1.5
-        version: 1.1.5
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
@@ -184,9 +184,6 @@ importers:
 
   app/mcp-server:
     dependencies:
-      '@dnd/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@fastify/cors':
         specifier: ^10.0.0
         version: 10.1.0
@@ -234,9 +231,6 @@ importers:
       '@dnd/domain':
         specifier: workspace:*
         version: link:../domain
-      '@dnd/shared':
-        specifier: workspace:*
-        version: link:../shared
       zod:
         specifier: ^3.23.0
         version: 3.25.76
@@ -1271,9 +1265,6 @@ packages:
 
   '@types/node@20.19.37':
     resolution: {integrity: sha512-8kzdPJ3FsNsVIurqBs7oodNnCEVbni9yUEkaHbgptDACOPW04jimGagZ51E6+lXUwJjgnBw+hyko/lkFWCldqw==}
-
-  '@types/pdf-parse@1.1.5':
-    resolution: {integrity: sha512-kBfrSXsloMnUJOKi25s3+hRmkycHfLK6A09eRGqF/N8BkQoPUmaCr+q8Cli5FnfohEz/rsv82zAiPz/LXtOGhA==}
 
   '@types/pdfkit@0.17.5':
     resolution: {integrity: sha512-T3ZHnvF91HsEco5ClhBCOuBwobZfPcI2jaiSHybkkKYq4KhVIIurod94JVKvDIG0JXT6o3KiERC0X0//m8dyrg==}
@@ -4458,10 +4449,6 @@ snapshots:
   '@types/node@20.19.37':
     dependencies:
       undici-types: 6.21.0
-
-  '@types/pdf-parse@1.1.5':
-    dependencies:
-      '@types/node': 20.19.37
 
   '@types/pdfkit@0.17.5':
     dependencies:
