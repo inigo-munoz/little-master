@@ -181,15 +181,6 @@ function ToolsBadge({ tools }: { tools: string[] }) {
   );
 }
 
-// ─── Panel de tools disponibles por modo ─────────────────────────────────────
-const MODE_TOOLS: Record<string, string[]> = {
-  session_director: ["get_campaign_state", "search_rules", "log_issue"],
-  designer: ["get_campaign_state", "create_npc", "search_rules", "search_documents"],
-  rule_reviewer: ["search_rules", "search_documents"],
-  auditor: ["get_campaign_state", "log_issue", "search_documents"],
-  archivista: ["search_documents", "search_rules"],
-};
-
 // ─── DesignerSaveButton ───────────────────────────────────────────────────────
 // Si entityHint está definido (el usuario usó un botón de acceso rápido), usa ese
 // tipo directamente. Si es null (texto libre), intenta detectar con los parsers.
@@ -606,17 +597,6 @@ function ChatInterface() {
                 <AlertCircle size={12} />
                 No campaign selected — responses won&apos;t use campaign context
               </p>
-            )}
-            {/* Tools disponibles para el modo activo */}
-            {(MODE_TOOLS[chatMode] ?? []).length > 0 && (
-              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                <Wrench size={10} className="text-stone-600" />
-                {(MODE_TOOLS[chatMode] ?? []).map((tool) => (
-                  <span key={tool} className="text-xs text-stone-600 bg-stone-800 px-1.5 py-0.5 rounded font-mono">
-                    {tool}
-                  </span>
-                ))}
-              </div>
             )}
           </div>
           {messages.length > 0 && (
