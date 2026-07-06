@@ -346,7 +346,7 @@ function NpcStatBlockDisplay({ data }: { data: NpcData }) {
 
 function NpcDetail({ data, campaignId }: { data: NpcData; campaignId?: string }) {
   let tags: string[] = [];
-  try { tags = JSON.parse(data.tags); } catch {}
+  try { tags = JSON.parse(data.tags); } catch { console.warn("DetailModal: tags JSON inválido, usando []", data.tags); }
 
   const { allies, enemies } = extractRelationships(data.description ?? null);
   const cleanDesc = cleanNpcDescription(data.description ?? null);
@@ -452,7 +452,7 @@ function SessionDetail({ data, campaignId }: { data: SessionData; campaignId?: s
 
 function LocationDetail({ data, campaignId }: { data: LocationData; campaignId?: string }) {
   let tags: string[] = [];
-  try { tags = JSON.parse(data.tags); } catch {}
+  try { tags = JSON.parse(data.tags); } catch { console.warn("DetailModal: tags JSON inválido, usando []", data.tags); }
 
   return (
     <div className="space-y-4">
@@ -483,7 +483,7 @@ function LocationDetail({ data, campaignId }: { data: LocationData; campaignId?:
 
 function FactionDetail({ data, campaignId }: { data: FactionData; campaignId?: string }) {
   let tags: string[] = [];
-  try { tags = JSON.parse(data.tags); } catch {}
+  try { tags = JSON.parse(data.tags); } catch { console.warn("DetailModal: tags JSON inválido, usando []", data.tags); }
 
   const dispositionColors: Record<string, string> = {
     allied: "text-emerald-400",
