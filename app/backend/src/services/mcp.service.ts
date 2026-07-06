@@ -1,101 +1,19 @@
 /**
- * MCP Service — cliente del MCP server para el backend.
+ * MCP Service — estado de campaña para el chat.
  *
- * Permite al chat.service.ts llamar a las tools del MCP server vía HTTP.
- * Si el MCP server no está disponible, las llamadas fallan silenciosamente
- * (graceful degradation): el chat continúa sin tools.
- *
- * Además expone `getCampaignState`, que obtiene el estado de campaña
- * DIRECTAMENTE de la BD (vía Prisma/servicios) con el mismo shape que la
- * tool `get_campaign_state` del MCP server. El chat usa este camino directo
- * para evitar el bucle backend → :3002 → :3001 → backend (que en la app
- * desktop pagaba timeout porque el MCP server no se lanza).
+ * Expone `getCampaignState`, que obtiene el estado de campaña DIRECTAMENTE de la
+ * BD (vía Prisma/servicios) con el mismo shape que la tool `get_campaign_state`
+ * del MCP server, y `formatCampaignState`, que lo formatea como texto para el
+ * system prompt. El chat usa este camino directo para evitar el bucle
+ * backend → :3002 → :3001 → backend.
  */
 
-import { env } from "../config/env.js";
 import { prisma } from "../db/prisma.js";
 import { AppError, ErrorCode } from "@dnd/shared";
 import { npcService } from "./npc.service.js";
 import { issueService } from "./issue.service.js";
 
-const TIMEOUT_MS = 5_000; // 5 segundos máx por tool call
-const HEALTH_TIMEOUT_MS = 2_000;
-
-export interface McpToolResult {
-  success: boolean;
-  data?: unknown;
-  error?: string;
-  tool?: string;
-}
-
-function withTimeout(ms: number): AbortSignal {
-  return AbortSignal.timeout(ms);
-}
-
 export const mcpService = {
-  /**
-   * Llama a una tool del MCP server y devuelve el resultado.
-   * Si el servidor no está disponible o la tool falla, devuelve success: false
-   * sin lanzar excepción (graceful degradation).
-   */
-  async callTool(name: string, input: unknown): Promise<McpToolResult> {
-    try {
-      const res = await fetch(`${env.MCP_SERVER_URL}/tools/${name}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-        signal: withTimeout(TIMEOUT_MS),
-      });
-
-      const json = await res.json() as McpToolResult;
-
-      if (!res.ok) {
-        return {
-          success: false,
-          error: `MCP tool '${name}' responded ${res.status}: ${JSON.stringify(json)}`,
-          tool: name,
-        };
-      }
-
-      return json;
-    } catch (err: unknown) {
-      // El MCP server no está disponible, red caída, o timeout
-      const message = err instanceof Error ? err.message : "MCP unavailable";
-      console.warn(`[mcp] Tool '${name}' unavailable: ${message}`);
-      return { success: false, error: message, tool: name };
-    }
-  },
-
-  /**
-   * Comprueba si el MCP server está arrancado.
-   */
-  async isAvailable(): Promise<boolean> {
-    try {
-      const res = await fetch(`${env.MCP_SERVER_URL}/health`, {
-        signal: withTimeout(HEALTH_TIMEOUT_MS),
-      });
-      return res.ok;
-    } catch {
-      return false;
-    }
-  },
-
-  /**
-   * Lista las tools disponibles en el MCP server.
-   */
-  async listTools(): Promise<string[]> {
-    try {
-      const res = await fetch(`${env.MCP_SERVER_URL}/tools`, {
-        signal: withTimeout(HEALTH_TIMEOUT_MS),
-      });
-      if (!res.ok) return [];
-      const json = await res.json() as { tools?: { name: string }[] };
-      return json.tools?.map((t) => t.name) ?? [];
-    } catch {
-      return [];
-    }
-  },
-
   /**
    * Obtiene el estado de campaña directamente de la BD, sin pasar por el
    * MCP server. Mismo shape que la tool `get_campaign_state` del MCP server:
