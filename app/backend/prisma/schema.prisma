@@ -34,7 +34,7 @@ model Campaign {
   updatedAt   DateTime @updatedAt
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   sessions        Session[]
   npcs            Npc[]
@@ -227,7 +227,7 @@ model CampaignRule {
   updatedAt      DateTime @updatedAt
 
   campaign   Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  ruleSource RuleSource? @relation(fields: [sourceId], references: [id])
+  ruleSource RuleSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
 }
 
 // ─── Change Log ───────────────────────────────────────────────────────────────
@@ -302,7 +302,7 @@ model AssistantRun {
   createdAt     DateTime @default(now())
 
   campaign  Campaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  llmConfig LlmConfig? @relation(fields: [llmConfigId], references: [id])
+  llmConfig LlmConfig? @relation(fields: [llmConfigId], references: [id], onDelete: SetNull)
 }
 
 // ─── App Settings ─────────────────────────────────────────────────────────────

@@ -37,7 +37,11 @@ async function main() {
 
   if (force) {
     console.log("  --force: eliminando documentos PHB existentes...");
-    const deleted = await prisma.document.deleteMany({ where: { sourceType: "official" } });
+    // Solo documentos PHB: excluye los del Monster Manual (title "MM 2024 …"),
+    // que también usan sourceType "official" y no debe borrar un --force de PHB.
+    const deleted = await prisma.document.deleteMany({
+      where: { sourceType: "official", NOT: { title: { startsWith: "MM 2024" } } },
+    });
     console.log(`  Eliminados ${deleted.count} documentos PHB existentes\n`);
   }
 
