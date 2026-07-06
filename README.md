@@ -26,6 +26,26 @@ Descargá el instalador de tu plataforma desde [Releases](../../releases/latest)
 | macOS (ARM) | `.dmg` |
 | Windows | `.msi`, `.exe` |
 
+### Verificación de descargas
+
+Los instaladores **no están firmados** (aún no hay firma de código). Para verificar
+que tu descarga es íntegra, cada release publica un archivo `checksums.txt` con el
+hash SHA256 de cada instalador. Después de descargar, comprobá el hash:
+
+```bash
+# Linux / macOS
+sha256sum -c checksums.txt --ignore-missing
+
+# Windows (PowerShell)
+Get-FileHash .\little-master_1.2.0_x64.msi -Algorithm SHA256
+```
+
+En Linux/macOS el comando debe imprimir `OK` para el archivo descargado. En Windows,
+compará el hash impreso con la línea correspondiente de `checksums.txt`.
+
+Como los binarios no están firmados, el sistema operativo puede mostrar una
+advertencia de "desarrollador no identificado" en el primer inicio; es esperado.
+
 ### Primer inicio
 
 1. Abrí la aplicación — la base de datos se inicializa automáticamente
