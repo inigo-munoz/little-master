@@ -43,7 +43,11 @@ async function computeRulesHash(seedRulesDir: string): Promise<string> {
   for (const meta of RULE_DOCS) {
     const src = join(seedRulesDir, meta.filename);
     if (existsSync(src)) {
+      // Incluye title/description (viven en código, no en el .md) para que un
+      // cambio de metadata también invalide el marker y dispare la reimportación.
       hash.update(meta.filename);
+      hash.update(meta.title);
+      hash.update(meta.description);
       hash.update(await readFile(src));
     }
   }
