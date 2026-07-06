@@ -252,7 +252,10 @@ export async function scanVault(vaultPath: string): Promise<VaultScanResult> {
   };
 
   for (const filePath of contentFiles) {
-    const raw = await fs.readFile(filePath, "utf-8").catch(() => null);
+    const raw = await fs.readFile(filePath, "utf-8").catch((err) => {
+      log.warn({ filePath, err }, "No se pudo leer el archivo durante el escaneo del vault — omitiendo");
+      return null;
+    });
     if (!raw) continue;
 
     const { fm } = parseFrontmatter(raw);
@@ -344,10 +347,15 @@ export async function importFromVault(
 
   const dataDir = path.resolve(process.env["DATA_DIR"] ?? "../../../data");
   const documentsDir = path.join(dataDir, "documents", "global");
-  await fs.mkdir(documentsDir, { recursive: true }).catch(() => {});
+  await fs.mkdir(documentsDir, { recursive: true }).catch((err) => {
+    log.warn({ documentsDir, err }, "No se pudo crear el directorio de documentos");
+  });
 
   for (const filePath of contentFiles) {
-    const raw = await fs.readFile(filePath, "utf-8").catch(() => null);
+    const raw = await fs.readFile(filePath, "utf-8").catch((err) => {
+      log.warn({ filePath, err }, "No se pudo leer el archivo durante la importación — omitiendo");
+      return null;
+    });
     if (!raw) continue;
 
     const { fm, body } = parseFrontmatter(raw);
@@ -760,7 +768,8 @@ export async function verifyVault(vaultPath: string) {
       hasJournals: entries.some(e => ["journal","sessions","1-session","sesiones"].includes(e.toLowerCase())),
       detectedFolders: entries.filter(e => !e.startsWith(".")),
     };
-  } catch {
+  } catch (err) {
+    log.warn({ vaultPath, err }, "No se pudo verificar el vault");
     return { valid: false, hasTemplates: false, hasPeople: false, hasJournals: false, detectedFolders: [] };
   }
 }
