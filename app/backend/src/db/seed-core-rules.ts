@@ -5,13 +5,11 @@
  * if already imported. Only runs when --seed-dir is provided (Tauri desktop).
  */
 
-import { copyFile, mkdir } from "node:fs/promises";
+import { copyFile, mkdir, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { prisma } from "./prisma.js";
-
-const CURRENT_RULES_VERSION = "1.0";
 
 interface RuleMeta {
   filename: string;
@@ -34,6 +32,24 @@ const RULE_DOCS: RuleMeta[] = [
   },
 ];
 
+/**
+ * Hash sha256 del contenido de los archivos de reglas presentes en seedRulesDir.
+ * Se usa como marker de versión: si el contenido cambia, el hash cambia y el
+ * seed vuelve a importar. Incluye el nombre de archivo para que reordenar o
+ * renombrar también invalide el marker.
+ */
+async function computeRulesHash(seedRulesDir: string): Promise<string> {
+  const hash = createHash("sha256");
+  for (const meta of RULE_DOCS) {
+    const src = join(seedRulesDir, meta.filename);
+    if (existsSync(src)) {
+      hash.update(meta.filename);
+      hash.update(await readFile(src));
+    }
+  }
+  return hash.digest("hex");
+}
+
 export async function seedCoreRulesIfNeeded(
   dataDir: string,
   seedDir: string | undefined
@@ -46,16 +62,31 @@ export async function seedCoreRulesIfNeeded(
     return;
   }
 
+  const currentHash = await computeRulesHash(seedRulesDir);
+
   const existing = await prisma.appSetting.findUnique({
     where: { key: "core_rules_version" },
   });
 
-  if (existing?.value === CURRENT_RULES_VERSION) {
-    console.log(`[seed] Core rules already seeded (v${CURRENT_RULES_VERSION}), skipping`);
+  if (existing?.value === currentHash) {
+    console.log(`[seed] Core rules already seeded (hash ${currentHash.slice(0, 12)}…), skipping`);
     return;
   }
 
-  console.log(`[seed] Seeding DM core rules v${CURRENT_RULES_VERSION}...`);
+  // El contenido cambió (o es la primera vez): si ya había reglas importadas,
+  // borrarlas para reimportar la versión nueva. Solo toca los documentos de
+  // core-rules (homebrew_external con los títulos conocidos), nunca contenido del usuario.
+  if (existing) {
+    await prisma.document.deleteMany({
+      where: {
+        sourceType: "homebrew_external",
+        title: { in: RULE_DOCS.map((r) => r.title) },
+      },
+    });
+    console.log("[seed] Core rules hash changed — reimportando versión nueva");
+  }
+
+  console.log(`[seed] Seeding DM core rules (hash ${currentHash.slice(0, 12)}…)...`);
 
   const targetDir = join(dataDir, "documents", "global");
   await mkdir(targetDir, { recursive: true });
@@ -106,7 +137,7 @@ export async function seedCoreRulesIfNeeded(
 
   await prisma.appSetting.upsert({
     where: { key: "core_rules_version" },
-    update: { value: CURRENT_RULES_VERSION },
-    create: { key: "core_rules_version", value: CURRENT_RULES_VERSION },
+    update: { value: currentHash },
+    create: { key: "core_rules_version", value: currentHash },
   });
 }
