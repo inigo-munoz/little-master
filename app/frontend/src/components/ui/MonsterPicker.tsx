@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import useSWR from "swr";
-import { Search, X, ChevronDown, Loader2 } from "lucide-react";
+import { Search, X, ChevronDown, Loader2, AlertCircle } from "lucide-react";
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
 import type { MonsterDetail } from "../../lib/api";
@@ -24,6 +24,7 @@ export function MonsterPicker({ onSelect }: MonsterPickerProps) {
   const [search, setSearch] = useState("");
   const [crFilter, setCrFilter] = useState("");
   const [loadingName, setLoadingName] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: monsters } = useSWR("/api/srd/monsters", () => api.srd.monsters());
 
@@ -38,6 +39,7 @@ export function MonsterPicker({ onSelect }: MonsterPickerProps) {
 
   async function handleSelect(name: string) {
     setLoadingName(name);
+    setError(null);
     try {
       const detail = await api.srd.monsterDetail(name);
       if (detail) {
@@ -46,6 +48,9 @@ export function MonsterPicker({ onSelect }: MonsterPickerProps) {
         setSearch("");
         setCrFilter("");
       }
+    } catch (err) {
+      console.error("MonsterPicker: no se pudo cargar el detalle del monstruo", err);
+      setError(`No se pudo cargar "${name}". Intentá de nuevo.`);
     } finally {
       setLoadingName(null);
     }
@@ -99,6 +104,13 @@ export function MonsterPicker({ onSelect }: MonsterPickerProps) {
           <ChevronDown size={12} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
         </div>
       </div>
+
+      {error && (
+        <p className="flex items-center gap-1.5 text-xs text-red-400">
+          <AlertCircle size={12} className="shrink-0" />
+          {error}
+        </p>
+      )}
 
       <div className="max-h-56 overflow-y-auto space-y-0.5">
         {!monsters ? (
