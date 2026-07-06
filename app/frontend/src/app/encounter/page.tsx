@@ -192,6 +192,9 @@ function MonsterAutocomplete({
                 {m.source === "phb" && (
                   <span className="bg-blue-900/60 text-blue-300 border border-blue-700/50 px-1.5 py-0.5 rounded text-xs">PHB 2024</span>
                 )}
+                {m.source === "mm" && (
+                  <span className="bg-red-900/60 text-red-300 border border-red-700/50 px-1.5 py-0.5 rounded text-xs">MM 2024</span>
+                )}
                 <span className="text-amber-400 font-mono">CR {m.cr}</span>
               </div>
             </button>
@@ -365,6 +368,9 @@ function MonsterStatBlockPanel({ name, npcStatBlock, source }: { name: string; n
           <p className="font-bold text-stone-100 text-sm">{data.name}</p>
           {source === "phb" && (
             <span className="bg-blue-900/60 text-blue-300 border border-blue-700/50 px-1.5 py-0.5 rounded text-xs">PHB 2024</span>
+          )}
+          {source === "mm" && (
+            <span className="bg-red-900/60 text-red-300 border border-red-700/50 px-1.5 py-0.5 rounded text-xs">MM 2024</span>
           )}
         </div>
         <p className="text-stone-500 italic">

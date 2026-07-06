@@ -531,7 +531,7 @@ function ObsidianSync() {
   useEffect(() => {
     api.obsidian.getConfig().then(({ vaultPath }) => {
       if (vaultPath) setSavedPath(vaultPath);
-    }).catch(() => {});
+    }).catch((err) => console.error("No se pudo cargar la config de Obsidian", err));
   }, []);
 
   async function handleSelect(path: string) {
@@ -1010,7 +1010,7 @@ function AuthProviderForm({ onSaved }: { onSaved: () => void }) {
     api.llmConfig.oauthStatus().then((status) => {
       setOauthStatus(status);
       if (status.model) setSelectedModel(status.model);
-    }).catch(() => {});
+    }).catch((err) => console.error("No se pudo cargar el estado de OAuth", err));
   }, []);
 
   async function handleConnect() {
@@ -1040,7 +1040,7 @@ function AuthProviderForm({ onSaved }: { onSaved: () => void }) {
             setOauthStatus(status);
             onSaved();
           }
-        } catch { /* continue polling */ }
+        } catch (err) { console.debug("Poll de OAuth falló, reintentando", err); }
         if (attempts >= maxAttempts) {
           clearInterval(interval);
           setPolling(false);
