@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { CreateCampaignSchema } from "@dnd/domain";
 import { campaignService } from "../services/campaign.service.js";
 import { AttributionFields } from "./changelogAttribution.js";
 
@@ -18,13 +19,7 @@ export const campaignRoutes: FastifyPluginAsync = async (server) => {
   });
 
   server.post<{ Body: unknown }>("/", async (request, reply) => {
-    const schema = z.object({
-      title: z.string().min(1).max(200),
-      description: z.string().max(5000).optional(),
-      system: z.string().default("D&D 2024"),
-    });
-
-    const data = schema.parse(request.body);
+    const data = CreateCampaignSchema.parse(request.body);
     const campaign = await campaignService.create(data, MVP_USER_ID);
     return reply.status(201).send({ success: true, data: campaign });
   });

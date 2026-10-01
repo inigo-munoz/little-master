@@ -1,8 +1,13 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { LlmProviderSchema } from "@dnd/domain";
 import { llmConfigService } from "../services/llmConfig.service.js";
 import { oauthService } from "../services/oauth.service.js";
 import { prisma } from "../db/prisma.js";
+
+// openai-codex se gestiona solo por OAuth (/oauth/*): estas rutas por API key
+// siguen rechazándolo como antes.
+const ApiKeyProviderSchema = LlmProviderSchema.exclude(["openai-codex"]);
 
 export const llmConfigRoutes: FastifyPluginAsync = async (server) => {
   server.get("/", async () => {
@@ -12,7 +17,7 @@ export const llmConfigRoutes: FastifyPluginAsync = async (server) => {
 
   server.post<{ Body: unknown }>("/", async (request, reply) => {
     const schema = z.object({
-      provider: z.enum(["openai", "anthropic", "openrouter", "ollama"]),
+      provider: ApiKeyProviderSchema,
       model: z.string().min(1),
       apiKey: z.string().min(1).optional(),
     });
@@ -24,7 +29,7 @@ export const llmConfigRoutes: FastifyPluginAsync = async (server) => {
 
   server.post<{ Body: unknown }>("/validate", async (request) => {
     const schema = z.object({
-      provider: z.enum(["openai", "anthropic", "openrouter", "ollama"]),
+      provider: ApiKeyProviderSchema,
       apiKey: z.string().min(1),
     });
 

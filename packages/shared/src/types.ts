@@ -18,23 +18,6 @@ export type SourceType = z.infer<typeof SourceTypeSchema>;
 export const AuthorityLevelSchema = z.enum(["high", "medium", "low"]);
 export type AuthorityLevel = z.infer<typeof AuthorityLevelSchema>;
 
-export const AUTHORITY_MAP: Record<SourceType, AuthorityLevel> = {
-  official: "high",
-  srd: "high",
-  campaign: "medium",
-  homebrew_external: "medium",
-  homebrew_user: "low",
-  ai_inferred: "low",
-};
-
-export const SourceMetaSchema = z.object({
-  sourceType: SourceTypeSchema,
-  authorityLevel: AuthorityLevelSchema,
-  version: z.string().optional(),
-  campaignId: z.string().optional(),
-});
-export type SourceMeta = z.infer<typeof SourceMetaSchema>;
-
 // ─── Entity Types (used in changelog and issues) ──────────────────────────────
 export const EntityTypeSchema = z.enum([
   "campaign",
@@ -88,37 +71,3 @@ export type NpcDisposition = z.infer<typeof NpcDispositionSchema>;
 // ─── Document Content Types ───────────────────────────────────────────────────
 export const ContentTypeSchema = z.enum(["markdown", "plaintext", "pdf"]);
 export type ContentType = z.infer<typeof ContentTypeSchema>;
-
-// ─── API Response Envelope ────────────────────────────────────────────────────
-export const ApiSuccessSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
-  z.object({
-    success: z.literal(true),
-    data: dataSchema,
-  });
-
-export const ApiErrorSchema = z.object({
-  success: z.literal(false),
-  error: z.object({
-    code: z.string(),
-    message: z.string(),
-    details: z.unknown().optional(),
-  }),
-});
-
-export type ApiError = z.infer<typeof ApiErrorSchema>;
-
-// ─── Pagination ───────────────────────────────────────────────────────────────
-export const PaginationQuerySchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-});
-export type PaginationQuery = z.infer<typeof PaginationQuerySchema>;
-
-export const PaginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
-  z.object({
-    items: z.array(itemSchema),
-    total: z.number(),
-    page: z.number(),
-    limit: z.number(),
-    hasNext: z.boolean(),
-  });
