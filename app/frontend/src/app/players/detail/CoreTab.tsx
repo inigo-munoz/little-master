@@ -20,6 +20,7 @@ import {
   EXOTIC_LANGUAGES,
   THIRD_CASTER_SUBCLASSES,
   isClassSpellcaster,
+  parseClassEntries,
   SPECIES_WITH_ORIGIN_FEAT,
   FIXED_SKILL_PROFICIENCIES_BY_SPECIES,
 } from "../../../lib/dnd-2024-data";
@@ -199,7 +200,7 @@ export function CoreTab({
     setForm(prev => {
       const oldSpecies = (prev.race as string | undefined)?.replace(/ \(.+\)$/, "") ?? "";
       const featsArr: FeatEntry[] = (() => { try { return JSON.parse(prev.feats ?? "[]"); } catch { return []; } })();
-      const classesArr: PlayerClassEntry[] = (() => { try { return JSON.parse(prev.classes ?? "[]"); } catch { return []; } })();
+      const classesArr: PlayerClassEntry[] = parseClassEntries<PlayerClassEntry>(prev.classes);
 
       const withoutSpeciesFeat = featsArr.filter(f => !(f.classIndex === -2 && f.level === 0));
       const newFeats = SPECIES_WITH_ORIGIN_FEAT.has(newSpecies) && !SPECIES_WITH_ORIGIN_FEAT.has(oldSpecies)

@@ -14,6 +14,7 @@ import {
   SAVING_THROWS_BY_CLASS,
   THIRD_CASTER_SUBCLASSES,
   isClassSpellcaster,
+  parseClassEntries,
   FIXED_SKILL_PROFICIENCIES_BY_SPECIES,
   LANGUAGES_BY_SPECIES,
 } from "../../../lib/dnd-2024-data";
@@ -69,8 +70,7 @@ function CharacterSheetContent() {
   const formInitialized = useRef(false);
 
   const isSpellcasterEarly = (() => {
-    let cls: PlayerClassEntry[] = [];
-    try { cls = JSON.parse((form.classes as string | undefined) ?? "[]"); } catch { /* ok */ }
+    const cls = parseClassEntries<PlayerClassEntry>(form.classes as string | undefined);
     return cls.some(c => isClassSpellcaster(c.class, c.subclass));
   })();
 
@@ -195,7 +195,7 @@ function CharacterSheetContent() {
   }
 
   // ── Parsear campos JSON ──────────────────────────────────────────────────────
-  const classes: PlayerClassEntry[] = parseJson(form.classes ?? "[]", []);
+  const classes: PlayerClassEntry[] = parseClassEntries<PlayerClassEntry>(form.classes);
   const hpRolls: HpRollEntry[]      = parseJson(form.hpRolls ?? "[]", []);
   const feats: FeatEntry[]          = parseJson(form.feats ?? "[]", []);
 
