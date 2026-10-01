@@ -196,14 +196,81 @@ ordinarios de arriba.
 
 ### T5 — Ollama y `log_change` prometen y fallan
 
-- [ ] **Estado**: pendiente
-- **Defecto A**: `factory.ts:23` lanza un `Error` plano para `ollama`, que
-  `errorHandler.ts` convierte en un 500 genérico, pese a que la UI lo ofrece.
-- **Defecto B**: el tool `log_change` del MCP llama `POST /api/changelog`, pero
-  `app/backend/src/routes/changeLog.ts` solo registra dos rutas `GET`.
-- **Decisión pendiente del usuario**: arreglar o retirar de la UI. Se plantea al
-  abrir la tarea.
-- **Commit**: _(pendiente)_
+- [x] **T5-A — Ollama**: cerrada (`2d3ca15`)
+- [x] **T5-B — atribución del changelog**: cerrada (`98fcf1f`)
+- **Decisión del usuario (tomada)**: se eligió **arreglar la atribución
+  completa**, no la opción barata. No se recorta.
+
+#### T5-A — Ollama
+
+- **Defecto**: `factory.ts:23` lanzaba un `Error` plano para `ollama`, que
+  `errorHandler.ts` convertía en un 500 genérico, pese a que la UI lo ofrece.
+- **Hecho verificable en esta máquina**: Ollama está instalado y corriendo con
+  `gemma3:4b`, y `GET localhost:11434/v1/models` responde en formato OpenAI.
+  No es una afirmación de la documentación: se comprobó.
+- **Solución**: una línea, ahora que `OpenAIProvider` acepta `baseUrl`.
+- **Segundo defecto, encontrado SOLO por el smoke test**: `listModels` filtraba
+  el catálogo a ids que empiezan por `gpt-4`, `gpt-3.5` u `o1`. Ese allowlist es
+  específico de OpenAI, así que devolvía `[]` tanto para Ollama (`gemma3:4b`)
+  como para **OpenRouter** (`anthropic/claude-3.5-sonnet`, `openai/gpt-4o`).
+  O sea: el fix de T3 tapaba la fuga pero habría dejado el selector de modelos
+  vacío. El test con `fetch` stubbeado no podía verlo. Ahora el filtro solo se
+  aplica cuando la base URL es la de OpenAI.
+- **Lección**: los tests de routing con `fetch` stubbeado prueban a dónde va la
+  petición, no que el proveedor funcione. Para un backend real, smoke test.
+- **Checks observados**: llm-providers 6/6; backend 99/99; typecheck 6 verdes.
+  Contra el Ollama real: `listModels` devuelve `gemma3:4b` y `generateText`
+  devuelve `"PONG\n"`.
+- **Falso positivo propio**: el primer smoke test imprimió `res.text` y dio
+  `undefined`; el provider devuelve `content`. El fallo era del script, no del
+  código. Corregido antes de sacar ninguna conclusión.
+
+#### T5-B — atribución del changelog
+
+- **Defecto A**: el tool `log_change` del MCP llama `POST /api/changelog`, pero
+  `routes/changeLog.ts` solo registra dos rutas `GET`. 404 garantizado. El body
+  que manda ya tiene la forma correcta, incluido `authorType: "ai"`.
+- **Defecto B (el de fondo)**: `POST /api/npcs:83` **sí** acepta `authorType`,
+  así que las creaciones de la IA se atribuyen bien. Es el **PATCH** el que
+  fuerza `"user"` — `npcs.ts:120` y lo mismo en `relations`, `sessions`,
+  `locations`, `players`, `encounters` y `campaignRules`. Además el `reason`
+  que manda `update_entity` lo descarta Zod en silencio por no ser `.strict()`.
+  Resultado: el changelog atribuye al usuario lo que editó la IA.
+- **Ruta**: delegada (writer trigger: 7 rutas, servicios y tests), más un cierre
+  inline del padre en el MCP.
+- **Solución**: nueva ruta `POST /api/changelog` validada con los schemas
+  compartidos (`EntityTypeSchema`, `AuthorTypeSchema`), con 404 explícito si la
+  campaña no existe en vez del 500 que daría la FK. La convención de
+  `POST /api/npcs` se extrae a un helper compartido
+  (`routes/changelogAttribution.ts`: `AttributionFields` + `resolveAttribution`)
+  y se aplica a los PATCH de npcs, sessions, locations, factions, players,
+  campaigns y al toggle de campaignRules. El default sigue siendo `"user"`.
+- **Hueco que el writer dejó abierto y cerró el padre**: `update_entity` del MCP
+  no mandaba `authorType`. El backend ya sabía honrarlo, pero el único llamador
+  que edita como IA no lo pedía, así que el defecto habría sobrevivido al fix.
+  Causa: mi brief decía "toca el mcp-server solo si la forma de la llamada lo
+  necesita de verdad" y lo necesitaba. `authorType` se aplica **después** del
+  spread de `updates`, para que un payload no pueda hacerse pasar por `"user"`.
+- **Checks observados**:
+  - backend: 18 archivos, **123 tests verdes** (99 → 123).
+  - mcp-server: **24 verdes** (22 → 24).
+  - llm-providers: 6 verdes. frontend: 176 verdes (con Node 22).
+  - `pnpm typecheck`: 6 workspaces verdes.
+  - **RED verificado dos veces**: el writer revirtió sus 10 ficheros fuente y
+    obtuvo 16 fallos / 8 pases (los 8 son las guardas de retrocompatibilidad,
+    que deben pasar). El padre revirtió la línea del MCP y obtuvo
+    `expected undefined to be 'assistant'` y `expected 'user' to be 'assistant'`
+    — este último es el guard anti-suplantación.
+- **CI**: se añade el paso de tests del mcp-server, que existían y no se
+  ejecutaban en CI.
+- **Deuda anotada, NO arreglada**: siguen con `"user"` hardcodeado los caminos
+  de create y delete (relations, campaignRules, encounters, players, documents,
+  obsidian, y los `delete` de npc/campaign/locations/factions). Hoy ninguno
+  tiene ruta de IA, por eso quedan fuera. Y conviven dos vocabularios:
+  `AuthorTypeSchema` es `user|ai|system` mientras las rutas aceptan
+  `user|assistant`; no se unificó a propósito, para no cambiar el contrato
+  público en este commit.
+- **Commit**: `98fcf1f`
 
 ## Entrega
 
@@ -212,12 +279,20 @@ ordinarios de arriba.
   de ~400. La previsión es gruesa; en lugar de bloquear al usuario con la
   pregunta de encadenado antes de escribir una línea, se plantea cuando el
   recuento real cruce el presupuesto.
-- **Recuento real**: 347 líneas autoras tras T4 (312 adiciones + 35 borrados
-  sobre `afe0680`). T5 muy probablemente cruza el presupuesto de ~400.
-- **Nota sobre la pregunta de encadenado**: `ask-on-risk` manda preguntar la
-  estrategia de cadena al cruzar el presupuesto, pero push/PR/merge están
-  fuera de alcance por decisión del usuario, así que la pregunta se plantea
-  solo si y cuando se quiera abrir PR. No se bloquea el trabajo por eso.
+- **Recuento real final**: **884 líneas autoras** (813 adiciones + 71 borrados
+  sobre `afe0680`, excluyendo `odd/` y el lockfile). La previsión inicial fue
+  de ~420, así que se desvió más del doble.
+- **Por qué se desvió**: **547 de esas líneas son tests**, en 6 ficheros. El
+  plan preveía tests solo para T1; acabaron llevando tests T1, T3, T4, T5-A y
+  T5-B, además de dos harnesses nuevos (`packages/llm-providers` y el paso de
+  CI del mcp-server) que no existían. El código de producción son ~337 líneas,
+  cerca de la previsión.
+- **Pregunta de encadenado**: `ask-on-risk` manda plantearla al cruzar el
+  presupuesto. Se deja planteada al usuario, sin bloquear: push, PR y merge
+  están fuera de alcance por decisión suya, así que la estrategia de cadena
+  (`stacked-to-main` o `feature-branch-chain`) solo hace falta si decide abrir
+  PR. Corte natural si lo quiere partir: T1+T2 (pérdida de datos) por un lado,
+  T3+T5-A (proveedores LLM) por otro, T4+T5-B (atribución) por un tercero.
 - **Cortes de slice**: ninguno todavía.
 
 ## Progreso
@@ -232,8 +307,33 @@ ordinarios de arriba.
 - 2026-10-01 — **T4 cerrada** (`0bfed6c`). Resultaron ser tres campos
   descartados, no dos. Backend 99/99.
 
+- 2026-10-01 — **T5-A cerrada** (`2d3ca15`). Ollama funciona contra la instancia
+  real; de paso se arregla el catálogo de modelos para todo backend que no sea
+  OpenAI, defecto que el fix de T3 habría dejado vivo.
+- 2026-10-01 — **T5-B cerrada** (`98fcf1f`). El usuario eligió la atribución
+  completa. Cierra también el hueco del MCP que el writer había dejado abierto.
+
+## Estado final
+
+Las cinco tareas cerradas, 9 commits en `fix/bloqueantes-revision-2026-10`,
+nada pusheado.
+
+Suites tras el último commit:
+
+| Suite | Resultado |
+| --- | --- |
+| backend | 123 verdes (base 93) |
+| frontend | 176 verdes (requiere Node 22) |
+| mcp-server | 24 verdes (base 22) |
+| llm-providers | 6 verdes (no existía la suite) |
+| `pnpm typecheck` | 6 workspaces verdes (base 5) |
+
 ## Siguiente paso
 
-T5, bloqueada esperando una decisión del usuario: arreglar Ollama y
-`log_change`, o retirarlos de la superficie que los promete. No se elige por
-él.
+Decisión del usuario: abrir PR (y entonces elegir estrategia de cadena, ver
+Entrega) o seguir con los hallazgos de severidad alta que la revisión dejó
+fuera de alcance — capa Zod muerta, índices de Prisma ausentes, accesibilidad
+del frontend, `AppShell` fuera de `layout.tsx`, `routes/srd.ts`.
+
+Pendiente menor sin relación: `graphify-out/` está sin trackear y no figura en
+`.gitignore`.
