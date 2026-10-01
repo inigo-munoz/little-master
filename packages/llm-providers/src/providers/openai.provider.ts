@@ -1,13 +1,14 @@
 import type { LLMProvider, PromptInput, LLMTextResponse, LLMModel } from "../types/index.js";
 
-const OPENAI_API_URL = "https://api.openai.com/v1";
+export const OPENAI_BASE_URL = "https://api.openai.com/v1";
 
 export class OpenAIProvider implements LLMProvider {
   readonly name = "openai";
 
   constructor(
     private readonly apiKey: string,
-    private readonly defaultModel: string = "gpt-4o-mini"
+    private readonly defaultModel: string = "gpt-4o-mini",
+    private readonly baseUrl: string = OPENAI_BASE_URL
   ) {}
 
   async generateText(input: PromptInput): Promise<LLMTextResponse> {
@@ -18,7 +19,7 @@ export class OpenAIProvider implements LLMProvider {
     }
     messages.push(...input.messages);
 
-    const res = await fetch(`${OPENAI_API_URL}/chat/completions`, {
+    const res = await fetch(`${this.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -61,7 +62,7 @@ export class OpenAIProvider implements LLMProvider {
   }
 
   async embedText(input: string): Promise<number[]> {
-    const res = await fetch(`${OPENAI_API_URL}/embeddings`, {
+    const res = await fetch(`${this.baseUrl}/embeddings`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -86,7 +87,7 @@ export class OpenAIProvider implements LLMProvider {
   }
 
   async listModels(): Promise<LLMModel[]> {
-    const res = await fetch(`${OPENAI_API_URL}/models`, {
+    const res = await fetch(`${this.baseUrl}/models`, {
       headers: { Authorization: `Bearer ${this.apiKey}` },
     });
 
@@ -108,7 +109,7 @@ export class OpenAIProvider implements LLMProvider {
 
   async validateKey(apiKey: string): Promise<boolean> {
     try {
-      const res = await fetch(`${OPENAI_API_URL}/models`, {
+      const res = await fetch(`${this.baseUrl}/models`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
       return res.ok;

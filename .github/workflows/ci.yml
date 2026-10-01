@@ -49,3 +49,7 @@ jobs:
       - name: Test backend
         working-directory: app/backend
         run: pnpm test
+
+      - name: Test llm-providers
+        working-directory: packages/llm-providers
+        run: pnpm test
