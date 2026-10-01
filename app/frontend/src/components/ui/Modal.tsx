@@ -15,14 +15,20 @@ interface ModalProps {
   onClose: () => void;
   /** Nombre accesible del diálogo (Dialog.Title). */
   title: string;
-  /** Texto secundario bajo el título, opcional. */
-  subtitle?: string;
+  /**
+   * Contenido secundario bajo el título. Una cadena se envuelve en el estilo
+   * por defecto; un nodo se renderiza tal cual, para los sitios que ya tenían
+   * su propio marcado ahí (badges, descripción con otro tamaño).
+   */
+  subtitle?: ReactNode;
   /** Icono a la izquierda del título, opcional. */
   icon?: ReactNode;
   /** Ancho máximo del panel, p. ej. "max-w-sm". */
   maxWidth?: string;
   /** "compact": cabecera de confirmación. "comfortable": cabecera de ficha de detalle. */
   density?: "compact" | "comfortable";
+  /** Sustituye por completo las clases del título (por defecto: color y tamaño según `density`). */
+  titleClassName?: string;
   /** Clases extra del panel (p. ej. altura máxima y flex-col). */
   panelClassName?: string;
   /**
@@ -48,6 +54,7 @@ export function Modal({
   maxWidth = "max-w-md",
   density = "compact",
   panelClassName,
+  titleClassName,
   hasDescription = false,
   children,
 }: ModalProps) {
@@ -81,14 +88,17 @@ export function Modal({
                 {icon}
                 <div>
                   <Dialog.Title
-                    className={clsx(
-                      "font-semibold text-stone-100",
-                      compact ? "text-sm" : "text-lg",
-                    )}
+                    className={
+                      titleClassName ??
+                      clsx("font-semibold text-stone-100", compact ? "text-sm" : "text-lg")
+                    }
                   >
                     {title}
                   </Dialog.Title>
-                  {subtitle && <p className="text-xs text-stone-500">{subtitle}</p>}
+                  {subtitle &&
+                    (typeof subtitle === "string"
+                      ? <p className="text-xs text-stone-500">{subtitle}</p>
+                      : subtitle)}
                 </div>
               </div>
               <Dialog.Close

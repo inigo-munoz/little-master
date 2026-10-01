@@ -4,6 +4,7 @@ import { useState } from "react";
 import useSWR, { mutate } from "swr";
 import { Plus, Swords, ChevronRight, Zap, Trash2 } from "lucide-react";
 import { clsx } from "clsx";
+import { Modal, ModalDescription } from "../../components/ui/Modal";
 import { api } from "../../lib/api";
 import type { Campaign } from "../../lib/api";
 import { StatusBadge } from "../../components/ui/Badge";
@@ -112,64 +113,65 @@ function CreateCampaignModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-lg">
-        <div className="p-6 border-b border-stone-800">
-          <h2 className="text-lg font-semibold text-amber-400">New Campaign</h2>
+    <Modal
+      onClose={onClose}
+      title={"New Campaign"}
+      maxWidth="max-w-lg"
+      density="comfortable"
+      titleClassName="text-lg font-semibold text-amber-400"
+    >
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div>
+          <label htmlFor="campaign-title" className="block text-sm text-stone-400 mb-1">Title *</label>
+          <input id="campaign-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500"
+            placeholder="The Lost Mines of Andeavion"
+            required
+            maxLength={200}
+          />
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label htmlFor="campaign-title" className="block text-sm text-stone-400 mb-1">Title *</label>
-            <input id="campaign-title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500"
-              placeholder="The Lost Mines of Andeavion"
-              required
-              maxLength={200}
-            />
-          </div>
-          <div>
-            <label htmlFor="campaign-system" className="block text-sm text-stone-400 mb-1">System</label>
-            <input id="campaign-system"
-              type="text"
-              value={system}
-              onChange={(e) => setSystem(e.target.value)}
-              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="campaign-description" className="block text-sm text-stone-400 mb-1">Description</label>
-            <textarea id="campaign-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500 resize-none"
-              placeholder="Campaign premise, setting, tone..."
-              maxLength={5000}
-            />
-          </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !title.trim()}
-              className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors"
-            >
-              {loading ? "Creating..." : "Create Campaign"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div>
+          <label htmlFor="campaign-system" className="block text-sm text-stone-400 mb-1">System</label>
+          <input id="campaign-system"
+            type="text"
+            value={system}
+            onChange={(e) => setSystem(e.target.value)}
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500"
+          />
+        </div>
+        <div>
+          <label htmlFor="campaign-description" className="block text-sm text-stone-400 mb-1">Description</label>
+          <textarea id="campaign-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500 resize-none"
+            placeholder="Campaign premise, setting, tone..."
+            maxLength={5000}
+          />
+        </div>
+        {error && <p className="text-red-400 text-sm">{error}</p>}
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading || !title.trim()}
+            className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors"
+          >
+            {loading ? "Creating..." : "Create Campaign"}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -249,12 +251,18 @@ function CampaignRow({ campaign, onDeleted }: { campaign: Campaign; onDeleted: (
       </div>
 
       {confirmDelete && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-sm p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-red-400">Eliminar campaña</h3>
-            <p className="text-sm text-stone-300">
+        <Modal
+          onClose={() => { setConfirmDelete(false); setDeleteError(""); }}
+          title="Eliminar campaña"
+          maxWidth="max-w-sm"
+          density="comfortable"
+          titleClassName="text-lg font-semibold text-red-400"
+          hasDescription
+        >
+          <div className="p-6 space-y-4">
+            <ModalDescription className="text-sm text-stone-300">
               ¿Eliminar <strong>{campaign.title}</strong>? Se borrarán todas las sesiones, PNJs, localizaciones, facciones y PJs asociados. Esta acción no se puede deshacer.
-            </p>
+            </ModalDescription>
             {deleteError && <p className="text-sm text-red-400">{deleteError}</p>}
             <div className="flex gap-3 pt-2">
               <button
@@ -272,7 +280,7 @@ function CampaignRow({ campaign, onDeleted }: { campaign: Campaign; onDeleted: (
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </>
   );

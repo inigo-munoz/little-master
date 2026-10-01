@@ -16,10 +16,10 @@ import {
   Pencil,
   CheckCircle,
   Clock,
-  X,
   Download,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { Modal } from "../../../components/ui/Modal";
 import { api } from "../../../lib/api";
 import type { Campaign, Session } from "../../../lib/api";
 import { DetailModal, type ModalEntity } from "../../../components/ui/DetailModal";
@@ -79,96 +79,95 @@ function SessionForm({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-stone-800 flex items-center justify-between shrink-0">
-          <h2 className="font-semibold text-amber-400">{isEdit ? "Edit Session" : "New Session"}</h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300" aria-label="Cerrar">
-            <X size={18} />
-          </button>
+    <Modal
+      onClose={onClose}
+      title={isEdit ? "Edit Session" : "New Session"}
+      maxWidth="max-w-2xl"
+      density="comfortable"
+      titleClassName="font-semibold text-amber-400"
+      panelClassName="max-h-[90vh] flex flex-col"
+    >
+
+      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="col-span-2">
+            <label htmlFor="session-title" className="block text-sm text-stone-400 mb-1">Title *</label>
+            <input id="session-title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+              placeholder="The Dragon's Lair"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="session-number" className="block text-sm text-stone-400 mb-1">Session #</label>
+            <input id="session-number"
+              type="number"
+              min={1}
+              value={sessionNumber}
+              onChange={(e) => setSessionNumber(Number(e.target.value))}
+              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+            />
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
-              <label htmlFor="session-title" className="block text-sm text-stone-400 mb-1">Title *</label>
-              <input id="session-title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
-                placeholder="The Dragon's Lair"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="session-number" className="block text-sm text-stone-400 mb-1">Session #</label>
-              <input id="session-number"
-                type="number"
-                min={1}
-                value={sessionNumber}
-                onChange={(e) => setSessionNumber(Number(e.target.value))}
-                className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="session-played-at" className="block text-sm text-stone-400 mb-1">Played At</label>
-            <input id="session-played-at"
-              type="date"
-              value={playedAt}
-              onChange={(e) => setPlayedAt(e.target.value)}
-              className="bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="session-summary" className="block text-sm text-stone-400 mb-1">Summary</label>
-            <textarea id="session-summary"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              rows={3}
-              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 resize-none"
-              placeholder="One-paragraph summary for quick reference..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-stone-400 mb-1">
-              Notes{" "}
-              <span className="text-stone-600">(Markdown supported)</span>
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={12}
-              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 resize-none font-mono"
-              placeholder="# Session Notes&#10;&#10;## What happened&#10;&#10;## NPCs encountered&#10;&#10;## DM notes"
-            />
-          </div>
-
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-        </form>
-
-        <div className="p-6 border-t border-stone-800 flex gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
-            disabled={loading || !title.trim()}
-            className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm"
-          >
-            {loading ? "Saving..." : isEdit ? "Save Changes" : "Create Session"}
-          </button>
+        <div>
+          <label htmlFor="session-played-at" className="block text-sm text-stone-400 mb-1">Played At</label>
+          <input id="session-played-at"
+            type="date"
+            value={playedAt}
+            onChange={(e) => setPlayedAt(e.target.value)}
+            className="bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+          />
         </div>
+
+        <div>
+          <label htmlFor="session-summary" className="block text-sm text-stone-400 mb-1">Summary</label>
+          <textarea id="session-summary"
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            rows={3}
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 resize-none"
+            placeholder="One-paragraph summary for quick reference..."
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-stone-400 mb-1">
+            Notes{" "}
+            <span className="text-stone-600">(Markdown supported)</span>
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={12}
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 resize-none font-mono"
+            placeholder="# Session Notes&#10;&#10;## What happened&#10;&#10;## NPCs encountered&#10;&#10;## DM notes"
+          />
+        </div>
+
+        {error && <p className="text-red-400 text-sm">{error}</p>}
+      </form>
+
+      <div className="p-6 border-t border-stone-800 flex gap-3 shrink-0">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
+          disabled={loading || !title.trim()}
+          className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm"
+        >
+          {loading ? "Saving..." : isEdit ? "Save Changes" : "Create Session"}
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }
 
