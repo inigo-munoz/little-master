@@ -64,6 +64,9 @@ model Session {
   updatedAt     DateTime  @updatedAt
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  // Listado por campaña ordenado por número, y comprobación de número duplicado
+  @@index([campaignId, sessionNumber])
 }
 
 // ─── NPCs ─────────────────────────────────────────────────────────────────────
@@ -108,6 +111,9 @@ model Npc {
   npcSpecies      String?
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  // Listado por campaña ordenado por nombre, y búsqueda por nombre exacto (import Obsidian)
+  @@index([campaignId, name])
 }
 
 // ─── Locations ────────────────────────────────────────────────────────────────
@@ -125,6 +131,9 @@ model Location {
   campaign       Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   parentLocation Location? @relation("LocationHierarchy", fields: [parentLocationId], references: [id], onDelete: SetNull)
   subLocations   Location[] @relation("LocationHierarchy")
+
+  // Listado por campaña, más reciente primero
+  @@index([campaignId, createdAt])
 }
 
 // ─── Factions ─────────────────────────────────────────────────────────────────
@@ -141,6 +150,9 @@ model Faction {
   updatedAt   DateTime @updatedAt
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  // Listado por campaña, más reciente primero
+  @@index([campaignId, createdAt])
 }
 
 // ─── Entity Relations ─────────────────────────────────────────────────────────
@@ -181,6 +193,9 @@ model Document {
 
   campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   chunks   DocumentChunk[]
+
+  // Listado de documentos de la campaña + globales, y SetNull al borrar la campaña (SQLite no indexa FKs)
+  @@index([campaignId])
 }
 
 // ─── Document Chunks (for semantic search) ───────────────────────────────────
@@ -198,6 +213,9 @@ model DocumentChunk {
   createdAt      DateTime @default(now())
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Re-embebido, recuento y borrado por documento (también el cascade al borrar un Document)
+  @@index([documentId, chunkIndex])
 }
 
 // ─── Rule Sources ─────────────────────────────────────────────────────────────
@@ -228,6 +246,9 @@ model CampaignRule {
 
   campaign   Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   ruleSource RuleSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  // Reglas activas de una campaña (rulesEngine, rules, campaignRules)
+  @@index([campaignId, active])
 }
 
 // ─── Change Log ───────────────────────────────────────────────────────────────
@@ -245,7 +266,8 @@ model ChangeLog {
 
   campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
 
-  @@index([campaignId])
+  // Listado por campaña, más reciente primero (el orden evita un sort temporal)
+  @@index([campaignId, createdAt])
   @@index([entityType, entityId])
 }
 
@@ -303,6 +325,9 @@ model AssistantRun {
 
   campaign  Campaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   llmConfig LlmConfig? @relation(fields: [llmConfigId], references: [id], onDelete: SetNull)
+
+  // Historial del chat de la campaña, más reciente primero; también el SetNull al borrar la campaña
+  @@index([campaignId, createdAt])
 }
 
 // ─── App Settings ─────────────────────────────────────────────────────────────
@@ -419,6 +444,9 @@ model Player {
   updatedAt   DateTime @updatedAt
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  // Listado por campaña ordenado por nombre, y búsqueda por nombre exacto (import Obsidian)
+  @@index([campaignId, name])
 }
 
 // ─── Encounters ───────────────────────────────────────────────────────────────
@@ -436,5 +464,8 @@ model Encounter {
   createdAt   DateTime @default(now())
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  // Historial de encuentros de la campaña, más recientes primero
+  @@index([campaignId, createdAt])
 }
 
