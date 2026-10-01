@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useId, Suspense } from "react";
 import useSWR, { mutate } from "swr";
 import {
   ScrollText,
@@ -22,6 +22,7 @@ import { WikiMarkdown } from "../../components/ui/WikiMarkdown";
 // ─── Inline Edit Row ──────────────────────────────────────────────────────────
 
 function SessionRow({ session, campaignId, onUpdated }: { session: Session; campaignId: string; onUpdated: () => void }) {
+  const uid = useId();
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [form, setForm] = useState({
@@ -174,9 +175,13 @@ function SessionRow({ session, campaignId, onUpdated }: { session: Session; camp
       {expanded && (
         <div className="px-4 pb-4 border-t border-stone-800 pt-3 space-y-3">
           <div>
-            <label className="block text-xs text-stone-500 mb-1">Resumen</label>
+            {/* En modo lectura no hay textarea, así que el htmlFor no debe apuntar a un id inexistente */}
+            {editing
+              ? <label htmlFor={`${uid}-summary`} className="block text-xs text-stone-500 mb-1">Resumen</label>
+              : <span className="block text-xs text-stone-500 mb-1">Resumen</span>}
             {editing ? (
               <textarea
+                id={`${uid}-summary`}
                 value={form.summary}
                 onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
                 rows={4}
@@ -192,9 +197,12 @@ function SessionRow({ session, campaignId, onUpdated }: { session: Session; camp
 
           {(editing || session.notes) && (
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Notas del DM</label>
+              {editing
+                ? <label htmlFor={`${uid}-notes`} className="block text-xs text-stone-500 mb-1">Notas del DM</label>
+                : <span className="block text-xs text-stone-500 mb-1">Notas del DM</span>}
               {editing ? (
                 <textarea
+                  id={`${uid}-notes`}
                   value={form.notes}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                   rows={3}
@@ -265,8 +273,8 @@ function NewSessionModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Nº Sesión</label>
-              <input
+              <label htmlFor="session-new-number" className="block text-xs text-stone-500 mb-1">Nº Sesión</label>
+              <input id="session-new-number"
                 type="number"
                 min={1}
                 value={sessionNumber}
@@ -275,8 +283,8 @@ function NewSessionModal({
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs text-stone-500 mb-1">Título *</label>
-              <input
+              <label htmlFor="session-new-title" className="block text-xs text-stone-500 mb-1">Título *</label>
+              <input id="session-new-title"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -288,8 +296,8 @@ function NewSessionModal({
             </div>
           </div>
           <div>
-            <label className="block text-xs text-stone-500 mb-1">Resumen (opcional)</label>
-            <textarea
+            <label htmlFor="session-new-summary" className="block text-xs text-stone-500 mb-1">Resumen (opcional)</label>
+            <textarea id="session-new-summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               rows={4}

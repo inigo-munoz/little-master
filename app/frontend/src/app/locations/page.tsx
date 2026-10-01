@@ -69,8 +69,8 @@ function LocationForm({ campaignId, initial, onClose, onSaved }: LocationFormPro
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Nombre *</label>
-            <input
+            <label htmlFor="location-name" className="block text-sm text-stone-400 mb-1">Nombre *</label>
+            <input id="location-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -80,8 +80,8 @@ function LocationForm({ campaignId, initial, onClose, onSaved }: LocationFormPro
           </div>
 
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Descripción</label>
-            <textarea
+            <label htmlFor="location-description" className="block text-sm text-stone-400 mb-1">Descripción</label>
+            <textarea id="location-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={5}
@@ -91,8 +91,8 @@ function LocationForm({ campaignId, initial, onClose, onSaved }: LocationFormPro
           </div>
 
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Tags</label>
-            <input
+            <label htmlFor="location-tags" className="block text-sm text-stone-400 mb-1">Tags</label>
+            <input id="location-tags"
               type="text"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}

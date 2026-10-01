@@ -119,8 +119,8 @@ function CreateCampaignModal({
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Title *</label>
-            <input
+            <label htmlFor="campaign-title" className="block text-sm text-stone-400 mb-1">Title *</label>
+            <input id="campaign-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -131,8 +131,8 @@ function CreateCampaignModal({
             />
           </div>
           <div>
-            <label className="block text-sm text-stone-400 mb-1">System</label>
-            <input
+            <label htmlFor="campaign-system" className="block text-sm text-stone-400 mb-1">System</label>
+            <input id="campaign-system"
               type="text"
               value={system}
               onChange={(e) => setSystem(e.target.value)}
@@ -140,8 +140,8 @@ function CreateCampaignModal({
             />
           </div>
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Description</label>
-            <textarea
+            <label htmlFor="campaign-description" className="block text-sm text-stone-400 mb-1">Description</label>
+            <textarea id="campaign-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}

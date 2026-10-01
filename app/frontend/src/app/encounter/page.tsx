@@ -607,16 +607,16 @@ export default function EncounterPage() {
             </h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-stone-500 mb-1">Party Size</label>
-                <input
+                <label htmlFor="encounter-party-size" className="block text-xs text-stone-500 mb-1">Party Size</label>
+                <input id="encounter-party-size"
                   type="number" min={1} max={20} value={partySize}
                   onChange={(e) => setPartySize(Number(e.target.value))}
                   className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-xs text-stone-500 mb-1">Average Level</label>
-                <input
+                <label htmlFor="encounter-avg-level" className="block text-xs text-stone-500 mb-1">Average Level</label>
+                <input id="encounter-avg-level"
                   type="number" min={1} max={20} value={avgLevel}
                   onChange={(e) => setAvgLevel(Number(e.target.value))}
                   className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
@@ -714,8 +714,9 @@ export default function EncounterPage() {
                     campaignNpcs={campaignNpcs}
                   />
                   <div className="flex items-center gap-1">
-                    <label className="text-xs text-stone-600">CR</label>
+                    <label htmlFor={`monster-cr-${m.id}`} className="text-xs text-stone-600">CR</label>
                     <select
+                      id={`monster-cr-${m.id}`}
                       value={m.cr}
                       onChange={(e) => updateMonster(m.id, "cr", e.target.value)}
                       className="bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 w-20"
@@ -724,8 +725,10 @@ export default function EncounterPage() {
                     </select>
                   </div>
                   <div className="flex items-center gap-1">
-                    <label className="text-xs text-stone-600">×</label>
+                    <label htmlFor={`monster-count-${m.id}`} className="text-xs text-stone-600">×</label>
                     <input
+                      id={`monster-count-${m.id}`}
+                      aria-label="Cantidad"
                       type="number" min={1} max={50} value={m.count}
                       onChange={(e) => updateMonster(m.id, "count", Number(e.target.value))}
                       className="w-16 bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 text-center"

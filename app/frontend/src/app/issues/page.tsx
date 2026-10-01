@@ -42,8 +42,8 @@ function ResolveModal({
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Resolution *</label>
-            <textarea
+            <label htmlFor="issue-resolution" className="block text-sm text-stone-400 mb-1">Resolution *</label>
+            <textarea id="issue-resolution"
               value={resolution}
               onChange={(e) => setResolution(e.target.value)}
               rows={4}

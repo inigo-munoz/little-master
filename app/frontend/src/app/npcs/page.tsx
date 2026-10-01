@@ -323,12 +323,12 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
             {/* Basic fields */}
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-sm text-stone-400 mb-1">Nombre *</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} required />
+                <label htmlFor="npc-name" className="block text-sm text-stone-400 mb-1">Nombre *</label>
+                <input id="npc-name" type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} required />
               </div>
               <div>
-                <label className="block text-sm text-stone-400 mb-1">Estado</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value as "alive" | "dead" | "unknown" | "missing")} className={inputCls}>
+                <label htmlFor="npc-status" className="block text-sm text-stone-400 mb-1">Estado</label>
+                <select id="npc-status" value={status} onChange={(e) => setStatus(e.target.value as "alive" | "dead" | "unknown" | "missing")} className={inputCls}>
                   <option value="alive">Vivo</option>
                   <option value="dead">Muerto</option>
                   <option value="unknown">Desconocido</option>
@@ -336,8 +336,8 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-stone-400 mb-1">Disposición</label>
-                <select value={disposition} onChange={(e) => setDisposition(e.target.value as "ally" | "neutral" | "enemy")} className={inputCls}>
+                <label htmlFor="npc-disposition" className="block text-sm text-stone-400 mb-1">Disposición</label>
+                <select id="npc-disposition" value={disposition} onChange={(e) => setDisposition(e.target.value as "ally" | "neutral" | "enemy")} className={inputCls}>
                   <option value="neutral">Neutral</option>
                   <option value="ally">Aliado</option>
                   <option value="enemy">Enemigo</option>
@@ -346,18 +346,18 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm text-stone-400 mb-1">Rol</label>
-              <input type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Herrero, Líder del gremio, Antagonista..." className={inputCls} />
+              <label htmlFor="npc-role" className="block text-sm text-stone-400 mb-1">Rol</label>
+              <input id="npc-role" type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Herrero, Líder del gremio, Antagonista..." className={inputCls} />
             </div>
 
             <div>
-              <label className="block text-sm text-stone-400 mb-1">Descripción</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className={`${inputCls} resize-none`} placeholder="Apariencia, personalidad, motivaciones..." />
+              <label htmlFor="npc-description" className="block text-sm text-stone-400 mb-1">Descripción</label>
+              <textarea id="npc-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className={`${inputCls} resize-none`} placeholder="Apariencia, personalidad, motivaciones..." />
             </div>
 
             <div>
-              <label className="block text-sm text-stone-400 mb-1">Tags</label>
-              <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="villano, mercader, recurrente (separados por coma)" className={inputCls} />
+              <label htmlFor="npc-tags" className="block text-sm text-stone-400 mb-1">Tags</label>
+              <input id="npc-tags" type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="villano, mercader, recurrente (separados por coma)" className={inputCls} />
             </div>
 
             {/* ── Stat Block Section ───────────────────────────────────── */}
@@ -381,7 +381,7 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
 
                   {/* Tipo */}
                   <div>
-                    <label className="block text-xs text-stone-500 mb-2">Tipo</label>
+                    <span className="block text-xs text-stone-500 mb-2">Tipo</span>
                     <div className="flex gap-2">
                       {(["monster", "player"] as const).map((t) => (
                         <button
@@ -404,14 +404,14 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
                   {/* CR or Class+Level */}
                   {npcType === "monster" ? (
                     <div>
-                      <label className="block text-xs text-stone-500 mb-1">CR</label>
-                      <input type="text" value={cr} onChange={(e) => setCr(e.target.value)} placeholder="ej: 3 (700 XP)" className={`${smallInputCls} max-w-xs`} />
+                      <label htmlFor="npc-cr" className="block text-xs text-stone-500 mb-1">CR</label>
+                      <input id="npc-cr" type="text" value={cr} onChange={(e) => setCr(e.target.value)} placeholder="ej: 3 (700 XP)" className={`${smallInputCls} max-w-xs`} />
                     </div>
                   ) : (
                     <div className="grid grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-xs text-stone-500 mb-1">Clase</label>
-                        <select value={npcClass} onChange={(e) => setNpcClass(e.target.value)} className={smallInputCls}>
+                        <label htmlFor="npc-class" className="block text-xs text-stone-500 mb-1">Clase</label>
+                        <select id="npc-class" value={npcClass} onChange={(e) => setNpcClass(e.target.value)} className={smallInputCls}>
                           <option value="">— seleccionar —</option>
                           {Object.keys(DND_CLASSES).map((name) => (
                             <option key={name} value={name}>{name}</option>
@@ -419,8 +419,8 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs text-stone-500 mb-1">Especie</label>
-                        <select value={npcSpecies} onChange={(e) => setNpcSpecies(e.target.value)} className={smallInputCls}>
+                        <label htmlFor="npc-species" className="block text-xs text-stone-500 mb-1">Especie</label>
+                        <select id="npc-species" value={npcSpecies} onChange={(e) => setNpcSpecies(e.target.value)} className={smallInputCls}>
                           <option value="">— seleccionar —</option>
                           {DND_SPECIES.map((sp) => (
                             <option key={sp} value={sp}>{sp}</option>
@@ -428,8 +428,8 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs text-stone-500 mb-1">Nivel</label>
-                        <input type="number" min={1} max={20} value={npcLevel} onChange={(e) => setNpcLevel(e.target.value)} className={smallInputCls} />
+                        <label htmlFor="npc-level" className="block text-xs text-stone-500 mb-1">Nivel</label>
+                        <input id="npc-level" type="number" min={1} max={20} value={npcLevel} onChange={(e) => setNpcLevel(e.target.value)} className={smallInputCls} />
                       </div>
                     </div>
                   )}
@@ -437,22 +437,22 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
                   {/* CA / PG / Velocidad */}
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs text-stone-500 mb-1">CA</label>
-                      <input type="number" min={0} max={30} value={ac} onChange={(e) => setAc(e.target.value)} className={smallInputCls} />
+                      <label htmlFor="npc-ac" className="block text-xs text-stone-500 mb-1">CA</label>
+                      <input id="npc-ac" type="number" min={0} max={30} value={ac} onChange={(e) => setAc(e.target.value)} className={smallInputCls} />
                     </div>
                     <div>
-                      <label className="block text-xs text-stone-500 mb-1">Puntos de Golpe</label>
-                      <input type="text" value={hp} onChange={(e) => setHp(e.target.value)} placeholder="27 (5d8+5)" className={smallInputCls} />
+                      <label htmlFor="npc-hp" className="block text-xs text-stone-500 mb-1">Puntos de Golpe</label>
+                      <input id="npc-hp" type="text" value={hp} onChange={(e) => setHp(e.target.value)} placeholder="27 (5d8+5)" className={smallInputCls} />
                     </div>
                     <div>
-                      <label className="block text-xs text-stone-500 mb-1">Velocidad</label>
-                      <input type="text" value={spd} onChange={(e) => setSpd(e.target.value)} placeholder="30 pies" className={smallInputCls} />
+                      <label htmlFor="npc-speed" className="block text-xs text-stone-500 mb-1">Velocidad</label>
+                      <input id="npc-speed" type="text" value={spd} onChange={(e) => setSpd(e.target.value)} placeholder="30 pies" className={smallInputCls} />
                     </div>
                   </div>
 
                   {/* Ability scores */}
                   <div>
-                    <label className="block text-xs text-stone-500 mb-2">Características</label>
+                    <span className="block text-xs text-stone-500 mb-2">Características</span>
                     <div className="grid grid-cols-6 gap-2">
                       {[
                         { label: "FUE", val: str, set: setStr },
@@ -466,6 +466,7 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
                           <p className="text-xs text-amber-500 font-bold mb-1">{label}</p>
                           <input
                             type="number" min={1} max={30} value={val}
+                            aria-label={label}
                             onChange={(e) => set(e.target.value)}
                             className="w-full bg-stone-800 border border-stone-700 rounded px-1 py-1.5 text-stone-100 text-sm text-center focus:outline-none focus:border-amber-500"
                           />

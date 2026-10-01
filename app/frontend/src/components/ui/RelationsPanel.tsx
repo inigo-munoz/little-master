@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import useSWR, { mutate } from "swr";
 import { Plus, X } from "lucide-react";
 import { api, type RelationItem, type CreateEntityRelationPayload } from "../../lib/api";
@@ -52,6 +52,7 @@ export function RelationsPanel({
   entityType,
   entityId,
 }: RelationsPanelProps) {
+  const uid = useId();
   const swrKey = `relations-${campaignId}-${entityType}-${entityId}`;
 
   const { data: relations = [], isLoading } = useSWR<RelationItem[]>(swrKey, () =>
@@ -173,8 +174,9 @@ export function RelationsPanel({
         <div className="bg-stone-800/60 rounded-lg p-3 space-y-2">
           {/* Tipo de entidad destino */}
           <div>
-            <label className="block text-xs text-stone-400 mb-1">Tipo de entidad</label>
+            <label htmlFor={`${uid}-target-type`} className="block text-xs text-stone-400 mb-1">Tipo de entidad</label>
             <select
+              id={`${uid}-target-type`}
               value={targetType}
               onChange={(e) => {
                 setTargetType(e.target.value as EntityKind | "");
@@ -219,8 +221,9 @@ export function RelationsPanel({
           {/* Tipo de relación */}
           {targetId && availableTypes.length > 0 && (
             <div>
-              <label className="block text-xs text-stone-400 mb-1">Tipo de relación</label>
+              <label htmlFor={`${uid}-relation-type`} className="block text-xs text-stone-400 mb-1">Tipo de relación</label>
               <select
+                id={`${uid}-relation-type`}
                 value={relationType}
                 onChange={(e) => setRelationType(e.target.value)}
                 className="w-full bg-stone-700 border border-stone-600 rounded px-2 py-1 text-sm text-stone-200 focus:outline-none focus:border-amber-500"
@@ -238,10 +241,11 @@ export function RelationsPanel({
           {/* Notas opcionales */}
           {relationType && (
             <div>
-              <label className="block text-xs text-stone-400 mb-1">
+              <label htmlFor={`${uid}-notes`} className="block text-xs text-stone-400 mb-1">
                 Notas <span className="text-stone-600">(opcional)</span>
               </label>
               <textarea
+                id={`${uid}-notes`}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}

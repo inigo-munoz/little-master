@@ -73,8 +73,8 @@ function FactionForm({ campaignId, initial, onClose, onSaved }: FactionFormProps
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm text-stone-400 mb-1">Nombre *</label>
-              <input
+              <label htmlFor="faction-name" className="block text-sm text-stone-400 mb-1">Nombre *</label>
+              <input id="faction-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -83,8 +83,8 @@ function FactionForm({ campaignId, initial, onClose, onSaved }: FactionFormProps
               />
             </div>
             <div>
-              <label className="block text-sm text-stone-400 mb-1">Disposición</label>
-              <select
+              <label htmlFor="faction-disposition" className="block text-sm text-stone-400 mb-1">Disposición</label>
+              <select id="faction-disposition"
                 value={disposition}
                 onChange={(e) => setDisposition(e.target.value)}
                 className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
@@ -96,8 +96,8 @@ function FactionForm({ campaignId, initial, onClose, onSaved }: FactionFormProps
               </select>
             </div>
             <div>
-              <label className="block text-sm text-stone-400 mb-1">Alineamiento</label>
-              <input
+              <label htmlFor="faction-alignment" className="block text-sm text-stone-400 mb-1">Alineamiento</label>
+              <input id="faction-alignment"
                 type="text"
                 value={alignment}
                 onChange={(e) => setAlignment(e.target.value)}
@@ -108,8 +108,8 @@ function FactionForm({ campaignId, initial, onClose, onSaved }: FactionFormProps
           </div>
 
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Descripción</label>
-            <textarea
+            <label htmlFor="faction-description" className="block text-sm text-stone-400 mb-1">Descripción</label>
+            <textarea id="faction-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={5}
@@ -119,8 +119,8 @@ function FactionForm({ campaignId, initial, onClose, onSaved }: FactionFormProps
           </div>
 
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Tags</label>
-            <input
+            <label htmlFor="faction-tags" className="block text-sm text-stone-400 mb-1">Tags</label>
+            <input id="faction-tags"
               type="text"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}

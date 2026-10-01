@@ -124,8 +124,8 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
           {/* Nombre + Estado */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Nombre *</label>
-              <input
+              <label htmlFor="player-name" className={labelCls}>Nombre *</label>
+              <input id="player-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -135,8 +135,8 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
               />
             </div>
             <div>
-              <label className={labelCls}>Estado</label>
-              <select
+              <label htmlFor="player-status" className={labelCls}>Estado</label>
+              <select id="player-status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value as typeof status)}
                 className={selectCls}
@@ -151,8 +151,8 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
 
           {/* Nombre real del jugador */}
           <div>
-            <label className={labelCls}>Nombre del jugador real</label>
-            <input
+            <label htmlFor="player-real-name" className={labelCls}>Nombre del jugador real</label>
+            <input id="player-real-name"
               type="text"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
@@ -164,8 +164,8 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
           {/* Clase + Nivel */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Clase</label>
-              <select
+              <label htmlFor="player-class" className={labelCls}>Clase</label>
+              <select id="player-class"
                 value={playerClass}
                 onChange={(e) => handleClassChange(e.target.value)}
                 className={selectCls}
@@ -177,8 +177,8 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
               </select>
             </div>
             <div>
-              <label className={labelCls}>Nivel</label>
-              <input
+              <label htmlFor="player-level" className={labelCls}>Nivel</label>
+              <input id="player-level"
                 type="number"
                 min={1}
                 max={20}
@@ -191,9 +191,13 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
 
           {/* Subclase — condicional: solo si hay clase y nivel >= 3 */}
           <div>
-            <label className={labelCls}>Subclase</label>
+            {/* Sin el select renderizado, un htmlFor apuntaría a un id inexistente */}
+            {showSubclass
+              ? <label htmlFor="player-subclass" className={labelCls}>Subclase</label>
+              : <span className={labelCls}>Subclase</span>}
             {showSubclass ? (
               <select
+                id="player-subclass"
                 value={subclass}
                 onChange={(e) => setSubclass(e.target.value)}
                 className={selectCls}
@@ -214,8 +218,8 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
           {/* Especie + Subtipo */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Especie</label>
-              <select
+              <label htmlFor="player-species" className={labelCls}>Especie</label>
+              <select id="player-species"
                 value={species}
                 onChange={(e) => handleSpeciesChange(e.target.value)}
                 className={selectCls}
@@ -247,8 +251,8 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
           {/* HP máximo + CA */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>HP máximo</label>
-              <input
+              <label htmlFor="player-hp-max" className={labelCls}>HP máximo</label>
+              <input id="player-hp-max"
                 type="number"
                 min={1}
                 value={hpMax}
@@ -258,8 +262,8 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
               />
             </div>
             <div>
-              <label className={labelCls}>CA (Clase de Armadura)</label>
-              <input
+              <label htmlFor="player-ac" className={labelCls}>CA (Clase de Armadura)</label>
+              <input id="player-ac"
                 type="number"
                 min={1}
                 value={ac}
