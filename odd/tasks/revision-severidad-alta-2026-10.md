@@ -197,12 +197,50 @@ formulario, 21 overlays de modal en 15 ficheros.
   de otro). El NPC usado no tenía relaciones. Queda para U3b-2.
 - **Commit**: `dbe94b4`
 
-#### U3b-2 — Migrar los ~20 modales inline de las páginas
+#### U3b-2 — Migrar los 19 modales inline de las páginas
 
-- [ ] **Estado**: pendiente
-- **Pendiente también**: el `onKeyDown` sobre un `div` no enfocable de
-  `encounter/page.tsx:962`, cuyo handler de Escape no puede dispararse nunca;
-  y verificar los diálogos anidados de `WikiLink`.
+- [x] **Estado**: cerrada. Troceada en dos tandas para validar antes de fanout.
+- **Tanda A** (`5351f7d`): 11 modales de formulario de entidad en 8 ficheros.
+- **Tanda B** (`5ca1bec`): 8 modales complejos — `encounter` (3),
+  `players/detail` (4), `SpellsTab` (1).
+- **Resultado**: solo quedan dos `fixed inset-0` en todo `src`: la propia
+  primitiva y el captador de clic-fuera del dropdown de chat, que no es un
+  modal.
+- **Defecto arreglado de paso**: el `onKeyDown` sobre un `div` no enfocable de
+  `encounter`, cuyo handler de Escape no podía dispararse nunca. Borrado, no
+  portado.
+
+**Regresiones del writer corregidas por el padre, todas en la primitiva y no
+sitio a sitio** (la primitiva crece solo para conservar lo que ya existía):
+
+| Regresión | Causa | Arreglo |
+| --- | --- | --- |
+| descripción de issues más pequeña y apagada | `subtitle` solo admitía `string` | `subtitle` acepta `ReactNode` |
+| badges de documents salen del header a una franja | idem | idem, pasa su marcado |
+| buscador de hechizos pierde el `autoFocus` | Radix mueve el foco al abrir | `initialFocusRef` vía `onOpenAutoFocus` |
+| hoja inferior en móvil pasa a centrada | overlay con `items-center` fijo | prop `align`, que **sustituye** la clase (dos `items-*` las resuelve el orden del CSS, no el de la cadena) |
+
+**Diferencias aceptadas a propósito** (mejoras, no regresiones): los modales de
+campañas e issues ganan una X para cerrar que no tenían; el título de las
+confirmaciones pasa de `h3` a `h2` vía `Dialog.Title`; y el fondo del
+buscador de hechizos pasa de `bg-black/60` al `/70` compartido, diferencia
+imperceptible que además unifica los overlays.
+
+**Verificado en navegador** (contra copia de la base real, la original
+intacta): el visor de documentos reporta `dialog` con los badges de vuelta
+bajo el título; dentro del formulario de facciones los cinco campos reportan
+su nombre accesible, o sea que las etiquetas de U3a sobrevivieron a que les
+movieran el marcado; y la confirmación de guardar ficha reporta `dialog` con
+**nombre y descripción** accesibles, lo que valida el cableado de
+`hasDescription` + `ModalDescription`.
+
+**NO verificado en navegador, dicho sin adornos**: los dos arreglos de
+`SpellsTab` (foco inicial y hoja inferior) están comprobados solo leyendo. No
+se pudo llegar al modal porque la ficha oculta su pestaña de Magia para ese
+personaje — la ficha carga "Bardo" en el desplegable aunque el personaje sea
+Mago. **Eso es un bug previo** (el `formInitialized` que ya señaló la
+auditoría del frontend), no introducido aquí, y queda anotado sin perseguir.
+Tampoco se verificaron los diálogos anidados de `WikiLink`.
 - **Defecto**: `rg 'role="dialog"'` y `rg aria-modal` devuelven 0. Ningún
   modal se anuncia como diálogo, ninguno atrapa ni restaura el foco. El de
   `encounter/page.tsx:962` además pone `onKeyDown` en un `div` no enfocable,
@@ -240,5 +278,5 @@ Documento creado el 2026-10-01. U1 delegada.
 
 ## Siguiente paso
 
-U3b-2 (migrar los ~20 modales inline) y luego U4, que sigue **bloqueada
-esperando la decisión del usuario** sobre la capa Zod.
+Solo queda **U4**, bloqueada esperando la decisión del usuario sobre la capa
+Zod muerta.
