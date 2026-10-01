@@ -81,3 +81,51 @@ describe("POST /api/npcs — authorType", () => {
     expect(res.body.success).toBe(false);
   });
 });
+
+describe("POST/PATCH /api/npcs — campos que la ruta acepta y el servicio debe persistir", () => {
+  it("persiste disposition y npcSpecies al crear, en vez de descartarlos", async () => {
+    const res = await request.post("/api/npcs").send({
+      campaignId,
+      name: "Thalia la Centinela",
+      disposition: "enemy",
+      npcSpecies: "Elfa del bosque",
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.disposition).toBe("enemy");
+    expect(res.body.data.npcSpecies).toBe("Elfa del bosque");
+
+    const stored = await prisma.npc.findUnique({ where: { id: res.body.data.id } });
+    expect(stored?.disposition).toBe("enemy");
+    expect(stored?.npcSpecies).toBe("Elfa del bosque");
+  });
+
+  it("aplica el default neutral cuando no se envía disposition", async () => {
+    const res = await request.post("/api/npcs").send({ campaignId, name: "Borin el Tabernero" });
+
+    expect(res.status).toBe(201);
+    const stored = await prisma.npc.findUnique({ where: { id: res.body.data.id } });
+    expect(stored?.disposition).toBe("neutral");
+    expect(stored?.sourceType).toBe("campaign");
+  });
+
+  it("persiste disposition y npcSpecies al actualizar", async () => {
+    const created = await request.post("/api/npcs").send({
+      campaignId,
+      name: "Garrick",
+      disposition: "ally",
+      npcSpecies: "Humano",
+    });
+
+    const res = await request.patch(`/api/npcs/${created.body.data.id}`).send({
+      disposition: "enemy",
+      npcSpecies: "Tiefling",
+    });
+
+    expect(res.status).toBe(200);
+
+    const stored = await prisma.npc.findUnique({ where: { id: created.body.data.id } });
+    expect(stored?.disposition).toBe("enemy");
+    expect(stored?.npcSpecies).toBe("Tiefling");
+  });
+});

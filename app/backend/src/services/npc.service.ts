@@ -30,6 +30,8 @@ export const npcService = {
         role: data.role ?? null,
         description: data.description ?? null,
         status: data.status ?? "alive",
+        disposition: data.disposition ?? "neutral",
+        sourceType: data.sourceType ?? "campaign",
         tags: JSON.stringify(data.tags ?? []),
         // Stat block
         armorClass: data.armorClass ?? null,
@@ -55,6 +57,7 @@ export const npcService = {
         npcType: data.npcType ?? null,
         npcClass: data.npcClass ?? null,
         npcLevel: data.npcLevel ?? null,
+        npcSpecies: data.npcSpecies ?? null,
       },
     });
 
@@ -82,6 +85,7 @@ export const npcService = {
         ...(data.role !== undefined && { role: data.role }),
         ...(data.description !== undefined && { description: data.description }),
         ...(data.status !== undefined && { status: data.status }),
+        ...(data.disposition !== undefined && { disposition: data.disposition }),
         ...(data.tags !== undefined && { tags: JSON.stringify(data.tags) }),
         // Stat block
         ...(data.armorClass !== undefined && { armorClass: data.armorClass }),
@@ -107,6 +111,9 @@ export const npcService = {
         ...(data.npcType !== undefined && { npcType: data.npcType }),
         ...(data.npcClass !== undefined && { npcClass: data.npcClass }),
         ...(data.npcLevel !== undefined && { npcLevel: data.npcLevel }),
+        ...(data.npcSpecies !== undefined && { npcSpecies: data.npcSpecies }),
+        // sourceType is intentionally not updatable: the PATCH route does not
+        // accept it, so a branch here would be unreachable.
       },
     });
 
