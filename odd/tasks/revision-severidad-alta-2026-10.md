@@ -49,41 +49,126 @@ nativa; rigen los checks de arriba.
 
 ### U1 — Índices de base de datos ausentes
 
-- [ ] **Estado**: en curso, delegada
-- **Defecto**: el schema tiene 6 `@@index` en total, en `EntityRelation`,
+- [x] **Estado**: cerrada
+- **Defecto**: el schema tenía 6 `@@index` en total, en `EntityRelation`,
   `ChangeLog` e `Issue`. SQLite no indexa claves foráneas por su cuenta, así
-  que el resto de filtros son escaneos completos. `DocumentChunk` no tiene
-  ninguno, ni en `documentId`, y es la tabla más caliente: `search()` la lee
-  en cada mensaje de chat.
-- **Criterio**: cada índice debe estar justificado por una consulta real
-  (`file:line`), y demostrado con `EXPLAIN QUERY PLAN` pasando de
-  `SCAN` a `SEARCH ... USING INDEX`. Nada especulativo.
+  que el resto de filtros eran escaneos completos. `DocumentChunk` no tenía
+  ninguno, ni en `documentId`, y es la tabla más caliente.
+- **Criterio**: cada índice justificado por una consulta real (`file:line`) y
+  demostrado con `EXPLAIN QUERY PLAN`. Nada especulativo.
+- **Ruta**: delegada (preparación + escritura: inventario de consultas en todo
+  el backend antes de tocar el schema).
+- **Resultado**: 10 índices nuevos y 1 reemplazado. Los compuestos van
+  ordenados para que el `ORDER BY` lo sirva el índice, así que desaparece
+  también el sort temporal, no solo el escaneo.
+- **Evidencia reproducida por el padre** (no solo reportada), sobre una base
+  de 6000 `DocumentChunk` y 4000 `ChangeLog`:
+
+  | Consulta | Antes | Después |
+  | --- | --- | --- |
+  | chunks de un doc sin embedding, ordenados | `SCAN` + temp b-tree | `SEARCH ... USING INDEX` |
+  | `count` por documento (N+1 de srd.ts) | `SCAN` | `SEARCH ... USING COVERING INDEX` |
+  | cascade al borrar un `Document` | `SCAN` | `SEARCH ... USING INDEX` |
+  | changelog por campaña, reciente primero | `SEARCH` + temp b-tree | `SEARCH`, sin temp b-tree |
+  | **`search()` de cada mensaje de chat** | `SCAN` | **`SCAN`** |
+
+- **Negativo honesto**: `search()` sigue siendo un escaneo completo, y no es un
+  olvido. La mayoría de chunks son globales (`campaignId` NULL), así que la
+  rama `OR campaignId IS NULL` devuelve casi toda la tabla y ningún índice
+  ayuda. Su coste real es el `findMany` sin `take` que carga todos los
+  `embeddingJson`: eso es una reescritura de consulta, no un índice.
+- **Decisión migración vs `db push`**: no se añade fichero de migración. Nada
+  aplica migraciones — la app, el Dockerfile, el `global-setup` de tests y la
+  documentación usan `db push`; el único `prisma migrate` es un script manual.
+  El directorio no tiene baseline y ya está desviado, así que un fichero nuevo
+  sería peso muerto que da falsa confianza.
+- **Checks observados**: backend 123/123; typecheck 6 verdes; `db push` **sin**
+  `--accept-data-loss` sobre una copia poblada → exit 0 y las 6000 filas
+  intactas (verificado por el padre). La base real del usuario no se tocó.
 - **Fuera de alcance deliberado**: las restricciones `UNIQUE`. Las candidatas
   son `Player(campaignId, name)` y `Session(campaignId, sessionNumber)`, por
   las carreras de check-then-create. Se dejan porque una `UNIQUE` puede fallar
   al aplicarse contra una base del usuario que ya tenga duplicados, y con el
   arranque fail-fast de `ddbecc0` eso impediría abrir la app. Es una decisión
   suya, con ese riesgo explícito.
-- **Commit**: _(pendiente)_
+- **Commit**: `77dc5d1` (rama `perf/db-indexes`)
 
 ### U2 — `AppShell` montado en cada página
 
-- [ ] **Estado**: pendiente
+- [ ] **Estado**: en curso, delegada (rama `refactor/appshell-in-layout`)
 - **Defecto**: `app/layout.tsx` solo renderiza `{children}`, y las 14 páginas
   envuelven su propio return en `<AppShell>`. Cada cambio de ruta remonta el
   splash "Iniciando…", relanza el health check contra el backend y pierde el
   estado local del `Sidebar`.
+- **Comprobado antes de delegar**: son 14 de 15 páginas. La excepción,
+  `app/page.tsx`, es un redirect de 10 líneas a `/campaigns` que devuelve
+  `null`; envolverlo es inocuo y hasta preferible a una página en blanco.
+  `AppShell` ya es `"use client"`, así que `layout.tsx` puede seguir siendo
+  server component y conservar su export de `metadata`.
+- **Riesgo de verificación**: el frontend **no tiene tests de componentes** —
+  los 176 verdes son de funciones puras de `lib/`. No ejercitan este cambio.
+  El check que vale aquí es `next build`, que detecta los errores de frontera
+  cliente/servidor.
 - **Commit**: _(pendiente)_
 
 ### U3 — Accesibilidad del frontend
 
+Troceada en dos, porque son problemas distintos: uno es mecánico y el otro
+pide una primitiva compartida.
+
+**Superficie medida**: 73 `<label>` en 16 ficheros, 121 controles de
+formulario, 21 overlays de modal en 15 ficheros.
+
+#### U3a — Etiquetas sin control asociado
+
+- [x] **Estado**: cerrada
+- **Defecto**: `rg htmlFor` devolvía 0 en todo `src`. Un lector de pantalla no
+  anunciaba el nombre de ningún campo, y hacer clic en la etiqueta no enfocaba
+  su input.
+- **Cambio de enfoque respecto al plan**: en vez de un barrido guiado por
+  `rg`, se **activa la regla de lint** `jsx-a11y/label-has-associated-control`
+  en `error`. `eslint-plugin-jsx-a11y` ya estaba instalado de forma transitiva
+  vía `eslint-config-next`; `next/core-web-vitals` simplemente no activa esa
+  regla. Dos ventajas: la herramienta da la lista exacta en vez de mi estimación,
+  y el defecto queda **impedido para siempre** en vez de arreglado una vez.
+- **Objetivo verificable**: lint pasa de **60 errores en 13 ficheros** a 0, con
+  la regla todavía en `error`. (De los 73 labels, 13 ya cumplían porque
+  envuelven su control.)
+- **Riesgo vigilado**: ids duplicados. Varias páginas renderizan más de un
+  formulario y repiten nombres de campo (`name`, `description`, `tags`); dos
+  elementos con el mismo id serían un defecto peor que el original.
+  **Verificado por el padre**: 50 ids literales, 0 repetidos en todo `src`, y
+  57 `htmlFor` para 57 controles. Los componentes que se renderizan más de una
+  vez (`SessionRow`, `RelationsPanel`) usan `useId`; los controles por fila de
+  `encounter` van indexados por id de monstruo.
+- **Dos arreglos del padre sobre el trabajo del writer**:
+  1. En `settings` había puesto `aria-label={g.type}` en un `<label>` para
+     contentar a la regla. Eso **sustituye** el nombre accesible por la clave
+     cruda del enum (`npc`) en vez del texto legible que ya está dentro: es
+     empeorar la accesibilidad para callar al linter. Se cambió a asociación
+     explícita con `htmlFor` (el input sigue anidado, así que no cambia nada
+     visual) y se subió `depth: 3` en la regla, porque el navegador calcula el
+     nombre recorriendo todo el subárbol mientras la regla solo mira 2 niveles.
+  2. Tres etiquetas apuntaban con `htmlFor` a controles **condicionales**
+     (subclase de jugador, resumen y notas de sesión), así que en el otro
+     estado el `htmlFor` quedaba colgando de un id inexistente. Ahora en ese
+     estado se renderiza un `<span>` con las mismas clases (todas llevan
+     `block`, así que no cambia el layout).
+- **Checks observados**: lint **0 errores** con la regla en `error` y sin
+  comentarios de desactivación (queda el warning de base del `any` en el e2e);
+  `next build` compila y genera las 18 páginas; typecheck 6 verdes; 176 tests.
+- **Commit**: `44e7bf8`
+
+#### U3b — Modales sin semántica de diálogo
+
 - [ ] **Estado**: pendiente
-- **Defecto**: `rg htmlFor` devuelve 0 en todo `src`, y `rg 'role="dialog"'`
-  también. Ningún control de formulario tiene etiqueta asociada, así que un
-  lector de pantalla no anuncia el nombre de ningún campo y hacer clic en la
-  etiqueta no enfoca su input. Ningún modal se anuncia como diálogo ni atrapa
-  el foco.
-- **Nota**: superficie grande y mecánica. Candidata a trocear.
+- **Defecto**: `rg 'role="dialog"'` y `rg aria-modal` devuelven 0. Ningún
+  modal se anuncia como diálogo, ninguno atrapa ni restaura el foco. El de
+  `encounter/page.tsx:962` además pone `onKeyDown` en un `div` no enfocable,
+  así que su handler de Escape no puede dispararse nunca.
+- **Enfoque previsto**: una primitiva compartida, no 21 parches. Ya existen
+  `ConfirmModal` y `DetailModal` como punto de partida, y ambos ya manejan
+  Escape con un listener a nivel de documento, que es la forma correcta.
 - **Commit**: _(pendiente)_
 
 ### U4 — Capa Zod muerta de `@dnd/domain`

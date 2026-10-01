@@ -91,8 +91,8 @@ function SessionForm({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
-              <label className="block text-sm text-stone-400 mb-1">Title *</label>
-              <input
+              <label htmlFor="session-title" className="block text-sm text-stone-400 mb-1">Title *</label>
+              <input id="session-title"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -102,8 +102,8 @@ function SessionForm({
               />
             </div>
             <div>
-              <label className="block text-sm text-stone-400 mb-1">Session #</label>
-              <input
+              <label htmlFor="session-number" className="block text-sm text-stone-400 mb-1">Session #</label>
+              <input id="session-number"
                 type="number"
                 min={1}
                 value={sessionNumber}
@@ -114,8 +114,8 @@ function SessionForm({
           </div>
 
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Played At</label>
-            <input
+            <label htmlFor="session-played-at" className="block text-sm text-stone-400 mb-1">Played At</label>
+            <input id="session-played-at"
               type="date"
               value={playedAt}
               onChange={(e) => setPlayedAt(e.target.value)}
@@ -124,8 +124,8 @@ function SessionForm({
           </div>
 
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Summary</label>
-            <textarea
+            <label htmlFor="session-summary" className="block text-sm text-stone-400 mb-1">Summary</label>
+            <textarea id="session-summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               rows={3}

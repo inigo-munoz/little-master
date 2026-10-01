@@ -281,8 +281,8 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-stone-400 mb-1">Provider</label>
-          <select
+          <label htmlFor="llm-provider" className="block text-sm text-stone-400 mb-1">Provider</label>
+          <select id="llm-provider"
             value={provider}
             onChange={(e) => {
               setProvider(e.target.value);
@@ -300,8 +300,8 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
         </div>
 
         <div>
-          <label className="block text-sm text-stone-400 mb-1">Modelo</label>
-          <select
+          <label htmlFor="llm-model" className="block text-sm text-stone-400 mb-1">Modelo</label>
+          <select id="llm-model"
             value={model}
             onChange={(e) => setModel(e.target.value)}
             className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
@@ -315,7 +315,7 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
 
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="text-sm text-stone-400">API Key</label>
+          <label htmlFor="llm-api-key" className="text-sm text-stone-400">API Key</label>
           {selectedProvider?.keyUrl && (
             <a
               href={selectedProvider.keyUrl}
@@ -335,6 +335,7 @@ function AddProviderForm({ onSaved }: { onSaved: () => void }) {
         </div>
         <div className="flex bg-stone-800 border border-stone-700 rounded-lg overflow-hidden focus-within:border-amber-500 transition-colors">
           <input
+            id="llm-api-key"
             type={showKey ? "text" : "password"}
             value={apiKey}
             onChange={(e) => { setApiKey(e.target.value); setError(""); setSuccess(false); }}
@@ -677,8 +678,9 @@ function ObsidianSync() {
                   <div className="space-y-2">
                     {scanResult.groups.map((g) => (
                       g.type !== "unknown" && (
-                        <label key={g.type} className="flex items-start gap-3 cursor-pointer">
+                        <label key={g.type} htmlFor={`import-${g.type}`} className="flex items-start gap-3 cursor-pointer">
                           <input
+                            id={`import-${g.type}`}
                             type="checkbox"
                             checked={mapping[g.type] ?? true}
                             onChange={(e) => setMapping(m => ({ ...m, [g.type]: e.target.checked }))}
@@ -1095,8 +1097,9 @@ function AuthProviderForm({ onSaved }: { onSaved: () => void }) {
           </div>
 
           <div>
-            <label className="block text-sm text-stone-400 mb-1">Modelo</label>
+            <label htmlFor="codex-model" className="block text-sm text-stone-400 mb-1">Modelo</label>
             <select
+              id="codex-model"
               value={selectedModel}
               onChange={(e) => handleModelChange(e.target.value)}
               className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"

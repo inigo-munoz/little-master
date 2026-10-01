@@ -167,8 +167,8 @@ function UploadModal({ campaignId, onClose, onUploaded }: UploadModalProps) {
           {/* Metadata */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm text-stone-400 mb-1">Tipo de fuente</label>
-              <select
+              <label htmlFor="document-source-type" className="block text-sm text-stone-400 mb-1">Tipo de fuente</label>
+              <select id="document-source-type"
                 value={sourceType}
                 onChange={(e) => handleSourceChange(e.target.value)}
                 className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
@@ -181,8 +181,8 @@ function UploadModal({ campaignId, onClose, onUploaded }: UploadModalProps) {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-stone-400 mb-1">Autoridad</label>
-              <select
+              <label htmlFor="document-authority" className="block text-sm text-stone-400 mb-1">Autoridad</label>
+              <select id="document-authority"
                 value={authorityLevel}
                 onChange={(e) => setAuthorityLevel(e.target.value)}
                 className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
@@ -193,8 +193,8 @@ function UploadModal({ campaignId, onClose, onUploaded }: UploadModalProps) {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-stone-400 mb-1">Versión</label>
-              <input
+              <label htmlFor="document-version" className="block text-sm text-stone-400 mb-1">Versión</label>
+              <input id="document-version"
                 type="text"
                 value={version}
                 onChange={(e) => setVersion(e.target.value)}
