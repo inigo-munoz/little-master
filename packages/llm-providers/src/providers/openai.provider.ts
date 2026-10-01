@@ -94,10 +94,19 @@ export class OpenAIProvider implements LLMProvider {
     if (!res.ok) return [];
 
     const data = await res.json() as any;
-    const chatModels = (data.data ?? []).filter(
-      (m: { id: string }) =>
-        m.id.startsWith("gpt-4") || m.id.startsWith("gpt-3.5") || m.id.startsWith("o1")
-    );
+    // OpenAI's /models lists embeddings, moderation and audio models too, so the
+    // chat ones are picked out by id. Every other OpenAI-compatible backend
+    // (OpenRouter, Ollama) names its models differently — "anthropic/claude-...",
+    // "gemma3:4b" — and this filter would silently return an empty list, so it
+    // only applies when actually talking to OpenAI.
+    const models = data.data ?? [];
+    const chatModels =
+      this.baseUrl === OPENAI_BASE_URL
+        ? models.filter(
+            (m: { id: string }) =>
+              m.id.startsWith("gpt-4") || m.id.startsWith("gpt-3.5") || m.id.startsWith("o1")
+          )
+        : models;
 
     return chatModels.map((m: { id: string }) => ({
       id: m.id,
