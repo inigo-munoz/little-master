@@ -5,6 +5,7 @@ import useSWR, { mutate } from "swr";
 import { useSearchParams } from "next/navigation";
 import { Users, Plus, Pencil, Trash2, X, Search, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { clsx } from "clsx";
+import { Modal } from "../../components/ui/Modal";
 import { api } from "../../lib/api";
 import type { Npc, UpdateNpc, StatBlockEntry, MonsterDetail } from "../../lib/api";
 import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
@@ -307,217 +308,215 @@ function NpcForm({ campaignId, initial, onClose, onSaved }: NpcFormProps) {
   const smallInputCls = "w-full bg-stone-800 border border-stone-700 rounded px-2 py-1.5 text-stone-100 text-sm focus:outline-none focus:border-amber-500";
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-stone-800 flex items-center justify-between shrink-0">
-          <h2 className="font-semibold text-amber-400">{isEdit ? "Edit NPC" : "New NPC"}</h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300" aria-label="Cerrar">
-            <X size={18} />
-          </button>
-        </div>
+    <Modal
+      onClose={onClose}
+      title={isEdit ? "Edit NPC" : "New NPC"}
+      maxWidth="max-w-2xl"
+      density="comfortable"
+      titleClassName="font-semibold text-amber-400"
+      panelClassName="max-h-[90vh] flex flex-col"
+    >
 
-        {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1">
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {/* Basic fields */}
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label htmlFor="npc-name" className="block text-sm text-stone-400 mb-1">Nombre *</label>
-                <input id="npc-name" type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} required />
-              </div>
-              <div>
-                <label htmlFor="npc-status" className="block text-sm text-stone-400 mb-1">Estado</label>
-                <select id="npc-status" value={status} onChange={(e) => setStatus(e.target.value as "alive" | "dead" | "unknown" | "missing")} className={inputCls}>
-                  <option value="alive">Vivo</option>
-                  <option value="dead">Muerto</option>
-                  <option value="unknown">Desconocido</option>
-                  <option value="missing">Desaparecido</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="npc-disposition" className="block text-sm text-stone-400 mb-1">Disposición</label>
-                <select id="npc-disposition" value={disposition} onChange={(e) => setDisposition(e.target.value as "ally" | "neutral" | "enemy")} className={inputCls}>
-                  <option value="neutral">Neutral</option>
-                  <option value="ally">Aliado</option>
-                  <option value="enemy">Enemigo</option>
-                </select>
-              </div>
-            </div>
-
+      {/* Scrollable body */}
+      <div className="overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Basic fields */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label htmlFor="npc-role" className="block text-sm text-stone-400 mb-1">Rol</label>
-              <input id="npc-role" type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Herrero, Líder del gremio, Antagonista..." className={inputCls} />
+              <label htmlFor="npc-name" className="block text-sm text-stone-400 mb-1">Nombre *</label>
+              <input id="npc-name" type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} required />
             </div>
-
             <div>
-              <label htmlFor="npc-description" className="block text-sm text-stone-400 mb-1">Descripción</label>
-              <textarea id="npc-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className={`${inputCls} resize-none`} placeholder="Apariencia, personalidad, motivaciones..." />
+              <label htmlFor="npc-status" className="block text-sm text-stone-400 mb-1">Estado</label>
+              <select id="npc-status" value={status} onChange={(e) => setStatus(e.target.value as "alive" | "dead" | "unknown" | "missing")} className={inputCls}>
+                <option value="alive">Vivo</option>
+                <option value="dead">Muerto</option>
+                <option value="unknown">Desconocido</option>
+                <option value="missing">Desaparecido</option>
+              </select>
             </div>
-
             <div>
-              <label htmlFor="npc-tags" className="block text-sm text-stone-400 mb-1">Tags</label>
-              <input id="npc-tags" type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="villano, mercader, recurrente (separados por coma)" className={inputCls} />
+              <label htmlFor="npc-disposition" className="block text-sm text-stone-400 mb-1">Disposición</label>
+              <select id="npc-disposition" value={disposition} onChange={(e) => setDisposition(e.target.value as "ally" | "neutral" | "enemy")} className={inputCls}>
+                <option value="neutral">Neutral</option>
+                <option value="ally">Aliado</option>
+                <option value="enemy">Enemigo</option>
+              </select>
             </div>
+          </div>
 
-            {/* ── Stat Block Section ───────────────────────────────────── */}
-            <div className="border border-stone-700 rounded-xl overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setStatExpanded((v) => !v)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-stone-800 hover:bg-stone-750 text-stone-300 text-sm font-medium transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-amber-500">⚔</span>
-                  Stat Block de Combate
-                  {(ac || hp || str) && <span className="text-xs text-emerald-500 font-normal">(configurado)</span>}
-                </span>
-                {statExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </button>
+          <div>
+            <label htmlFor="npc-role" className="block text-sm text-stone-400 mb-1">Rol</label>
+            <input id="npc-role" type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Herrero, Líder del gremio, Antagonista..." className={inputCls} />
+          </div>
 
-              {statExpanded && (
-                <div className="p-4 space-y-4 bg-stone-900/50">
-                  <MonsterPicker onSelect={applyMonster} />
+          <div>
+            <label htmlFor="npc-description" className="block text-sm text-stone-400 mb-1">Descripción</label>
+            <textarea id="npc-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className={`${inputCls} resize-none`} placeholder="Apariencia, personalidad, motivaciones..." />
+          </div>
 
-                  {/* Tipo */}
-                  <div>
-                    <span className="block text-xs text-stone-500 mb-2">Tipo</span>
-                    <div className="flex gap-2">
-                      {(["monster", "player"] as const).map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setNpcType(t)}
-                          className={clsx(
-                            "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors",
-                            npcType === t
-                              ? "bg-amber-600 border-amber-500 text-stone-950"
-                              : "bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500"
-                          )}
-                        >
-                          {t === "monster" ? "Monstruo" : "Personaje"}
-                        </button>
-                      ))}
-                    </div>
+          <div>
+            <label htmlFor="npc-tags" className="block text-sm text-stone-400 mb-1">Tags</label>
+            <input id="npc-tags" type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="villano, mercader, recurrente (separados por coma)" className={inputCls} />
+          </div>
+
+          {/* ── Stat Block Section ───────────────────────────────────── */}
+          <div className="border border-stone-700 rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setStatExpanded((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-stone-800 hover:bg-stone-750 text-stone-300 text-sm font-medium transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <span className="text-amber-500">⚔</span>
+                Stat Block de Combate
+                {(ac || hp || str) && <span className="text-xs text-emerald-500 font-normal">(configurado)</span>}
+              </span>
+              {statExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+
+            {statExpanded && (
+              <div className="p-4 space-y-4 bg-stone-900/50">
+                <MonsterPicker onSelect={applyMonster} />
+
+                {/* Tipo */}
+                <div>
+                  <span className="block text-xs text-stone-500 mb-2">Tipo</span>
+                  <div className="flex gap-2">
+                    {(["monster", "player"] as const).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setNpcType(t)}
+                        className={clsx(
+                          "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors",
+                          npcType === t
+                            ? "bg-amber-600 border-amber-500 text-stone-950"
+                            : "bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500"
+                        )}
+                      >
+                        {t === "monster" ? "Monstruo" : "Personaje"}
+                      </button>
+                    ))}
                   </div>
+                </div>
 
-                  {/* CR or Class+Level */}
-                  {npcType === "monster" ? (
-                    <div>
-                      <label htmlFor="npc-cr" className="block text-xs text-stone-500 mb-1">CR</label>
-                      <input id="npc-cr" type="text" value={cr} onChange={(e) => setCr(e.target.value)} placeholder="ej: 3 (700 XP)" className={`${smallInputCls} max-w-xs`} />
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label htmlFor="npc-class" className="block text-xs text-stone-500 mb-1">Clase</label>
-                        <select id="npc-class" value={npcClass} onChange={(e) => setNpcClass(e.target.value)} className={smallInputCls}>
-                          <option value="">— seleccionar —</option>
-                          {Object.keys(DND_CLASSES).map((name) => (
-                            <option key={name} value={name}>{name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label htmlFor="npc-species" className="block text-xs text-stone-500 mb-1">Especie</label>
-                        <select id="npc-species" value={npcSpecies} onChange={(e) => setNpcSpecies(e.target.value)} className={smallInputCls}>
-                          <option value="">— seleccionar —</option>
-                          {DND_SPECIES.map((sp) => (
-                            <option key={sp} value={sp}>{sp}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label htmlFor="npc-level" className="block text-xs text-stone-500 mb-1">Nivel</label>
-                        <input id="npc-level" type="number" min={1} max={20} value={npcLevel} onChange={(e) => setNpcLevel(e.target.value)} className={smallInputCls} />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* CA / PG / Velocidad */}
+                {/* CR or Class+Level */}
+                {npcType === "monster" ? (
+                  <div>
+                    <label htmlFor="npc-cr" className="block text-xs text-stone-500 mb-1">CR</label>
+                    <input id="npc-cr" type="text" value={cr} onChange={(e) => setCr(e.target.value)} placeholder="ej: 3 (700 XP)" className={`${smallInputCls} max-w-xs`} />
+                  </div>
+                ) : (
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label htmlFor="npc-ac" className="block text-xs text-stone-500 mb-1">CA</label>
-                      <input id="npc-ac" type="number" min={0} max={30} value={ac} onChange={(e) => setAc(e.target.value)} className={smallInputCls} />
+                      <label htmlFor="npc-class" className="block text-xs text-stone-500 mb-1">Clase</label>
+                      <select id="npc-class" value={npcClass} onChange={(e) => setNpcClass(e.target.value)} className={smallInputCls}>
+                        <option value="">— seleccionar —</option>
+                        {Object.keys(DND_CLASSES).map((name) => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <label htmlFor="npc-hp" className="block text-xs text-stone-500 mb-1">Puntos de Golpe</label>
-                      <input id="npc-hp" type="text" value={hp} onChange={(e) => setHp(e.target.value)} placeholder="27 (5d8+5)" className={smallInputCls} />
+                      <label htmlFor="npc-species" className="block text-xs text-stone-500 mb-1">Especie</label>
+                      <select id="npc-species" value={npcSpecies} onChange={(e) => setNpcSpecies(e.target.value)} className={smallInputCls}>
+                        <option value="">— seleccionar —</option>
+                        {DND_SPECIES.map((sp) => (
+                          <option key={sp} value={sp}>{sp}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <label htmlFor="npc-speed" className="block text-xs text-stone-500 mb-1">Velocidad</label>
-                      <input id="npc-speed" type="text" value={spd} onChange={(e) => setSpd(e.target.value)} placeholder="30 pies" className={smallInputCls} />
+                      <label htmlFor="npc-level" className="block text-xs text-stone-500 mb-1">Nivel</label>
+                      <input id="npc-level" type="number" min={1} max={20} value={npcLevel} onChange={(e) => setNpcLevel(e.target.value)} className={smallInputCls} />
                     </div>
                   </div>
+                )}
 
-                  {/* Ability scores */}
+                {/* CA / PG / Velocidad */}
+                <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <span className="block text-xs text-stone-500 mb-2">Características</span>
-                    <div className="grid grid-cols-6 gap-2">
-                      {[
-                        { label: "FUE", val: str, set: setStr },
-                        { label: "DES", val: dex, set: setDex },
-                        { label: "CON", val: con, set: setCon },
-                        { label: "INT", val: int_, set: setInt },
-                        { label: "SAB", val: wis, set: setWis },
-                        { label: "CAR", val: cha, set: setCha },
-                      ].map(({ label, val, set }) => (
-                        <div key={label} className="text-center">
-                          <p className="text-xs text-amber-500 font-bold mb-1">{label}</p>
-                          <input
-                            type="number" min={1} max={30} value={val}
-                            aria-label={label}
-                            onChange={(e) => set(e.target.value)}
-                            className="w-full bg-stone-800 border border-stone-700 rounded px-1 py-1.5 text-stone-100 text-sm text-center focus:outline-none focus:border-amber-500"
-                          />
-                          <p className="text-xs text-stone-500 mt-0.5">{val ? formatAbilityInput(val) : ""}</p>
-                        </div>
-                      ))}
-                    </div>
+                    <label htmlFor="npc-ac" className="block text-xs text-stone-500 mb-1">CA</label>
+                    <input id="npc-ac" type="number" min={0} max={30} value={ac} onChange={(e) => setAc(e.target.value)} className={smallInputCls} />
                   </div>
+                  <div>
+                    <label htmlFor="npc-hp" className="block text-xs text-stone-500 mb-1">Puntos de Golpe</label>
+                    <input id="npc-hp" type="text" value={hp} onChange={(e) => setHp(e.target.value)} placeholder="27 (5d8+5)" className={smallInputCls} />
+                  </div>
+                  <div>
+                    <label htmlFor="npc-speed" className="block text-xs text-stone-500 mb-1">Velocidad</label>
+                    <input id="npc-speed" type="text" value={spd} onChange={(e) => setSpd(e.target.value)} placeholder="30 pies" className={smallInputCls} />
+                  </div>
+                </div>
 
-                  {/* Secondary stats */}
-                  <div className="grid grid-cols-2 gap-3">
+                {/* Ability scores */}
+                <div>
+                  <span className="block text-xs text-stone-500 mb-2">Características</span>
+                  <div className="grid grid-cols-6 gap-2">
                     {[
-                      { label: "Salvaciones", val: saves, set: setSaves, placeholder: "DES +4, CAR +3" },
-                      { label: "Habilidades", val: skillsField, set: setSkillsField, placeholder: "Sigilo +5, Percepción +3" },
-                      { label: "Resistencias", val: resistances, set: setResistances, placeholder: "Fuego, Ácido" },
-                      { label: "Inmunidades", val: immunities, set: setImmunities, placeholder: "Veneno, Encantamiento" },
-                      { label: "Sentidos", val: senses, set: setSenses, placeholder: "Vista en la oscuridad 18m" },
-                      { label: "Idiomas", val: langs, set: setLangs, placeholder: "Común, Infernal" },
-                    ].map(({ label, val, set, placeholder }) => (
-                      <div key={label}>
-                        <label className="block text-xs text-stone-500 mb-1">{label}</label>
-                        <input type="text" value={val} onChange={(e) => set(e.target.value)} placeholder={placeholder} className={smallInputCls} />
+                      { label: "FUE", val: str, set: setStr },
+                      { label: "DES", val: dex, set: setDex },
+                      { label: "CON", val: con, set: setCon },
+                      { label: "INT", val: int_, set: setInt },
+                      { label: "SAB", val: wis, set: setWis },
+                      { label: "CAR", val: cha, set: setCha },
+                    ].map(({ label, val, set }) => (
+                      <div key={label} className="text-center">
+                        <p className="text-xs text-amber-500 font-bold mb-1">{label}</p>
+                        <input
+                          type="number" min={1} max={30} value={val}
+                          aria-label={label}
+                          onChange={(e) => set(e.target.value)}
+                          className="w-full bg-stone-800 border border-stone-700 rounded px-1 py-1.5 text-stone-100 text-sm text-center focus:outline-none focus:border-amber-500"
+                        />
+                        <p className="text-xs text-stone-500 mt-0.5">{val ? formatAbilityInput(val) : ""}</p>
                       </div>
                     ))}
                   </div>
-
-                  {/* Dynamic entry lists */}
-                  <div className="space-y-4 border-t border-stone-700 pt-4">
-                    <EntryListEditor label="Rasgos" entries={traits} onChange={setTraits} />
-                    <EntryListEditor label="Acciones" entries={actions} onChange={setActions} />
-                    <EntryListEditor label="Acciones Adicionales" entries={bonusActions} onChange={setBonusActions} />
-                    <EntryListEditor label="Reacciones" entries={reactions} onChange={setReactions} />
-                  </div>
                 </div>
-              )}
-            </div>
 
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+                {/* Secondary stats */}
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Salvaciones", val: saves, set: setSaves, placeholder: "DES +4, CAR +3" },
+                    { label: "Habilidades", val: skillsField, set: setSkillsField, placeholder: "Sigilo +5, Percepción +3" },
+                    { label: "Resistencias", val: resistances, set: setResistances, placeholder: "Fuego, Ácido" },
+                    { label: "Inmunidades", val: immunities, set: setImmunities, placeholder: "Veneno, Encantamiento" },
+                    { label: "Sentidos", val: senses, set: setSenses, placeholder: "Vista en la oscuridad 18m" },
+                    { label: "Idiomas", val: langs, set: setLangs, placeholder: "Común, Infernal" },
+                  ].map(({ label, val, set, placeholder }) => (
+                    <div key={label}>
+                      <label className="block text-xs text-stone-500 mb-1">{label}</label>
+                      <input type="text" value={val} onChange={(e) => set(e.target.value)} placeholder={placeholder} className={smallInputCls} />
+                    </div>
+                  ))}
+                </div>
 
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm">
-                Cancelar
-              </button>
-              <button type="submit" disabled={loading || !name.trim()} className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm">
-                {loading ? "Guardando..." : isEdit ? "Guardar Cambios" : "Crear NPC"}
-              </button>
-            </div>
-          </form>
-        </div>
+                {/* Dynamic entry lists */}
+                <div className="space-y-4 border-t border-stone-700 pt-4">
+                  <EntryListEditor label="Rasgos" entries={traits} onChange={setTraits} />
+                  <EntryListEditor label="Acciones" entries={actions} onChange={setActions} />
+                  <EntryListEditor label="Acciones Adicionales" entries={bonusActions} onChange={setBonusActions} />
+                  <EntryListEditor label="Reacciones" entries={reactions} onChange={setReactions} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm">
+              Cancelar
+            </button>
+            <button type="submit" disabled={loading || !name.trim()} className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm">
+              {loading ? "Guardando..." : isEdit ? "Guardar Cambios" : "Crear NPC"}
+            </button>
+          </div>
+        </form>
       </div>
-    </div>
+    </Modal>
   );
 }
 

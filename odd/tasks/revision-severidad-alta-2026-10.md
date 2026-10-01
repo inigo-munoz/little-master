@@ -159,9 +159,88 @@ formulario, 21 overlays de modal en 15 ficheros.
   `next build` compila y genera las 18 páginas; typecheck 6 verdes; 176 tests.
 - **Commit**: `44e7bf8`
 
-#### U3b — Modales sin semántica de diálogo
+#### U3b-1 — Primitiva de modal (2 modales compartidos)
 
-- [ ] **Estado**: pendiente
+- [x] **Estado**: cerrada
+- **Decisión de base**: el usuario delegó la elección. Se eligió **Radix
+  Dialog** frente a (a) trampa de foco a mano y (b) `<dialog>` nativo. Razones:
+  la trampa de foco es un problema de **corrección** y el proyecto no tiene un
+  solo test de componentes que atrape una regresión ahí; Radix viene sin
+  estilos, así que las clases Tailwind pasan literales; y el `<dialog>` nativo
+  habría forzado reescribir el overlay en los 22 sitios por su top-layer y
+  `::backdrop`. El argumento "sería la primera dependencia de UI" **se
+  verificó y no se sostenía**: ya hay `lucide-react`, `react-markdown`,
+  `clsx`, `swr` y `zustand`.
+- **Troceado deliberado**: primero la primitiva sobre los 2 modales
+  compartidos. Si estaba mal, mejor descubrirlo en 2 sitios que en 22.
+- **Comprobado antes de delegar**: de los 22 `fixed inset-0`,
+  `chat/page.tsx:96` **no es un modal** — es un captador de clic-fuera de un
+  dropdown. Convertirlo en diálogo habría sido un error.
+- **Estructura**: `Dialog.Content` va anidado dentro de `Dialog.Overlay`. No se
+  asumió que fuera válido: está documentado por Radix ("Move the Dialog.Content
+  inside Dialog.Overlay to enable scrolling"), consultado vía context7.
+- **Verificación en navegador** (lo único que podía cerrar la duda, porque no
+  hay tests de componentes), contra una **copia** de la base real:
+  - El árbol de accesibilidad reporta `dialog` con nombre "Adjutora Maelis".
+    Antes era un `div` anónimo.
+  - Escape cierra. ✅ Clic en el fondo cierra. ✅
+  - Tras 3 tabulaciones el foco sigue dentro (termina en "Añadir"): **trampa de
+    foco confirmada**.
+  - Consola limpia: la supresión con `aria-describedby={undefined}` funciona.
+  - Aspecto equivalente, centrado correcto.
+- **Hallazgo colateral que valida T2**: en modo dev el CLI de Prisma no se
+  resuelve, así que `initDatabase` **nunca sincroniza el schema** y salta el
+  mensaje nuevo. Si esas rutas se hubieran hecho fatales, `pnpm dev` quedaría
+  roto. La decisión de dejarlas no fatales era correcta.
+- **Checks**: `next build` 18 páginas; lint 0 errores; typecheck 6; 176 tests.
+- **No verificado**: diálogos anidados (`WikiLink` abre un `DetailModal` dentro
+  de otro). El NPC usado no tenía relaciones. Queda para U3b-2.
+- **Commit**: `dbe94b4`
+
+#### U3b-2 — Migrar los 19 modales inline de las páginas
+
+- [x] **Estado**: cerrada. Troceada en dos tandas para validar antes de fanout.
+- **Tanda A** (`5351f7d`): 11 modales de formulario de entidad en 8 ficheros.
+- **Tanda B** (`5ca1bec`): 8 modales complejos — `encounter` (3),
+  `players/detail` (4), `SpellsTab` (1).
+- **Resultado**: solo quedan dos `fixed inset-0` en todo `src`: la propia
+  primitiva y el captador de clic-fuera del dropdown de chat, que no es un
+  modal.
+- **Defecto arreglado de paso**: el `onKeyDown` sobre un `div` no enfocable de
+  `encounter`, cuyo handler de Escape no podía dispararse nunca. Borrado, no
+  portado.
+
+**Regresiones del writer corregidas por el padre, todas en la primitiva y no
+sitio a sitio** (la primitiva crece solo para conservar lo que ya existía):
+
+| Regresión | Causa | Arreglo |
+| --- | --- | --- |
+| descripción de issues más pequeña y apagada | `subtitle` solo admitía `string` | `subtitle` acepta `ReactNode` |
+| badges de documents salen del header a una franja | idem | idem, pasa su marcado |
+| buscador de hechizos pierde el `autoFocus` | Radix mueve el foco al abrir | `initialFocusRef` vía `onOpenAutoFocus` |
+| hoja inferior en móvil pasa a centrada | overlay con `items-center` fijo | prop `align`, que **sustituye** la clase (dos `items-*` las resuelve el orden del CSS, no el de la cadena) |
+
+**Diferencias aceptadas a propósito** (mejoras, no regresiones): los modales de
+campañas e issues ganan una X para cerrar que no tenían; el título de las
+confirmaciones pasa de `h3` a `h2` vía `Dialog.Title`; y el fondo del
+buscador de hechizos pasa de `bg-black/60` al `/70` compartido, diferencia
+imperceptible que además unifica los overlays.
+
+**Verificado en navegador** (contra copia de la base real, la original
+intacta): el visor de documentos reporta `dialog` con los badges de vuelta
+bajo el título; dentro del formulario de facciones los cinco campos reportan
+su nombre accesible, o sea que las etiquetas de U3a sobrevivieron a que les
+movieran el marcado; y la confirmación de guardar ficha reporta `dialog` con
+**nombre y descripción** accesibles, lo que valida el cableado de
+`hasDescription` + `ModalDescription`.
+
+**NO verificado en navegador, dicho sin adornos**: los dos arreglos de
+`SpellsTab` (foco inicial y hoja inferior) están comprobados solo leyendo. No
+se pudo llegar al modal porque la ficha oculta su pestaña de Magia para ese
+personaje — la ficha carga "Bardo" en el desplegable aunque el personaje sea
+Mago. **Eso es un bug previo** (el `formInitialized` que ya señaló la
+auditoría del frontend), no introducido aquí, y queda anotado sin perseguir.
+Tampoco se verificaron los diálogos anidados de `WikiLink`.
 - **Defecto**: `rg 'role="dialog"'` y `rg aria-modal` devuelven 0. Ningún
   modal se anuncia como diálogo, ninguno atrapa ni restaura el foco. El de
   `encounter/page.tsx:962` además pone `onKeyDown` en un `div` no enfocable,
@@ -189,7 +268,9 @@ formulario, 21 overlays de modal en 15 ficheros.
 
 - **Estrategia**: una rama por tarea, apiladas. Evita repetir el problema de la
   tanda anterior, que acabó en 884 líneas en una sola rama.
-- **Recuento real**: 0.
+- **Recuento real**: una rama por tarea, todas locales:
+  `perf/db-indexes` (`77dc5d1`), `refactor/appshell-in-layout` (`d5c7aae`),
+  `a11y/form-labels` (`44e7bf8`), `a11y/modal-dialog-semantics` (`dbe94b4`).
 
 ## Progreso
 
@@ -197,4 +278,5 @@ Documento creado el 2026-10-01. U1 delegada.
 
 ## Siguiente paso
 
-Cerrar U1 con su evidencia de `EXPLAIN QUERY PLAN`, luego U2.
+Solo queda **U4**, bloqueada esperando la decisión del usuario sobre la capa
+Zod muerta.

@@ -3,7 +3,8 @@
 import { useState, Suspense } from "react";
 import useSWR, { mutate } from "swr";
 import { useSearchParams } from "next/navigation";
-import { MapPin, Plus, Pencil, Trash2, X, Search, Download } from "lucide-react";
+import { MapPin, Plus, Pencil, Trash2, Search, Download } from "lucide-react";
+import { Modal } from "../../components/ui/Modal";
 import { api } from "../../lib/api";
 import type { Location } from "../../lib/api";
 import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
@@ -56,72 +57,68 @@ function LocationForm({ campaignId, initial, onClose, onSaved }: LocationFormPro
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-lg">
-        <div className="p-6 border-b border-stone-800 flex items-center justify-between">
-          <h2 className="font-semibold text-amber-400">
-            {isEdit ? "Editar Localización" : "Nueva Localización"}
-          </h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300" aria-label="Cerrar">
-            <X size={18} />
-          </button>
+    <Modal
+      onClose={onClose}
+      title={isEdit ? "Editar Localización" : "Nueva Localización"}
+      maxWidth="max-w-lg"
+      density="comfortable"
+      titleClassName="font-semibold text-amber-400"
+    >
+
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div>
+          <label htmlFor="location-name" className="block text-sm text-stone-400 mb-1">Nombre *</label>
+          <input id="location-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+            required
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label htmlFor="location-name" className="block text-sm text-stone-400 mb-1">Nombre *</label>
-            <input id="location-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
-              required
-            />
-          </div>
+        <div>
+          <label htmlFor="location-description" className="block text-sm text-stone-400 mb-1">Descripción</label>
+          <textarea id="location-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={5}
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 resize-none"
+            placeholder="Historia, descripción física, habitantes..."
+          />
+        </div>
 
-          <div>
-            <label htmlFor="location-description" className="block text-sm text-stone-400 mb-1">Descripción</label>
-            <textarea id="location-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={5}
-              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 resize-none"
-              placeholder="Historia, descripción física, habitantes..."
-            />
-          </div>
+        <div>
+          <label htmlFor="location-tags" className="block text-sm text-stone-400 mb-1">Tags</label>
+          <input id="location-tags"
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            placeholder="ciudad, dungeon, bosque (separados por coma)"
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+          />
+        </div>
 
-          <div>
-            <label htmlFor="location-tags" className="block text-sm text-stone-400 mb-1">Tags</label>
-            <input id="location-tags"
-              type="text"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              placeholder="ciudad, dungeon, bosque (separados por coma)"
-              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
-            />
-          </div>
+        {error && <p className="text-red-400 text-sm">{error}</p>}
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !name.trim()}
-              className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm"
-            >
-              {loading ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear Localización"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading || !name.trim()}
+            className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm"
+          >
+            {loading ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear Localización"}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

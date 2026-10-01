@@ -35,6 +35,7 @@ import {
 } from "../../../lib/player-calcs";
 import { ABILITIES, SKILLS } from "./player-types";
 import { SectionTitle } from "./player-ui";
+import { Modal, ModalDescription } from "../../../components/ui/Modal";
 import { AbilityBox } from "./AbilityBox";
 import { BackstoryTab } from "./BackstoryTab";
 import { SkillsTab } from "./SkillsTab";
@@ -522,13 +523,18 @@ function CharacterSheetContent() {
 
         {/* Modal selección de maestría */}
         {expertiseModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-              <h3 className="font-bold text-stone-100 text-lg mb-1">Nuevos slots de Maestría</h3>
-              <p className="text-stone-400 text-sm mb-4">
+          <Modal
+            onClose={() => { setExpertiseModal(null); setExpertisePick(new Set()); }}
+            title="Nuevos slots de Maestría"
+            titleClassName="font-bold text-stone-100 text-lg"
+            maxWidth="max-w-sm"
+            hasDescription
+          >
+            <div className="p-6">
+              <ModalDescription className="block text-stone-400 text-sm mb-4">
                 Ganaste {expertiseModal.slots} slot{expertiseModal.slots > 1 ? "s" : ""} de maestría.
                 Elige {expertiseModal.slots} habilidad{expertiseModal.slots > 1 ? "es" : ""} en las que ya tienes competencia.
-              </p>
+              </ModalDescription>
               {(() => {
                 const proficientWithoutExp = SKILLS.filter(s => {
                   const hasPro = bgSkills.includes(s.key) || speciesSkills.includes(s.key) || skillProfs.includes(s.key);
@@ -593,17 +599,22 @@ function CharacterSheetContent() {
                 </div>
               </div>
             </div>
-          </div>
+          </Modal>
         )}
 
         {bgConfirmPending && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-              <h3 className="font-bold text-stone-100 text-lg mb-2">Aplicar trasfondo</h3>
-              <p className="text-stone-400 text-sm mb-6">
+          <Modal
+            onClose={() => { setBgConfirmPending(null); }}
+            title="Aplicar trasfondo"
+            titleClassName="font-bold text-stone-100 text-lg"
+            maxWidth="max-w-sm"
+            hasDescription
+          >
+            <div className="p-6">
+              <ModalDescription className="block text-stone-400 text-sm mb-6">
                 ¿Aplicar el trasfondo <span className="text-amber-400 font-semibold">{bgConfirmPending}</span>?
                 Las competencias y dote quedarán bloqueadas. Para cambiarlo necesitarás confirmarlo explícitamente.
-              </p>
+              </ModalDescription>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setBgConfirmPending(null)}
@@ -619,16 +630,21 @@ function CharacterSheetContent() {
                 </button>
               </div>
             </div>
-          </div>
+          </Modal>
         )}
 
         {bgUnlockConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-              <h3 className="font-bold text-stone-100 text-lg mb-2">Cambiar trasfondo</h3>
-              <p className="text-stone-400 text-sm mb-6">
+          <Modal
+            onClose={() => { setBgUnlockConfirm(false); }}
+            title="Cambiar trasfondo"
+            titleClassName="font-bold text-stone-100 text-lg"
+            maxWidth="max-w-sm"
+            hasDescription
+          >
+            <div className="p-6">
+              <ModalDescription className="block text-stone-400 text-sm mb-6">
                 ¿Cambiar el trasfondo? Se eliminarán las competencias y la dote aplicadas por <span className="text-amber-400 font-semibold">{form.background}</span>.
-              </p>
+              </ModalDescription>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setBgUnlockConfirm(false)}
@@ -644,17 +660,22 @@ function CharacterSheetContent() {
                 </button>
               </div>
             </div>
-          </div>
+          </Modal>
         )}
 
         {showSaveConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-              <h3 className="font-bold text-stone-100 text-lg mb-2">Guardar ficha</h3>
-              <p className="text-stone-400 text-sm mb-6">
+          <Modal
+            onClose={() => { setShowSaveConfirm(false); }}
+            title="Guardar ficha"
+            titleClassName="font-bold text-stone-100 text-lg"
+            maxWidth="max-w-sm"
+            hasDescription
+          >
+            <div className="p-6">
+              <ModalDescription className="block text-stone-400 text-sm mb-6">
                 ¿Guardar los cambios en la ficha de{" "}
                 <span className="text-stone-200 font-semibold">{form.name}</span>?
-              </p>
+              </ModalDescription>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setShowSaveConfirm(false)}
@@ -670,7 +691,7 @@ function CharacterSheetContent() {
                 </button>
               </div>
             </div>
-          </div>
+          </Modal>
         )}
 
         {saveError && (

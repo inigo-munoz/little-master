@@ -5,6 +5,7 @@ import useSWR, { mutate } from "swr";
 import { useSearchParams } from "next/navigation";
 import { AlertTriangle, CheckCircle, XCircle, Filter } from "lucide-react";
 import { clsx } from "clsx";
+import { Modal } from "../../components/ui/Modal";
 import { api } from "../../lib/api";
 import type { Issue } from "../../lib/api";
 import { SeverityBadge, StatusBadge } from "../../components/ui/Badge";
@@ -34,41 +35,42 @@ function ResolveModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-lg">
-        <div className="p-6 border-b border-stone-800">
-          <h2 className="font-semibold text-stone-100">Resolve Issue</h2>
-          <p className="text-sm text-stone-400 mt-1">{issue.description}</p>
+    <Modal
+      onClose={onClose}
+      title="Resolve Issue"
+      subtitle={<p className="text-sm text-stone-400 mt-1">{issue.description}</p>}
+      maxWidth="max-w-lg"
+      density="comfortable"
+      titleClassName="font-semibold text-stone-100"
+    >
+      <div className="p-6 space-y-4">
+        <div>
+          <label htmlFor="issue-resolution" className="block text-sm text-stone-400 mb-1">Resolution *</label>
+          <textarea id="issue-resolution"
+            value={resolution}
+            onChange={(e) => setResolution(e.target.value)}
+            rows={4}
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500 resize-none text-sm"
+            placeholder="How was this resolved?"
+          />
         </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <label htmlFor="issue-resolution" className="block text-sm text-stone-400 mb-1">Resolution *</label>
-            <textarea id="issue-resolution"
-              value={resolution}
-              onChange={(e) => setResolution(e.target.value)}
-              rows={4}
-              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 focus:outline-none focus:border-amber-500 resize-none text-sm"
-              placeholder="How was this resolved?"
-            />
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleResolve}
-              disabled={loading || !resolution.trim()}
-              className="flex-1 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white font-medium rounded-lg transition-colors text-sm"
-            >
-              {loading ? "Resolving..." : "Mark Resolved"}
-            </button>
-          </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleResolve}
+            disabled={loading || !resolution.trim()}
+            className="flex-1 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white font-medium rounded-lg transition-colors text-sm"
+          >
+            {loading ? "Resolving..." : "Mark Resolved"}
+          </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

@@ -13,6 +13,7 @@ import {
   Plus,
   Loader2,
 } from "lucide-react";
+import { Modal } from "../../components/ui/Modal";
 import { api } from "../../lib/api";
 import type { Session } from "../../lib/api";
 import { useAppStore } from "../../store/app.store";
@@ -262,69 +263,67 @@ function NewSessionModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-lg">
-        <div className="p-6 border-b border-stone-800 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-amber-400">Nueva Sesión</h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300 transition-colors" aria-label="Cerrar">
-            <X size={18} />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label htmlFor="session-new-number" className="block text-xs text-stone-500 mb-1">Nº Sesión</label>
-              <input id="session-new-number"
-                type="number"
-                min={1}
-                value={sessionNumber}
-                onChange={(e) => setSessionNumber(parseInt(e.target.value) || 1)}
-                className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 text-center"
-              />
-            </div>
-            <div className="col-span-2">
-              <label htmlFor="session-new-title" className="block text-xs text-stone-500 mb-1">Título *</label>
-              <input id="session-new-title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
-                placeholder="La cueva del dragón..."
-                required
-                autoFocus
-              />
-            </div>
-          </div>
+    <Modal
+      onClose={onClose}
+      title={"Nueva Sesión"}
+      maxWidth="max-w-lg"
+      density="comfortable"
+      titleClassName="text-lg font-semibold text-amber-400"
+    >
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div className="grid grid-cols-3 gap-3">
           <div>
-            <label htmlFor="session-new-summary" className="block text-xs text-stone-500 mb-1">Resumen (opcional)</label>
-            <textarea id="session-new-summary"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              rows={4}
-              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-300 text-sm focus:outline-none focus:border-amber-500 resize-none"
-              placeholder="Resumen de lo ocurrido en la sesión..."
+            <label htmlFor="session-new-number" className="block text-xs text-stone-500 mb-1">Nº Sesión</label>
+            <input id="session-new-number"
+              type="number"
+              min={1}
+              value={sessionNumber}
+              onChange={(e) => setSessionNumber(parseInt(e.target.value) || 1)}
+              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 text-center"
             />
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !title.trim()}
-              className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm"
-            >
-              {loading ? "Creando..." : "Crear sesión"}
-            </button>
+          <div className="col-span-2">
+            <label htmlFor="session-new-title" className="block text-xs text-stone-500 mb-1">Título *</label>
+            <input id="session-new-title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+              placeholder="La cueva del dragón..."
+              required
+              autoFocus
+            />
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+        <div>
+          <label htmlFor="session-new-summary" className="block text-xs text-stone-500 mb-1">Resumen (opcional)</label>
+          <textarea id="session-new-summary"
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            rows={4}
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-300 text-sm focus:outline-none focus:border-amber-500 resize-none"
+            placeholder="Resumen de lo ocurrido en la sesión..."
+          />
+        </div>
+        {error && <p className="text-red-400 text-sm">{error}</p>}
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading || !title.trim()}
+            className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm"
+          >
+            {loading ? "Creando..." : "Crear sesión"}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

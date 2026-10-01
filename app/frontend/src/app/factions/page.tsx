@@ -3,8 +3,9 @@
 import { useState, Suspense } from "react";
 import useSWR, { mutate } from "swr";
 import { useSearchParams } from "next/navigation";
-import { Users, Plus, Pencil, Trash2, X, Search, Download } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, Search, Download } from "lucide-react";
 import { clsx } from "clsx";
+import { Modal } from "../../components/ui/Modal";
 import { api } from "../../lib/api";
 import type { Faction } from "../../lib/api";
 import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
@@ -59,97 +60,93 @@ function FactionForm({ campaignId, initial, onClose, onSaved }: FactionFormProps
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-lg">
-        <div className="p-6 border-b border-stone-800 flex items-center justify-between">
-          <h2 className="font-semibold text-amber-400">
-            {isEdit ? "Editar Facción" : "Nueva Facción"}
-          </h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300" aria-label="Cerrar">
-            <X size={18} />
-          </button>
-        </div>
+    <Modal
+      onClose={onClose}
+      title={isEdit ? "Editar Facción" : "Nueva Facción"}
+      maxWidth="max-w-lg"
+      density="comfortable"
+      titleClassName="font-semibold text-amber-400"
+    >
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label htmlFor="faction-name" className="block text-sm text-stone-400 mb-1">Nombre *</label>
-              <input id="faction-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="faction-disposition" className="block text-sm text-stone-400 mb-1">Disposición</label>
-              <select id="faction-disposition"
-                value={disposition}
-                onChange={(e) => setDisposition(e.target.value)}
-                className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
-              >
-                <option value="unknown">Desconocida</option>
-                <option value="allied">Aliada</option>
-                <option value="neutral">Neutral</option>
-                <option value="hostile">Hostil</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="faction-alignment" className="block text-sm text-stone-400 mb-1">Alineamiento</label>
-              <input id="faction-alignment"
-                type="text"
-                value={alignment}
-                onChange={(e) => setAlignment(e.target.value)}
-                placeholder="Neutral malvado..."
-                className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
-              />
-            </div>
-          </div>
-
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div className="grid grid-cols-3 gap-3">
           <div>
-            <label htmlFor="faction-description" className="block text-sm text-stone-400 mb-1">Descripción</label>
-            <textarea id="faction-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={5}
-              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 resize-none"
-              placeholder="Historia, objetivos, estructura de poder..."
+            <label htmlFor="faction-name" className="block text-sm text-stone-400 mb-1">Nombre *</label>
+            <input id="faction-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+              required
             />
           </div>
-
           <div>
-            <label htmlFor="faction-tags" className="block text-sm text-stone-400 mb-1">Tags</label>
-            <input id="faction-tags"
+            <label htmlFor="faction-disposition" className="block text-sm text-stone-400 mb-1">Disposición</label>
+            <select id="faction-disposition"
+              value={disposition}
+              onChange={(e) => setDisposition(e.target.value)}
+              className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+            >
+              <option value="unknown">Desconocida</option>
+              <option value="allied">Aliada</option>
+              <option value="neutral">Neutral</option>
+              <option value="hostile">Hostil</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="faction-alignment" className="block text-sm text-stone-400 mb-1">Alineamiento</label>
+            <input id="faction-alignment"
               type="text"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              placeholder="criminal, gremio, religioso (separados por coma)"
+              value={alignment}
+              onChange={(e) => setAlignment(e.target.value)}
+              placeholder="Neutral malvado..."
               className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
             />
           </div>
+        </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+        <div>
+          <label htmlFor="faction-description" className="block text-sm text-stone-400 mb-1">Descripción</label>
+          <textarea id="faction-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={5}
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500 resize-none"
+            placeholder="Historia, objetivos, estructura de poder..."
+          />
+        </div>
 
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !name.trim()}
-              className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm"
-            >
-              {loading ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear Facción"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div>
+          <label htmlFor="faction-tags" className="block text-sm text-stone-400 mb-1">Tags</label>
+          <input id="faction-tags"
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            placeholder="criminal, gremio, religioso (separados por coma)"
+            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-amber-500"
+          />
+        </div>
+
+        {error && <p className="text-red-400 text-sm">{error}</p>}
+
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading || !name.trim()}
+            className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-semibold rounded-lg transition-colors text-sm"
+          >
+            {loading ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear Facción"}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

@@ -3,7 +3,8 @@
 import { useState, Suspense } from "react";
 import useSWR from "swr";
 import { useSearchParams } from "next/navigation";
-import { Users, Shield, Heart, Star, X, Plus } from "lucide-react";
+import { Users, Shield, Heart, Star, Plus } from "lucide-react";
+import { Modal } from "../../components/ui/Modal";
 import { api } from "../../lib/api";
 import type { Player } from "../../lib/api";
 import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
@@ -111,192 +112,191 @@ function PlayerForm({ campaignId, onClose, onSaved }: PlayerFormProps) {
   const labelCls = "block text-sm text-stone-400 mb-1";
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-stone-800 flex items-center justify-between sticky top-0 bg-stone-900 z-10">
-          <h2 className="font-semibold text-amber-400">Nuevo Jugador</h2>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300" aria-label="Cerrar">
-            <X size={18} />
-          </button>
-        </div>
+    <Modal
+      onClose={onClose}
+      title={"Nuevo Jugador"}
+      maxWidth="max-w-lg"
+      density="comfortable"
+      titleClassName="font-semibold text-amber-400"
+      panelClassName="max-h-[90vh] flex flex-col"
+    >
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Nombre + Estado */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="player-name" className={labelCls}>Nombre *</label>
-              <input id="player-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={inputCls}
-                placeholder="Lyra Moonwhisper"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="player-status" className={labelCls}>Estado</label>
-              <select id="player-status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as typeof status)}
-                className={selectCls}
-              >
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
-                <option value="dead">Muerto</option>
-                <option value="retired">Retirado</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Nombre real del jugador */}
+      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+        {/* Nombre + Estado */}
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="player-real-name" className={labelCls}>Nombre del jugador real</label>
-            <input id="player-real-name"
+            <label htmlFor="player-name" className={labelCls}>Nombre *</label>
+            <input id="player-name"
               type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className={inputCls}
-              placeholder="Juan García"
+              placeholder="Lyra Moonwhisper"
+              required
             />
           </div>
-
-          {/* Clase + Nivel */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="player-class" className={labelCls}>Clase</label>
-              <select id="player-class"
-                value={playerClass}
-                onChange={(e) => handleClassChange(e.target.value)}
-                className={selectCls}
-              >
-                <option value="">Selecciona clase</option>
-                {SORTED_CLASSES.map((cls) => (
-                  <option key={cls} value={cls}>{cls}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="player-level" className={labelCls}>Nivel</label>
-              <input id="player-level"
-                type="number"
-                min={1}
-                max={20}
-                value={level}
-                onChange={(e) => handleLevelChange(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
-                className={inputCls}
-              />
-            </div>
-          </div>
-
-          {/* Subclase — condicional: solo si hay clase y nivel >= 3 */}
           <div>
-            {/* Sin el select renderizado, un htmlFor apuntaría a un id inexistente */}
-            {showSubclass
-              ? <label htmlFor="player-subclass" className={labelCls}>Subclase</label>
-              : <span className={labelCls}>Subclase</span>}
-            {showSubclass ? (
-              <select
-                id="player-subclass"
-                value={subclass}
-                onChange={(e) => setSubclass(e.target.value)}
-                className={selectCls}
-              >
-                <option value="">Selecciona subclase</option>
-                {availableSubclasses.map((sc) => (
-                  <option key={sc} value={sc}>{sc}</option>
-                ))}
-                <option value="Homebrew / Otra">Homebrew / Otra</option>
-              </select>
-            ) : (
-              <p className="text-xs text-stone-500 italic py-2 px-1">
-                {playerClass ? "La subclase se elige al nivel 3" : "Selecciona una clase primero"}
-              </p>
-            )}
+            <label htmlFor="player-status" className={labelCls}>Estado</label>
+            <select id="player-status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as typeof status)}
+              className={selectCls}
+            >
+              <option value="active">Activo</option>
+              <option value="inactive">Inactivo</option>
+              <option value="dead">Muerto</option>
+              <option value="retired">Retirado</option>
+            </select>
           </div>
+        </div>
 
-          {/* Especie + Subtipo */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="player-species" className={labelCls}>Especie</label>
-              <select id="player-species"
-                value={species}
-                onChange={(e) => handleSpeciesChange(e.target.value)}
-                className={selectCls}
-              >
-                <option value="">Selecciona especie</option>
-                {DND_SPECIES.map((sp) => (
-                  <option key={sp} value={sp}>{sp}</option>
-                ))}
-                <option value="Otra (homebrew)">Otra (homebrew)</option>
-              </select>
-            </div>
-            {speciesVariants.length > 0 && (
-              <div>
-                <label className={labelCls}>{variantLabel}</label>
-                <select
-                  value={speciesVariant}
-                  onChange={(e) => setSpeciesVariant(e.target.value)}
-                  className={selectCls}
-                >
-                  <option value="">Selecciona {variantLabel.toLowerCase()}</option>
-                  {speciesVariants.map((v) => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+        {/* Nombre real del jugador */}
+        <div>
+          <label htmlFor="player-real-name" className={labelCls}>Nombre del jugador real</label>
+          <input id="player-real-name"
+            type="text"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            className={inputCls}
+            placeholder="Juan García"
+          />
+        </div>
+
+        {/* Clase + Nivel */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="player-class" className={labelCls}>Clase</label>
+            <select id="player-class"
+              value={playerClass}
+              onChange={(e) => handleClassChange(e.target.value)}
+              className={selectCls}
+            >
+              <option value="">Selecciona clase</option>
+              {SORTED_CLASSES.map((cls) => (
+                <option key={cls} value={cls}>{cls}</option>
+              ))}
+            </select>
           </div>
-
-          {/* HP máximo + CA */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="player-hp-max" className={labelCls}>HP máximo</label>
-              <input id="player-hp-max"
-                type="number"
-                min={1}
-                value={hpMax}
-                onChange={(e) => setHpMax(e.target.value)}
-                className={inputCls}
-                placeholder="—"
-              />
-            </div>
-            <div>
-              <label htmlFor="player-ac" className={labelCls}>CA (Clase de Armadura)</label>
-              <input id="player-ac"
-                type="number"
-                min={1}
-                value={ac}
-                onChange={(e) => setAc(e.target.value)}
-                className={inputCls}
-                placeholder="—"
-              />
-            </div>
+          <div>
+            <label htmlFor="player-level" className={labelCls}>Nivel</label>
+            <input id="player-level"
+              type="number"
+              min={1}
+              max={20}
+              value={level}
+              onChange={(e) => handleLevelChange(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+              className={inputCls}
+            />
           </div>
+        </div>
 
-          {error && (
-            <p className="text-red-400 text-sm">{error}</p>
+        {/* Subclase — condicional: solo si hay clase y nivel >= 3 */}
+        <div>
+          {/* Sin el select renderizado, un htmlFor apuntaría a un id inexistente */}
+          {showSubclass
+            ? <label htmlFor="player-subclass" className={labelCls}>Subclase</label>
+            : <span className={labelCls}>Subclase</span>}
+          {showSubclass ? (
+            <select
+              id="player-subclass"
+              value={subclass}
+              onChange={(e) => setSubclass(e.target.value)}
+              className={selectCls}
+            >
+              <option value="">Selecciona subclase</option>
+              {availableSubclasses.map((sc) => (
+                <option key={sc} value={sc}>{sc}</option>
+              ))}
+              <option value="Homebrew / Otra">Homebrew / Otra</option>
+            </select>
+          ) : (
+            <p className="text-xs text-stone-500 italic py-2 px-1">
+              {playerClass ? "La subclase se elige al nivel 3" : "Selecciona una clase primero"}
+            </p>
           )}
+        </div>
 
-          <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={loading || !name.trim()}
-              className="flex-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-stone-950 font-medium py-2 rounded-lg text-sm transition-colors"
+        {/* Especie + Subtipo */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="player-species" className={labelCls}>Especie</label>
+            <select id="player-species"
+              value={species}
+              onChange={(e) => handleSpeciesChange(e.target.value)}
+              className={selectCls}
             >
-              {loading ? "Guardando..." : "Guardar Jugador"}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg text-sm transition-colors"
-            >
-              Cancelar
-            </button>
+              <option value="">Selecciona especie</option>
+              {DND_SPECIES.map((sp) => (
+                <option key={sp} value={sp}>{sp}</option>
+              ))}
+              <option value="Otra (homebrew)">Otra (homebrew)</option>
+            </select>
           </div>
-        </form>
-      </div>
-    </div>
+          {speciesVariants.length > 0 && (
+            <div>
+              <label className={labelCls}>{variantLabel}</label>
+              <select
+                value={speciesVariant}
+                onChange={(e) => setSpeciesVariant(e.target.value)}
+                className={selectCls}
+              >
+                <option value="">Selecciona {variantLabel.toLowerCase()}</option>
+                {speciesVariants.map((v) => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* HP máximo + CA */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="player-hp-max" className={labelCls}>HP máximo</label>
+            <input id="player-hp-max"
+              type="number"
+              min={1}
+              value={hpMax}
+              onChange={(e) => setHpMax(e.target.value)}
+              className={inputCls}
+              placeholder="—"
+            />
+          </div>
+          <div>
+            <label htmlFor="player-ac" className={labelCls}>CA (Clase de Armadura)</label>
+            <input id="player-ac"
+              type="number"
+              min={1}
+              value={ac}
+              onChange={(e) => setAc(e.target.value)}
+              className={inputCls}
+              placeholder="—"
+            />
+          </div>
+        </div>
+
+        {error && (
+          <p className="text-red-400 text-sm">{error}</p>
+        )}
+
+        <div className="flex gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={loading || !name.trim()}
+            className="flex-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-stone-950 font-medium py-2 rounded-lg text-sm transition-colors"
+          >
+            {loading ? "Guardando..." : "Guardar Jugador"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg text-sm transition-colors"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
