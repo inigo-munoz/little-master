@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { Users, Shield, Heart, Star, X, Plus } from "lucide-react";
 import { api } from "../../lib/api";
 import type { Player } from "../../lib/api";
-import { AppShell } from "../../components/layout/AppShell";
 import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
 import { StatusBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
@@ -392,15 +391,15 @@ function PlayersContent() {
   if (!_hasHydrated && !campaignId) return null;
 
   if (swrError) return (
-    <AppShell>
+    <>
       <div className="p-8 text-center text-red-400">
         Error al cargar los datos. Intenta recargar la pagina.
       </div>
-    </AppShell>
+    </>
   );
 
   return (
-    <AppShell>
+    <>
       <div className="p-8 max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -485,7 +484,7 @@ function PlayersContent() {
           }}
         />
       )}
-    </AppShell>
+    </>
   );
 }
 

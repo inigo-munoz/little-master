@@ -6,7 +6,6 @@ import useSWR from "swr";
 import { Shield, Heart, Star, Zap, ChevronLeft, Save, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
 import dynamic from "next/dynamic";
-import { AppShell } from "../../../components/layout/AppShell";
 import { api } from "../../../lib/api";
 import {
   SPELLCASTING_ABILITY_BY_CLASS,
@@ -285,23 +284,23 @@ function CharacterSheetContent() {
   const filteredTabs = TABS.filter(t => t.id !== "spells" || isSpellcaster);
 
   if (playerError) return (
-    <AppShell>
+    <>
       <div className="p-8 text-center text-red-400">
         Error al cargar los datos. Intenta recargar la pagina.
       </div>
-    </AppShell>
+    </>
   );
 
   if (!player || Object.keys(form).length === 0) return (
-    <AppShell>
+    <>
       <div className="flex items-center justify-center h-64">
         <Loader2 className="animate-spin text-stone-600" />
       </div>
-    </AppShell>
+    </>
   );
 
   return (
-    <AppShell>
+    <>
       <div className="max-w-4xl mx-auto px-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -679,7 +678,7 @@ function CharacterSheetContent() {
             {saveError}
           </div>
         )}
-    </AppShell>
+    </>
   );
 }
 

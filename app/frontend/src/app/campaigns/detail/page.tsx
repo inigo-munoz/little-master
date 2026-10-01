@@ -22,7 +22,6 @@ import {
 import { clsx } from "clsx";
 import { api } from "../../../lib/api";
 import type { Campaign, Session } from "../../../lib/api";
-import { AppShell } from "../../../components/layout/AppShell";
 import { DetailModal, type ModalEntity } from "../../../components/ui/DetailModal";
 import { WikiMarkdown } from "../../../components/ui/WikiMarkdown";
 import { StatusBadge, SeverityBadge, SourceBadge, AuthorityBadge } from "../../../components/ui/Badge";
@@ -289,35 +288,35 @@ function CampaignDetailContent() {
 
   if (isLoading) {
     return (
-      <AppShell>
+      <>
         <div className="p-8">
           <div className="h-8 w-64 bg-stone-800 rounded animate-pulse mb-4" />
           <div className="h-4 w-96 bg-stone-800 rounded animate-pulse" />
         </div>
-      </AppShell>
+      </>
     );
   }
 
   if (campaignError) {
     return (
-      <AppShell>
+      <>
         <div className="p-8 text-center text-red-400">
           Error al cargar los datos. Intenta recargar la pagina.
         </div>
-      </AppShell>
+      </>
     );
   }
 
   if (!campaign) {
     return (
-      <AppShell>
+      <>
         <div className="p-8 text-stone-500">Campaign not found.</div>
-      </AppShell>
+      </>
     );
   }
 
   return (
-    <AppShell>
+    <>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="px-8 pt-8 pb-6 border-b border-stone-800">
@@ -605,7 +604,7 @@ function CampaignDetailContent() {
           }}
         />
       )}
-    </AppShell>
+    </>
   );
 }
 

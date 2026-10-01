@@ -7,7 +7,6 @@ import { ScrollText, ChevronDown, ChevronRight, Bot, User, Cpu } from "lucide-re
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
 import type { ChangeLog } from "../../lib/api";
-import { AppShell } from "../../components/layout/AppShell";
 import { useAppStore } from "../../store/app.store";
 
 function DiffView({ before, after }: { before?: string | null; after?: string | null }) {
@@ -128,7 +127,7 @@ function ChangelogContent() {
   if (!_hasHydrated && !campaignId) return null;
 
   return (
-    <AppShell>
+    <>
       <div className="p-8 max-w-3xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-stone-100 flex items-center gap-2">
@@ -167,7 +166,7 @@ function ChangelogContent() {
           ))}
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }
 

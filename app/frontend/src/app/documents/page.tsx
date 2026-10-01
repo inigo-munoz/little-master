@@ -19,7 +19,6 @@ import {
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
 import type { Document } from "../../lib/api";
-import { AppShell } from "../../components/layout/AppShell";
 import { SourceBadge, AuthorityBadge } from "../../components/ui/Badge";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { useAppStore } from "../../store/app.store";
@@ -491,15 +490,15 @@ function DocumentsContent() {
   if (!_hasHydrated && !campaignId) return null;
 
   if (swrError) return (
-    <AppShell>
+    <>
       <div className="p-8 text-center text-red-400">
         Error al cargar los datos. Intenta recargar la pagina.
       </div>
-    </AppShell>
+    </>
   );
 
   return (
-    <AppShell>
+    <>
       <div className="p-8 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -587,7 +586,7 @@ function DocumentsContent() {
           onUploaded={() => { setShowUpload(false); refresh(); }}
         />
       )}
-    </AppShell>
+    </>
   );
 }
 

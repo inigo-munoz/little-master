@@ -16,7 +16,6 @@ import {
 import { clsx } from "clsx";
 import { api, ApiError } from "../../lib/api";
 import type { LlmConfigPublic } from "../../lib/api";
-import { AppShell } from "../../components/layout/AppShell";
 
 interface BrowseResult {
   current: string;
@@ -1157,15 +1156,15 @@ export default function SettingsPage() {
   const { data: configs, error: configError, isLoading } = useSWR("/llm-config", () => api.llmConfig.list());
 
   if (configError) return (
-    <AppShell>
+    <>
       <div className="p-8 text-center text-red-400">
         Error al cargar los datos. Intenta recargar la pagina.
       </div>
-    </AppShell>
+    </>
   );
 
   return (
-    <AppShell>
+    <>
       <div className="p-8 max-w-2xl mx-auto">
         <div className="flex items-center gap-2 mb-8">
           <Settings size={20} className="text-amber-400" />
@@ -1268,6 +1267,6 @@ export default function SettingsPage() {
           </div>
         </section>
       </div>
-    </AppShell>
+    </>
   );
 }

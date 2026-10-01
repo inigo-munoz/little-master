@@ -8,7 +8,6 @@ import {
   History, RotateCcw, X,
 } from "lucide-react";
 import { clsx } from "clsx";
-import { AppShell } from "../../components/layout/AppShell";
 import { useAppStore } from "../../store/app.store";
 import { api } from "../../lib/api";
 import type { Encounter, Npc, StatBlockEntry } from "../../lib/api";
@@ -578,15 +577,15 @@ export default function EncounterPage() {
   if (!_hasHydrated) return null;
 
   if (swrError) return (
-    <AppShell>
+    <>
       <div className="p-8 text-center text-red-400">
         Error al cargar los datos. Intenta recargar la pagina.
       </div>
-    </AppShell>
+    </>
   );
 
   return (
-    <AppShell>
+    <>
       <div className="p-8 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
@@ -1058,6 +1057,6 @@ export default function EncounterPage() {
           </div>
         );
       })()}
-    </AppShell>
+    </>
   );
 }

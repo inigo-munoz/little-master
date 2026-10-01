@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { api } from "../../lib/api";
 import type { Session } from "../../lib/api";
-import { AppShell } from "../../components/layout/AppShell";
 import { useAppStore } from "../../store/app.store";
 import { WikiMarkdown } from "../../components/ui/WikiMarkdown";
 
@@ -340,15 +339,15 @@ function SessionsContent() {
   if (!_hasHydrated) return null;
 
   if (swrError) return (
-    <AppShell>
+    <>
       <div className="p-8 text-center text-red-400">
         Error al cargar los datos. Intenta recargar la pagina.
       </div>
-    </AppShell>
+    </>
   );
 
   return (
-    <AppShell>
+    <>
       <div className="p-8 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -422,7 +421,7 @@ function SessionsContent() {
           }}
         />
       )}
-    </AppShell>
+    </>
   );
 }
 
