@@ -5,7 +5,7 @@ import useSWR from "swr";
 import {
   Swords, Plus, Trash2, AlertTriangle, Shield,
   ChevronDown, ChevronUp, Save, Check, Loader2,
-  History, RotateCcw, X,
+  History, RotateCcw,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useAppStore } from "../../store/app.store";
@@ -13,6 +13,7 @@ import { api } from "../../lib/api";
 import type { Encounter, Npc, StatBlockEntry } from "../../lib/api";
 import { crToNumber, parseStatBlockEntries } from "../../lib/monster-types";
 import { formatModifier } from "../../lib/player-calcs";
+import { Modal, ModalDescription } from "../../components/ui/Modal";
 
 // NPC stat block data shaped for display in the encounter panel
 interface NpcStatBlockDisplay {
@@ -898,16 +899,19 @@ export default function EncounterPage() {
 
       {/* ── Modal de advertencia por dificultad peligrosa ────────────────────── */}
       {dangerModal && result && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-sm w-full">
-            <p className="text-stone-100 font-bold text-lg mb-3">
-              {result.difficulty === "impossible" ? "☠️ Encuentro Imposible" : "⚠️ Encuentro Peligroso"}
-            </p>
-            <p className="text-stone-400 text-sm mb-6">
+        <Modal
+          onClose={() => setDangerModal(false)}
+          title={result.difficulty === "impossible" ? "☠️ Encuentro Imposible" : "⚠️ Encuentro Peligroso"}
+          titleClassName="text-stone-100 font-bold text-lg"
+          maxWidth="max-w-sm"
+          hasDescription
+        >
+          <div className="p-6">
+            <ModalDescription className="block text-stone-400 text-sm mb-6">
               {result.difficulty === "impossible"
                 ? "Este encuentro probablemente matará a todo el grupo. Resérvalo para jefes finales con opciones de huida o protección narrativa. ¿Quieres guardarlo de todas formas?"
                 : "Este encuentro puede matar a uno o más personajes. ¿Estás seguro de que quieres proceder?"}
-            </p>
+            </ModalDescription>
             <div className="flex gap-3">
               <button
                 onClick={() => setDangerModal(false)}
@@ -924,15 +928,20 @@ export default function EncounterPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Modal de confirmación de borrado ──────────────────────────────────── */}
       {confirmDelete && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-sm w-full">
-            <p className="text-stone-200 font-semibold mb-2">¿Eliminar encuentro?</p>
-            <p className="text-stone-500 text-sm mb-6">Esta acción no se puede deshacer.</p>
+        <Modal
+          onClose={() => setConfirmDelete(null)}
+          title="¿Eliminar encuentro?"
+          titleClassName="text-stone-200 font-semibold"
+          maxWidth="max-w-sm"
+          hasDescription
+        >
+          <div className="p-6">
+            <ModalDescription className="block text-stone-500 text-sm mb-6">Esta acción no se puede deshacer.</ModalDescription>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmDelete(null)}
@@ -949,7 +958,7 @@ export default function EncounterPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Modal de detalle del encuentro ────────────────────────────────────── */}
@@ -960,29 +969,15 @@ export default function EncounterPage() {
           day: "2-digit", month: "short", year: "numeric",
         });
         return (
-          <div
-            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedEncounter(null)}
-            onKeyDown={(e) => { if (e.key === "Escape") setSelectedEncounter(null); }}
+          <Modal
+            onClose={() => setSelectedEncounter(null)}
+            title="Detalle del encuentro"
+            titleClassName="text-lg font-bold text-stone-100"
+            icon={<Swords size={18} className="text-amber-400" />}
+            maxWidth="max-w-2xl"
+            density="comfortable"
+            panelClassName="max-h-[85vh] flex flex-col"
           >
-            <div
-              className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between p-5 border-b border-stone-800 shrink-0">
-                <div className="flex items-center gap-3">
-                  <Swords size={18} className="text-amber-400" />
-                  <h2 className="text-lg font-bold text-stone-100">Detalle del encuentro</h2>
-                </div>
-                <button
-                  onClick={() => setSelectedEncounter(null)}
-                  className="p-1.5 text-stone-500 hover:text-stone-300 transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
               {/* Scrollable body */}
               <div className="overflow-y-auto p-5 space-y-5">
                 {/* Summary */}
@@ -1056,8 +1051,7 @@ export default function EncounterPage() {
                   Cerrar
                 </button>
               </div>
-            </div>
-          </div>
+          </Modal>
         );
       })()}
     </>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api } from "../../../lib/api";
 import { type SpellFullData } from "../../../lib/api";
 import {
@@ -15,6 +15,7 @@ import {
   type SpellEntry,
   calcSuggestedSpellSlots,
 } from "../../../lib/player-calcs";
+import { Modal } from "../../../components/ui/Modal";
 import { type CharacterFormProps, type SlotEntry, parseSlotData } from "./player-types";
 
 interface SpellsTabProps extends CharacterFormProps {
@@ -28,6 +29,8 @@ export function SpellsTab({ form, set, classes, calcDC, calcAttack }: SpellsTabP
   const [spellModalClass, setSpellModalClass] = useState("");
   const [spellModalLevel, setSpellModalLevel] = useState(0);
   const [spellSearch, setSpellSearch] = useState("");
+  // Radix mueve el foco al abrir el diálogo, lo que anularía un autoFocus aquí.
+  const spellSearchRef = useRef<HTMLInputElement>(null);
   const [expandedSpellId, setExpandedSpellId] = useState<string | null>(null);
   const [spellDetailCache, setSpellDetailCache] = useState<Record<string, SpellFullData | null>>({});
 
@@ -442,23 +445,15 @@ export function SpellsTab({ form, set, classes, calcDC, calcAttack }: SpellsTabP
             {spellModalOpen && (() => {
               const modalSpells = getSpellsForModal();
               return (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4">
-                  <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl">
-
-                    {/* Header */}
-                    <div className="flex items-center gap-2 px-4 py-3 border-b border-stone-800 shrink-0">
-                      <h3 className="text-sm font-bold text-amber-400 flex-1">
-                        Añadir hechizo — {spellModalLevel === 0 ? "Truco" : `Nivel ${spellModalLevel}`}
-                      </h3>
-                      <button
-                        onClick={() => setSpellModalOpen(false)}
-                        className="text-stone-400 hover:text-stone-200 text-lg leading-none"
-                        aria-label="Cerrar"
-                      >
-                        ✕
-                      </button>
-                    </div>
-
+                <Modal
+                  onClose={() => setSpellModalOpen(false)}
+                  title={`Añadir hechizo — ${spellModalLevel === 0 ? "Truco" : `Nivel ${spellModalLevel}`}`}
+                  titleClassName="text-sm font-bold text-amber-400"
+                  maxWidth="max-w-lg"
+                  panelClassName="max-h-[80vh] flex flex-col"
+                  align="items-end sm:items-center"
+                  initialFocusRef={spellSearchRef}
+                >
                     {/* Filtros */}
                     <div className="px-4 pt-3 pb-2 border-b border-stone-800 space-y-2 shrink-0">
                       <select
@@ -477,7 +472,7 @@ export function SpellsTab({ form, set, classes, calcDC, calcAttack }: SpellsTabP
                         value={spellSearch}
                         onChange={e => setSpellSearch(e.target.value)}
                         placeholder="Buscar hechizo..."
-                        autoFocus
+                        ref={spellSearchRef}
                         aria-label="Buscar hechizo"
                         className="w-full bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-100 text-xs focus:outline-none focus:border-amber-500 placeholder-stone-600"
                       />
@@ -536,8 +531,7 @@ export function SpellsTab({ form, set, classes, calcDC, calcAttack }: SpellsTabP
                       )}
                     </div>
 
-                  </div>
-                </div>
+                </Modal>
               );
             })()}
 

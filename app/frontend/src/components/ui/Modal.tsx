@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { clsx } from "clsx";
@@ -37,6 +37,18 @@ interface ModalProps {
    * silenciar el aviso de Radix cuando no hay texto descriptivo real.
    */
   hasDescription?: boolean;
+  /**
+   * Sustituye la alineación vertical del panel dentro del fondo. Por defecto
+   * va centrado; `SpellsTab` lo usa para conservar su hoja inferior en móvil
+   * ("items-end sm:items-center"). Sustituye, no añade: dos clases `items-*`
+   * en el mismo elemento las resuelve el orden del CSS, no el de la cadena.
+   */
+  align?: string;
+  /**
+   * Elemento a enfocar al abrir, en vez del primer enfocable. Radix mueve el
+   * foco al abrir, lo que anula un `autoFocus` dentro del diálogo.
+   */
+  initialFocusRef?: RefObject<HTMLElement | null>;
   children: ReactNode;
 }
 
@@ -56,6 +68,8 @@ export function Modal({
   panelClassName,
   titleClassName,
   hasDescription = false,
+  align = "items-center",
+  initialFocusRef,
   children,
 }: ModalProps) {
   const compact = density === "compact";
@@ -66,11 +80,19 @@ export function Modal({
         {/* Los eventos sintéticos de React burbujean a través del portal:
             se frenan para que un clic dentro no active el onClick de un ancestro. */}
         <Dialog.Overlay
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          className={clsx("fixed inset-0 bg-black/70 flex justify-center z-50 p-4", align)}
           onClick={(e) => e.stopPropagation()}
         >
           <Dialog.Content
             {...(hasDescription ? {} : { "aria-describedby": undefined })}
+            onOpenAutoFocus={
+              initialFocusRef
+                ? (e) => {
+                    e.preventDefault();
+                    initialFocusRef.current?.focus();
+                  }
+                : undefined
+            }
             className={clsx(
               "bg-stone-900 border border-stone-700 rounded-xl w-full shadow-2xl",
               maxWidth,
