@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { X, Shield, Heart, Star, Users, MapPin, Swords, ScrollText } from "lucide-react";
+import { Shield, Heart, Star, Users, MapPin, Swords, ScrollText } from "lucide-react";
 import { clsx } from "clsx";
+import { Modal } from "./Modal";
 import { StatusBadge } from "./Badge";
 import { WikiMarkdown } from "./WikiMarkdown";
 import { RelationsPanel } from "./RelationsPanel";
@@ -101,49 +101,25 @@ export function DetailModal({
   onClose: () => void;
   campaignId?: string;
 }) {
-  // Close on Escape
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose]);
-
   return (
-    <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <Modal
+      onClose={onClose}
+      title={getTitle(entity)}
+      subtitle={getSubtitle(entity)}
+      icon={<EntityIcon entity={entity} />}
+      maxWidth="max-w-2xl"
+      density="comfortable"
+      panelClassName="max-h-[85vh] flex flex-col"
     >
-      <div className="bg-stone-900 border border-stone-700 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-800 shrink-0">
-          <div className="flex items-center gap-3">
-            <EntityIcon entity={entity} />
-            <div>
-              <h2 className="font-semibold text-stone-100 text-lg">{getTitle(entity)}</h2>
-              <p className="text-xs text-stone-500">{getSubtitle(entity)}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-stone-500 hover:text-stone-300 transition-colors p-1"
-            aria-label="Cerrar"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          {entity.type === "player" && <PlayerDetail data={entity.data} campaignId={campaignId} />}
-          {entity.type === "npc" && <NpcDetail data={entity.data} campaignId={campaignId} />}
-          {entity.type === "session" && <SessionDetail data={entity.data} campaignId={campaignId} />}
-          {entity.type === "location" && <LocationDetail data={entity.data} campaignId={campaignId} />}
-          {entity.type === "faction" && <FactionDetail data={entity.data} campaignId={campaignId} />}
-        </div>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-6 py-5">
+        {entity.type === "player" && <PlayerDetail data={entity.data} campaignId={campaignId} />}
+        {entity.type === "npc" && <NpcDetail data={entity.data} campaignId={campaignId} />}
+        {entity.type === "session" && <SessionDetail data={entity.data} campaignId={campaignId} />}
+        {entity.type === "location" && <LocationDetail data={entity.data} campaignId={campaignId} />}
+        {entity.type === "faction" && <FactionDetail data={entity.data} campaignId={campaignId} />}
       </div>
-    </div>
+    </Modal>
   );
 }
 
