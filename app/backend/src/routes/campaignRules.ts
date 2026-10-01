@@ -4,6 +4,7 @@ import { prisma } from "../db/prisma.js";
 import { changeLogService } from "../services/changeLog.service.js";
 import { rulesEngine } from "../services/rulesEngine.service.js";
 import { AppError, ErrorCode } from "@dnd/shared";
+import { AttributionFields, resolveAttribution } from "./changelogAttribution.js";
 
 export const campaignRuleRoutes: FastifyPluginAsync = async (server) => {
   // List rules for a campaign
@@ -112,6 +113,9 @@ export const campaignRuleRoutes: FastifyPluginAsync = async (server) => {
   server.patch<{ Params: { id: string }; Body: unknown }>(
     "/:id/toggle",
     async (request) => {
+      const { authorType, reason } = z
+        .object(AttributionFields)
+        .parse(request.body ?? {});
       const rule = await prisma.campaignRule.findUnique({
         where: { id: request.params.id },
       });
@@ -130,9 +134,11 @@ export const campaignRuleRoutes: FastifyPluginAsync = async (server) => {
         entityId: rule.id,
         beforeJson: JSON.stringify({ active: rule.active }),
         afterJson: JSON.stringify({ active: updated.active }),
-        reason: `Rule ${updated.active ? "activated" : "deactivated"}`,
-        source: "user",
-        authorType: "user",
+        ...resolveAttribution(
+          authorType,
+          reason,
+          `Rule ${updated.active ? "activated" : "deactivated"}`
+        ),
       });
 
       // Fire-and-forget: re-auditar conflictos tras cambio de estado activo

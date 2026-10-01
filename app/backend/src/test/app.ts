@@ -11,6 +11,7 @@ import { locationRoutes } from "../routes/locations.js";
 import { factionRoutes } from "../routes/factions.js";
 import { pdfRoutes } from "../routes/pdf.js";
 import { documentRoutes } from "../routes/documents.js";
+import { playerRoutes } from "../routes/players.js";
 
 /**
  * Construye una instancia de Fastify para tests de integración.
@@ -34,6 +35,7 @@ export async function buildTestApp() {
   await app.register(factionRoutes, { prefix: "/api/factions" });
   await app.register(pdfRoutes, { prefix: "/api/pdf" });
   await app.register(documentRoutes, { prefix: "/api/documents" });
+  await app.register(playerRoutes, { prefix: "/api/players" });
 
   await app.ready();
   return app;

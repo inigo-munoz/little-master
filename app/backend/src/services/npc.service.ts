@@ -75,7 +75,12 @@ export const npcService = {
     return npc;
   },
 
-  async update(id: string, data: Partial<Omit<CreateNpc, "campaignId">>, authorType: "user" | "ai" = "user") {
+  async update(
+    id: string,
+    data: Partial<Omit<CreateNpc, "campaignId">>,
+    authorType: "user" | "ai" = "user",
+    reason?: string
+  ) {
     const existing = await this.getById(id);
 
     const updated = await prisma.npc.update({
@@ -123,7 +128,7 @@ export const npcService = {
       entityId: id,
       beforeJson: JSON.stringify(existing),
       afterJson: JSON.stringify(updated),
-      reason: "NPC updated",
+      reason: reason ?? "NPC updated",
       source: authorType === "ai" ? "ai_assistant" : "user",
       authorType,
     });

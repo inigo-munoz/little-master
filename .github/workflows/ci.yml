@@ -53,3 +53,7 @@ jobs:
       - name: Test llm-providers
         working-directory: packages/llm-providers
         run: pnpm test
+
+      - name: Test mcp-server
+        working-directory: app/mcp-server
+        run: pnpm test

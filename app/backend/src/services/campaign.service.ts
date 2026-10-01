@@ -72,7 +72,13 @@ export const campaignService = {
     return campaign;
   },
 
-  async update(id: string, userId: string, data: Partial<CreateCampaign> & { status?: string }) {
+  async update(
+    id: string,
+    userId: string,
+    data: Partial<CreateCampaign> & { status?: string },
+    authorType: "user" | "ai" = "user",
+    reason?: string
+  ) {
     const existing = await this.getById(id, userId);
 
     const updated = await prisma.campaign.update({
@@ -91,9 +97,9 @@ export const campaignService = {
       entityId: id,
       beforeJson: JSON.stringify(existing),
       afterJson: JSON.stringify(updated),
-      reason: "Campaign updated",
-      source: "user",
-      authorType: "user",
+      reason: reason ?? "Campaign updated",
+      source: authorType === "ai" ? "ai_assistant" : "user",
+      authorType,
     });
 
     return updated;

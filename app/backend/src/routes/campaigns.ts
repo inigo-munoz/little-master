@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { campaignService } from "../services/campaign.service.js";
+import { AttributionFields } from "./changelogAttribution.js";
 
 // Hardcoded userId for MVP — Sprint 2 adds real auth
 const MVP_USER_ID = "default-user";
@@ -34,10 +35,17 @@ export const campaignRoutes: FastifyPluginAsync = async (server) => {
       description: z.string().max(5000).optional(),
       system: z.string().optional(),
       status: z.enum(["active", "paused", "completed", "archived"]).optional(),
+      ...AttributionFields,
     });
 
-    const data = schema.parse(request.body);
-    const campaign = await campaignService.update(request.params.id, MVP_USER_ID, data);
+    const { authorType, reason, ...data } = schema.parse(request.body);
+    const campaign = await campaignService.update(
+      request.params.id,
+      MVP_USER_ID,
+      data,
+      authorType === "assistant" ? "ai" : "user",
+      reason
+    );
     return { success: true, data: campaign };
   });
 

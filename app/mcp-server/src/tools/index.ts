@@ -144,7 +144,13 @@ export const updateEntity: MCPTool = {
     };
     const route = routeMap[entityType];
     if (!route) throw new Error(`Entity type '${entityType}' not supported`);
-    return backendCall("PATCH", `${route}/${entityId}`, { ...updates, reason });
+    // authorType goes after the spread on purpose: a caller cannot smuggle
+    // authorType into `updates` and have the edit recorded as the user's.
+    return backendCall("PATCH", `${route}/${entityId}`, {
+      ...updates,
+      reason,
+      authorType: "assistant",
+    });
   },
 };
 
