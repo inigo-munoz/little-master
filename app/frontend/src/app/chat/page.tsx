@@ -27,7 +27,6 @@ import remarkGfm from "remark-gfm";
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
 import type { ChatMessage, AssistantMode, ChatResponse, ContextChunk, ExtendedMessage } from "../../lib/api";
-import { AppShell } from "../../components/layout/AppShell";
 import { SourceBadge, AuthorityBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
 import { parseNpcFromResponse, parseStatBlockFromResponse } from "../../lib/npc-parser";
@@ -581,7 +580,7 @@ function ChatInterface() {
   if (!_hasHydrated && !campaignId) return null;
 
   return (
-    <AppShell>
+    <>
       <div className="flex flex-col h-screen">
         {/* Header */}
         <div className="border-b border-stone-800 px-6 py-4 flex items-center justify-between shrink-0">
@@ -772,7 +771,7 @@ function ChatInterface() {
           </p>
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }
 

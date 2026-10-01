@@ -6,7 +6,6 @@ import { Plus, Swords, ChevronRight, Zap, Trash2 } from "lucide-react";
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
 import type { Campaign } from "../../lib/api";
-import { AppShell } from "../../components/layout/AppShell";
 import { StatusBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
 import Link from "next/link";
@@ -285,7 +284,7 @@ export default function CampaignsPage() {
   const { activeCampaignId } = useAppStore();
 
   return (
-    <AppShell>
+    <>
       <div className="p-8 max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -341,6 +340,6 @@ export default function CampaignsPage() {
           }}
         />
       )}
-    </AppShell>
+    </>
   );
 }

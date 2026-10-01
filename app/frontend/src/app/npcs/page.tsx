@@ -7,7 +7,6 @@ import { Users, Plus, Pencil, Trash2, X, Search, Download, ChevronDown, ChevronU
 import { clsx } from "clsx";
 import { api } from "../../lib/api";
 import type { Npc, UpdateNpc, StatBlockEntry, MonsterDetail } from "../../lib/api";
-import { AppShell } from "../../components/layout/AppShell";
 import { DetailModal, type ModalEntity } from "../../components/ui/DetailModal";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { useAppStore } from "../../store/app.store";
@@ -802,15 +801,15 @@ function NpcsContent() {
   if (!_hasHydrated && !campaignId) return null;
 
   if (swrError) return (
-    <AppShell>
+    <>
       <div className="p-8 text-center text-red-400">
         Error al cargar los datos. Intenta recargar la pagina.
       </div>
-    </AppShell>
+    </>
   );
 
   return (
-    <AppShell>
+    <>
       <div className="p-8 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -905,7 +904,7 @@ function NpcsContent() {
           onSaved={() => { setShowForm(false); setEditNpc(null); refresh(); }}
         />
       )}
-    </AppShell>
+    </>
   );
 }
 
