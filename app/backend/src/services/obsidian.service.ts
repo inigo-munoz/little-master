@@ -10,6 +10,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import pino from "pino";
 import { prisma } from "../db/prisma.js";
+import { changeLogService } from "./changeLog.service.js";
 
 const log = pino({ name: "obsidian-service" });
 
@@ -393,14 +394,12 @@ export async function importFromVault(
     // ── Player Character ──────────────────────────────────────────────────
     if (type === "player") {
       try {
-        // If this was previously imported as NPC, migrate it
-        const existingNpc = await prisma.npc.findFirst({ where: { campaignId, name: fileName } });
-        if (existingNpc) {
-          await prisma.npc.delete({ where: { id: existingNpc.id } });
-        }
-
+        // Skip first: a re-import must never destroy anything.
         const existing = await prisma.player.findFirst({ where: { campaignId, name: fileName } });
         if (existing) { result.players.skipped++; continue; }
+
+        // If this was previously imported as NPC, it is migrated below
+        const existingNpc = await prisma.npc.findFirst({ where: { campaignId, name: fileName } });
 
         const classField = Array.isArray(fm["Class"]) ? fm["Class"].join(", ") : (fm["Class"] ?? fm["class"] ?? fm["char_class"] ?? null);
         const raceField = Array.isArray(fm["Race"]) ? fm["Race"].join(", ") : (fm["Race"] ?? fm["race"] ?? fm["char_race"] ?? null);
@@ -409,20 +408,44 @@ export async function importFromVault(
         const ac = fm["ac"] ? parseInt(fm["ac"] as string) : null;
         const status = (fm["Status"] ?? fm["status"] ?? fm["char_status"] ?? "active").toString().toLowerCase();
 
-        await prisma.player.create({
-          data: {
-            campaignId,
-            name: fileName,
-            playerName: fm["Player"] as string ?? null,
-            class: classField as string ?? null,
-            race: raceField as string ?? null,
-            level,
-            hp: isNaN(hp as number) ? null : hp,
-            ac: isNaN(ac as number) ? null : ac,
-            status: ["active","inactive","dead","retired","missing"].includes(status) ? status : "active",
-            notes: cleanObsidianSyntax(body).slice(0, 3000) || null,
-            tags: JSON.stringify([]),
-          },
+        // Create the player and retire the old NPC atomically, mirroring
+        // npcService.delete (changelog + EntityRelation cleanup + delete).
+        await prisma.$transaction(async (tx) => {
+          await tx.player.create({
+            data: {
+              campaignId,
+              name: fileName,
+              playerName: fm["Player"] as string ?? null,
+              class: classField as string ?? null,
+              race: raceField as string ?? null,
+              level,
+              hp: isNaN(hp as number) ? null : hp,
+              ac: isNaN(ac as number) ? null : ac,
+              status: ["active","inactive","dead","retired","missing"].includes(status) ? status : "active",
+              notes: cleanObsidianSyntax(body).slice(0, 3000) || null,
+              tags: JSON.stringify([]),
+            },
+          });
+
+          if (existingNpc) {
+            await changeLogService.log(
+              {
+                campaignId,
+                entityType: "npc",
+                entityId: existingNpc.id,
+                beforeJson: JSON.stringify(existingNpc),
+                afterJson: null,
+                reason: "NPC migrated to player during Obsidian import",
+                source: "obsidian_import",
+                authorType: "user",
+              },
+              tx
+            );
+            await tx.entityRelation.deleteMany({
+              where: { OR: [{ fromId: existingNpc.id }, { toId: existingNpc.id }] },
+            });
+            await tx.npc.delete({ where: { id: existingNpc.id } });
+          }
         });
         result.players.imported++;
       } catch (e: unknown) { result.players.errors.push(`${fileName}: ${errorMessage(e)}`); }
