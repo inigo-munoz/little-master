@@ -595,3 +595,55 @@ export function isClassSpellcaster(className: string, subclass?: string | null):
   const thirdSub = THIRD_CASTER_SUBCLASSES[className];
   return thirdSub !== undefined && subclass === thirdSub;
 }
+
+// ─── Normalización de "Clase (Subclase)" ─────────────────────────────────────
+// Los personajes importados guardan la subclase dentro del nombre de la clase
+// ("Mago (Escuela de Adivinación)"), pero todas las tablas están indexadas por
+// el nombre simple. Solo se separa cuando el resultado es conocido y válido.
+
+export interface ClassSubclassPair {
+  class: string;
+  subclass: string;
+}
+
+const _norm = (s: string) => s.trim().toLowerCase();
+
+/**
+ * Separa "Clase (Subclase)" en sus partes, solo si la clase base es clave de
+ * DND_CLASSES y el paréntesis es una de sus subclases (sin distinguir
+ * mayúsculas ni espacios sobrantes). En cualquier otro caso devuelve la
+ * entrada intacta, para no desfigurar clases homebrew.
+ * Nunca pisa una subclase ya informada.
+ */
+export function splitClassSubclass(className: string, subclass?: string | null): ClassSubclassPair {
+  const sub = subclass ?? "";
+  const unchanged = { class: className, subclass: sub };
+  if (sub.trim() !== "") return unchanged;
+  const m = /^(.+?)\s*\(([^()]+)\)\s*$/.exec(className);
+  if (!m) return unchanged;
+  const [, rawBase = "", rawSub = ""] = m;
+  const baseKey = Object.keys(DND_CLASSES).find(k => _norm(k) === _norm(rawBase));
+  if (!baseKey) return unchanged;
+  const subName = (DND_CLASSES[baseKey] ?? []).find(s => _norm(s) === _norm(rawSub));
+  if (!subName) return unchanged;
+  return { class: baseKey, subclass: subName };
+}
+
+/** Normaliza una lista de entradas de clase conservando el resto de campos. */
+export function normalizeClassEntries<T extends { class: string; subclass?: string | null }>(entries: T[]): T[] {
+  if (!Array.isArray(entries)) return entries;
+  return entries.map(e => {
+    const split = splitClassSubclass(e.class, e.subclass);
+    return split.class === e.class && split.subclass === (e.subclass ?? "") ? e : { ...e, ...split };
+  });
+}
+
+/** Parsea el JSON `classes` de la ficha y lo normaliza (único punto de entrada). */
+export function parseClassEntries<T extends { class: string; subclass?: string | null }>(raw: string | null | undefined): T[] {
+  try {
+    const parsed = JSON.parse(raw ?? "[]");
+    return Array.isArray(parsed) ? normalizeClassEntries<T>(parsed) : [];
+  } catch {
+    return [];
+  }
+}
