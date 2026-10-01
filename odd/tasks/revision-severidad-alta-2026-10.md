@@ -252,17 +252,47 @@ Tampoco se verificaron los diálogos anidados de `WikiLink`.
 
 ### U4 — Capa Zod muerta de `@dnd/domain`
 
-- [ ] **Estado**: **bloqueada esperando decisión del usuario**
+- [x] **Estado**: cerrada. **Commit**: `097b53f` (rama `refactor/zod-domain-layer`)
 - **Dato**: 23 schemas exportados; solo `AssistantModeSchema` se ejecuta en
   runtime (`routes/chat.ts:14`). Tres más se consumen solo como tipo
   (`CreateNpc`, `CreateCampaign`, `LlmProvider`) y sus rutas revalidan con un
   `z.object` inline al lado. Los 19 restantes no se referencian desde ningún
   sitio. El frontend se redeclara a mano `Session`, `Npc` y `LlmConfigPublic`
   en `lib/api.ts`.
-- **La decisión es del usuario**, y su propia nota de memoria la tiene
-  reservada: conectar los schemas a las rutas, o recortar los paquetes a solo
-  tipos. No se elige por él.
-- **Commit**: _(pendiente)_
+- **Decisión del usuario**: opción **mixta** — conectar los tres que ya se
+  importaban como tipo (donde hay drift demostrado) y borrar los 19 sin
+  referencias. Era la que más valor daba por diff.
+- **Resultado**: `packages/domain/src/entities/index.ts` pasa de **359 a 105
+  líneas**; quedan 4 schemas exportados. Diff total: 5 ficheros, **+27/−333**.
+- **La conexión compone, no sustituye**, para que lo de transporte se quede en
+  la ruta: `POST /npcs` usa
+  `CreateNpcSchema.omit({sourceType}).extend({authorType, traits, actions, ...})`
+  porque la ruta acepta entradas de stat block en string u objeto y las
+  normaliza. `POST /campaigns` usa `CreateCampaignSchema` directo.
+- **Premisa mía que resultó FALSA, y el writer la corrigió**: le dije que
+  `LlmProviderSchema` sin `openai-codex` era drift a arreglar. Fue a mirarlo:
+  las rutas de clave **hoy rechazan** `openai-codex` con 400, porque Codex se
+  configura por `/oauth/*`. Añadirlo al enum y conectar sin más habría
+  **ampliado** la API. Resuelto con
+  `LlmProviderSchema.exclude(["openai-codex"])`: el tipo cuadra con
+  `SupportedProvider` y la superficie HTTP queda idéntica. Verificado por el
+  padre contra `git show HEAD:` del fichero anterior.
+- **Relajación deliberada y aceptada**: el dominio marca los opcionales como
+  `.optional().nullable()` y las rutas solo `.optional()`, así que un `null`
+  explícito en un campo opcional de NPC o campaña ahora pasa donde antes daba
+  400. **Ensancha, no estrecha**: ningún llamador existente se rompe, los
+  servicios ya hacen `?? null`, y los campos obligatorios no cambian. Se
+  acepta porque la regla que se dio era precisamente "si la API acepta algo
+  hoy, que lo siga aceptando; se ensancha el schema, no se estrecha la ruta".
+- **También borrado de `@dnd/shared`** lo que no tenía ningún consumidor:
+  `AUTHORITY_MAP`, `SourceMetaSchema`, `ApiSuccessSchema`, `ApiErrorSchema`,
+  `PaginationQuerySchema` y `PaginatedResponseSchema`. Los enums se conservan
+  porque los usan los schemas supervivientes y el backend. El `ApiError` del
+  frontend es una clase local, no el tipo borrado.
+- **Checks observados**: backend 123, mcp-server 24, llm-providers 6, frontend
+  176, typecheck 6 workspaces, lint sin cambios. **Ningún test se tocó.**
+- **Verificado por el padre**: ningún schema borrado se referencia en `app/` ni
+  `packages/` (barrido `rg -w` de los 19 nombres).
 
 ## Entrega
 
@@ -276,7 +306,23 @@ Tampoco se verificaron los diálogos anidados de `WikiLink`.
 
 Documento creado el 2026-10-01. U1 delegada.
 
+## Estado final
+
+Las cuatro tareas cerradas, en cinco ramas apiladas y **locales**:
+
+| Rama | Commit | Qué |
+| --- | --- | --- |
+| `perf/db-indexes` | `77dc5d1` | 11 índices con evidencia de `EXPLAIN` |
+| `refactor/appshell-in-layout` | `d5c7aae` | el shell monta una sola vez |
+| `a11y/form-labels` | `44e7bf8` | 60 → 0, con la regla en `error` |
+| `a11y/modal-dialog-semantics` | `dbe94b4`, `5351f7d`, `5ca1bec` | primitiva + los 19 modales |
+| `refactor/zod-domain-layer` | `097b53f` | 3 conectados, 19 borrados |
+
 ## Siguiente paso
 
-Solo queda **U4**, bloqueada esperando la decisión del usuario sobre la capa
-Zod muerta.
+Decisión del usuario: abrir PRs (una rama por asunto, ya separadas) o seguir
+con lo que la revisión dejó fuera de alcance — `routes/srd.ts` con 650 líneas
+de parsing dentro de un fichero de rutas, el `findMany` sin `take` de
+`embedding.service.ts`, el N+1 de `buildDocumentList`, los dos vocabularios de
+`authorType`, y el bug previo del `formInitialized` en la ficha de personaje
+(carga la clase equivocada y esconde la pestaña de Magia).

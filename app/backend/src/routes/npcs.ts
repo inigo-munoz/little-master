@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import type { CreateNpc } from "@dnd/domain";
+import { CreateNpcSchema, type CreateNpc } from "@dnd/domain";
 import { npcService } from "../services/npc.service.js";
 import { AttributionFields } from "./changelogAttribution.js";
 
@@ -73,16 +73,15 @@ export const npcRoutes: FastifyPluginAsync = async (server) => {
   });
 
   server.post<{ Body: unknown }>("/", async (request, reply) => {
-    const schema = z.object({
-      campaignId: z.string(),
-      name: z.string().min(1).max(200),
-      role: z.string().max(200).optional(),
-      description: z.string().max(10000).optional(),
-      status: z.enum(["alive", "dead", "unknown", "missing"]).default("alive"),
-      disposition: z.enum(["ally", "neutral", "enemy"]).default("neutral"),
-      tags: z.array(z.string()).default([]),
+    // sourceType se omite: el POST siempre crea PNJs de campaña (se fija abajo).
+    // authorType es un campo de transporte y los stat blocks aceptan entradas
+    // en string u objeto (se normalizan abajo), así que se redefinen aquí.
+    const schema = CreateNpcSchema.omit({ sourceType: true }).extend({
       authorType: z.enum(["user", "assistant"]).default("user"),
-      ...StatBlockFields,
+      traits: z.array(TraitEntrySchema).optional(),
+      actions: z.array(ActionEntrySchema).optional(),
+      bonusActions: z.array(ActionEntrySchema).optional(),
+      reactions: z.array(ActionEntrySchema).optional(),
     });
 
     const { authorType, traits, actions, bonusActions, reactions, ...rest } = schema.parse(request.body);
