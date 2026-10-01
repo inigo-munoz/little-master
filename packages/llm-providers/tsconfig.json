@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@dnd/shared": ["../shared/src/index.ts"],
+      "@dnd/domain": ["../domain/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "../shared/src/**/*", "../domain/src/**/*"],
+  "exclude": ["node_modules"]
+}

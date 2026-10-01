@@ -4,6 +4,7 @@ import { prisma } from "../db/prisma.js";
 import { changeLogService } from "../services/changeLog.service.js";
 import { deleteWithChangeLog } from "../db/delete-with-changelog.js";
 import { AppError, ErrorCode } from "@dnd/shared";
+import { AttributionFields, resolveAttribution } from "./changelogAttribution.js";
 
 export const factionRoutes: FastifyPluginAsync = async (server) => {
   server.get<{ Querystring: { campaignId: string } }>("/", async (request) => {
@@ -67,9 +68,10 @@ export const factionRoutes: FastifyPluginAsync = async (server) => {
       alignment: z.string().max(100).optional(),
       disposition: z.string().max(100).optional(),
       tags: z.array(z.string()).optional(),
+      ...AttributionFields,
     });
 
-    const data = schema.parse(request.body);
+    const { authorType, reason, ...data } = schema.parse(request.body);
     const existing = await prisma.faction.findUnique({ where: { id: request.params.id } });
     if (!existing) throw AppError.notFound(ErrorCode.NOT_FOUND, "Faction not found");
 
@@ -90,9 +92,7 @@ export const factionRoutes: FastifyPluginAsync = async (server) => {
       entityId: updated.id,
       beforeJson: JSON.stringify(existing),
       afterJson: JSON.stringify(updated),
-      reason: "Faction updated",
-      source: "user",
-      authorType: "user",
+      ...resolveAttribution(authorType, reason, "Faction updated"),
     });
 
     return { success: true, data: updated };

@@ -4,6 +4,7 @@ import { prisma } from "../db/prisma.js";
 import { changeLogService } from "../services/changeLog.service.js";
 import { deleteWithChangeLog } from "../db/delete-with-changelog.js";
 import { AppError, ErrorCode } from "@dnd/shared";
+import { AttributionFields, resolveAttribution } from "./changelogAttribution.js";
 
 export const playerRoutes: FastifyPluginAsync = async (server) => {
   server.get<{ Querystring: { campaignId: string } }>("/", async (request) => {
@@ -144,9 +145,10 @@ export const playerRoutes: FastifyPluginAsync = async (server) => {
       status: z.enum(["active", "inactive", "dead", "retired"]).optional(),
       notes: z.string().nullish(),
       tags: z.string().optional(),
+      ...AttributionFields,
     });
 
-    const data = schema.parse(request.body);
+    const { authorType, reason, ...data } = schema.parse(request.body);
     const existing = await prisma.player.findUnique({ where: { id: request.params.id } });
     if (!existing) throw AppError.notFound(ErrorCode.NOT_FOUND, "Player not found");
 
@@ -161,9 +163,7 @@ export const playerRoutes: FastifyPluginAsync = async (server) => {
       entityId: existing.id,
       beforeJson: JSON.stringify(existing),
       afterJson: JSON.stringify(updated),
-      reason: "Player character updated",
-      source: "user",
-      authorType: "user",
+      ...resolveAttribution(authorType, reason, "Player character updated"),
     });
 
     return { success: true, data: updated };

@@ -4,6 +4,7 @@ import { prisma } from "../db/prisma.js";
 import { changeLogService } from "../services/changeLog.service.js";
 import { deleteWithChangeLog } from "../db/delete-with-changelog.js";
 import { AppError, ErrorCode } from "@dnd/shared";
+import { AttributionFields, resolveAttribution } from "./changelogAttribution.js";
 
 export const locationRoutes: FastifyPluginAsync = async (server) => {
   server.get<{ Querystring: { campaignId: string } }>("/", async (request) => {
@@ -61,9 +62,10 @@ export const locationRoutes: FastifyPluginAsync = async (server) => {
       name: z.string().min(1).max(200).optional(),
       description: z.string().max(10000).optional(),
       tags: z.array(z.string()).optional(),
+      ...AttributionFields,
     });
 
-    const data = schema.parse(request.body);
+    const { authorType, reason, ...data } = schema.parse(request.body);
     const existing = await prisma.location.findUnique({ where: { id: request.params.id } });
     if (!existing) throw AppError.notFound(ErrorCode.NOT_FOUND, "Location not found");
 
@@ -82,9 +84,7 @@ export const locationRoutes: FastifyPluginAsync = async (server) => {
       entityId: updated.id,
       beforeJson: JSON.stringify(existing),
       afterJson: JSON.stringify(updated),
-      reason: "Location updated",
-      source: "user",
-      authorType: "user",
+      ...resolveAttribution(authorType, reason, "Location updated"),
     });
 
     return { success: true, data: updated };

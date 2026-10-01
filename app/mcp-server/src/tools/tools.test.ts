@@ -5,6 +5,7 @@ import {
   logIssue,
   searchRules,
   searchDocuments,
+  updateEntity,
 } from "./index.js";
 
 // ─── Mock global fetch ─────────────────────────────────────────────────────────
@@ -202,5 +203,45 @@ describe("search_documents", () => {
   it("rechaza query vacía (schema Zod)", async () => {
     const parseResult = searchDocuments.inputSchema.safeParse({ query: "", limit: 5 });
     expect(parseResult.success).toBe(false);
+  });
+});
+
+// ─── update_entity ─────────────────────────────────────────────────────────────
+
+describe("update_entity", () => {
+  it("marca la edición como assistant para que el changelog no la atribuya al usuario", async () => {
+    const fetchMock = mockFetchResponse({ success: true, data: { id: "n1" } });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await updateEntity.execute({
+      entityType: "npc",
+      entityId: "n1",
+      updates: { status: "dead" },
+      reason: "Murió en la sesión 7",
+    });
+
+    const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/api/npcs/n1");
+    expect(options.method).toBe("PATCH");
+
+    const body = JSON.parse(options.body as string);
+    expect(body.status).toBe("dead");
+    expect(body.reason).toBe("Murió en la sesión 7");
+    expect(body.authorType).toBe("assistant");
+  });
+
+  it("no deja que updates sobrescriba authorType", async () => {
+    const fetchMock = mockFetchResponse({ success: true, data: { id: "n1" } });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await updateEntity.execute({
+      entityType: "npc",
+      entityId: "n1",
+      updates: { authorType: "user" },
+      reason: "Intento de suplantación",
+    });
+
+    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(options.body as string).authorType).toBe("assistant");
   });
 });

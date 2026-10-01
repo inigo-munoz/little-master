@@ -3,6 +3,13 @@ import { OpenAIProvider } from "./openai.provider.js";
 import { AnthropicProvider } from "./anthropic.provider.js";
 import { OpenAICodexProvider } from "./openai-codex.provider.js";
 
+// OpenRouter exposes an OpenAI-compatible API; the key must only ever go here.
+export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+
+// Ollama serves an OpenAI-compatible API on the local machine. It ignores the
+// Authorization header, so the apiKey is passed through and simply unused.
+export const OLLAMA_BASE_URL = "http://localhost:11434/v1";
+
 export type SupportedProvider = "openai" | "anthropic" | "openrouter" | "ollama" | "openai-codex";
 
 export function createProvider(
@@ -19,9 +26,9 @@ export function createProvider(
     case "anthropic":
       return new AnthropicProvider(apiKey, model);
     case "openrouter":
-      return new OpenAIProvider(apiKey, model); // TODO: extend with base URL override
+      return new OpenAIProvider(apiKey, model, OPENROUTER_BASE_URL);
     case "ollama":
-      throw new Error("Ollama provider not yet implemented");
+      return new OpenAIProvider(apiKey, model, OLLAMA_BASE_URL);
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }

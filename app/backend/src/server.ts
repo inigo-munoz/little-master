@@ -111,23 +111,30 @@ function initDatabase() {
     join(dir, "schema.prisma"),
     join(dir, "..", "prisma", "schema.prisma"),
   ];
+  // These two paths stay non-fatal: a packaged build may legitimately ship
+  // without the Prisma CLI. They still mean the schema was NOT synced, so say so.
   const schema = schemaCandidates.find(existsSync);
   if (!schema) {
     console.error("initDatabase: no schema.prisma found in", schemaCandidates);
+    console.error("initDatabase: schema NOT synced — the database may be out of date");
     return;
   }
 
   const prismaCli = join(dir, "node_modules", "prisma", "build", "index.js");
   if (!existsSync(prismaCli)) {
     console.error("initDatabase: prisma CLI not found at", prismaCli);
+    console.error("initDatabase: schema NOT synced — the database may be out of date");
     return;
   }
 
-  // Always sync schema on every launch — safe on upgrades, fast when up to date.
-  // db push --accept-data-loss is safe here: it only adds columns, never drops.
+  // Sync the schema on every launch — fast when it is already up to date.
+  // --accept-data-loss is deliberately NOT passed: additive changes still apply,
+  // but a destructive diff makes db push fail instead of dropping user data.
+  // A failed push aborts startup, because serving requests against a schema the
+  // code does not match corrupts data more quietly than refusing to start.
   try {
     console.log("initDatabase: pushing schema from", schema);
-    execSync(`"${process.execPath}" "${prismaCli}" db push --schema="${schema}" --skip-generate --accept-data-loss`, {
+    execSync(`"${process.execPath}" "${prismaCli}" db push --schema="${schema}" --skip-generate`, {
       env: { ...process.env, DATABASE_URL: env.DATABASE_URL },
       cwd: dir,
       stdio: "pipe",
@@ -136,10 +143,21 @@ function initDatabase() {
     console.log("Database schema up to date");
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("Failed to sync database schema:", msg);
-    if (err && typeof err === "object" && "stderr" in err) {
-      console.error("stderr:", String((err as { stderr: Buffer }).stderr));
-    }
+    const stderr =
+      err && typeof err === "object" && "stderr" in err
+        ? String((err as { stderr: Buffer }).stderr)
+        : "";
+    throw new Error(
+      [
+        "Failed to sync the database schema; refusing to start.",
+        "If the pending change is destructive, migrate the data explicitly instead of",
+        "letting db push drop it.",
+        msg,
+        stderr,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    );
   }
 
   // Seed default user once — marker guards this block only.

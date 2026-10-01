@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import type { CreateNpc } from "@dnd/domain";
 import { npcService } from "../services/npc.service.js";
+import { AttributionFields } from "./changelogAttribution.js";
 
 const TraitEntrySchema = z.union([
   z.string(),
@@ -106,10 +107,11 @@ export const npcRoutes: FastifyPluginAsync = async (server) => {
       status: z.enum(["alive", "dead", "unknown", "missing"]).optional(),
       disposition: z.enum(["ally", "neutral", "enemy"]).optional(),
       tags: z.array(z.string()).optional(),
+      ...AttributionFields,
       ...StatBlockFields,
     });
 
-    const { traits, actions, bonusActions, reactions, ...rest } = schema.parse(request.body);
+    const { authorType, reason, traits, actions, bonusActions, reactions, ...rest } = schema.parse(request.body);
     const data: Partial<Omit<CreateNpc, "campaignId">> = {
       ...rest,
       ...(traits !== undefined && { traits: traits.map(normalizeEntry) }),
@@ -117,7 +119,12 @@ export const npcRoutes: FastifyPluginAsync = async (server) => {
       ...(bonusActions !== undefined && { bonusActions: bonusActions.map(normalizeEntry) }),
       ...(reactions !== undefined && { reactions: reactions.map(normalizeEntry) }),
     };
-    const npc = await npcService.update(request.params.id, data, "user");
+    const npc = await npcService.update(
+      request.params.id,
+      data,
+      authorType === "assistant" ? "ai" : "user",
+      reason
+    );
     return { success: true, data: npc };
   });
 
