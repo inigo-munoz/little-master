@@ -142,6 +142,7 @@ export const playerRoutes: FastifyPluginAsync = async (server) => {
       passivePerception: z.number().int().nullish(),
       inspiration: z.boolean().optional(),
       heroicInspiration: z.boolean().optional(),
+      backgroundLocked: z.boolean().optional(),
       status: z.enum(["active", "inactive", "dead", "retired"]).optional(),
       notes: z.string().nullish(),
       tags: z.string().optional(),
@@ -175,7 +176,7 @@ export const playerRoutes: FastifyPluginAsync = async (server) => {
     await deleteWithChangeLog({
       prisma,
       existing,
-      campaignId: null,
+      campaignId: existing.campaignId,
       entityType: "player",
       reason: "Player deleted",
       deleteEntity: (tx) => tx.player.delete({ where: { id: request.params.id } }),
