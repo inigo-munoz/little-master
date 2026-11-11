@@ -1,16 +1,7 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
+import { FORBIDDEN_HOST_RESPONSE, isAllowedHost, toAllowedHostSet } from "@dnd/shared";
 
-/** Extracts the hostname (without port) from a Host header value, handling IPv6 literals. */
-export function hostnameFromHostHeader(host: string): string {
-  const h = host.trim();
-  if (h.startsWith("[")) {
-    // IPv6 literal, e.g. "[::1]:3001" or "[::1]"
-    const end = h.indexOf("]");
-    return end === -1 ? h.slice(1) : h.slice(1, end);
-  }
-  const colon = h.indexOf(":");
-  return colon === -1 ? h : h.slice(0, colon);
-}
+export { hostnameFromHostHeader } from "@dnd/shared";
 
 /**
  * DNS-rebinding defense for a loopback-only service.
@@ -24,17 +15,11 @@ export function hostnameFromHostHeader(host: string): string {
  * because the backend picks a dynamic one (3001-3100).
  */
 export function makeHostGuard(allowedHosts: Iterable<string>) {
-  const allowed = new Set(
-    [...allowedHosts].map((h) => h.trim().toLowerCase()).filter(Boolean)
-  );
+  const allowed = toAllowedHostSet(allowedHosts);
 
   return async function hostGuard(request: FastifyRequest, reply: FastifyReply) {
-    const host = request.headers.host;
-    if (!host || !allowed.has(hostnameFromHostHeader(host).toLowerCase())) {
-      return reply.status(403).send({
-        success: false,
-        error: { code: "FORBIDDEN_HOST", message: "Host not allowed" },
-      });
+    if (!isAllowedHost(request.headers.host, allowed)) {
+      return reply.status(403).send(FORBIDDEN_HOST_RESPONSE);
     }
   };
 }

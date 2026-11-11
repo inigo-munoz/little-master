@@ -27,6 +27,13 @@ export async function backendCall<T>(
   return res.json() as T;
 }
 
+// Backend IDs are cuids. Restricting their shape keeps tool input from reaching other
+// backend routes through the URL ("../campaigns/x"), which encoding alone cannot stop
+// because the URL parser normalizes dot segments.
+const EntityId = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, "Invalid id");
+
+const enc = encodeURIComponent;
+
 // ─── Tool Type ────────────────────────────────────────────────────────────────
 export interface MCPTool<TInput extends z.ZodTypeAny = z.ZodTypeAny> {
   name: string;
@@ -42,15 +49,15 @@ export const getCampaignState: MCPTool = {
   description:
     "Retrieve the current state of a campaign: active NPCs, recent sessions (last 3), open issues, and players. Use this before any analysis or generation that requires campaign context.",
   inputSchema: z.object({
-    campaignId: z.string().describe("The campaign ID to retrieve state for"),
+    campaignId: EntityId.describe("The campaign ID to retrieve state for"),
   }),
   async execute({ campaignId }) {
     const [campaign, sessionsRaw, npcsRaw, issuesRaw, playersRaw] = await Promise.all([
-      backendCall<{ data: unknown }>("GET", `/api/campaigns/${campaignId}`),
-      backendCall<{ data: unknown[] }>("GET", `/api/sessions?campaignId=${campaignId}`),
-      backendCall<{ data: unknown[] }>("GET", `/api/npcs?campaignId=${campaignId}`),
-      backendCall<{ data: unknown[] }>("GET", `/api/issues?campaignId=${campaignId}&status=open`),
-      backendCall<{ data: unknown[] }>("GET", `/api/players?campaignId=${campaignId}`),
+      backendCall<{ data: unknown }>("GET", `/api/campaigns/${enc(campaignId)}`),
+      backendCall<{ data: unknown[] }>("GET", `/api/sessions?campaignId=${enc(campaignId)}`),
+      backendCall<{ data: unknown[] }>("GET", `/api/npcs?campaignId=${enc(campaignId)}`),
+      backendCall<{ data: unknown[] }>("GET", `/api/issues?campaignId=${enc(campaignId)}&status=open`),
+      backendCall<{ data: unknown[] }>("GET", `/api/players?campaignId=${enc(campaignId)}`),
     ]);
 
     // Limit sessions to most recent 3
@@ -78,7 +85,7 @@ export const searchDocuments: MCPTool = {
   description:
     "Search indexed documents and notes for relevant content. Returns chunks with source type and authority level. Always use this before answering questions about specific campaign content.",
   inputSchema: z.object({
-    campaignId: z.string().optional().describe("Scope search to this campaign. Omit for global docs."),
+    campaignId: EntityId.optional().describe("Scope search to this campaign. Omit for global docs."),
     query: z.string().min(1).describe("What to search for"),
     limit: z.number().int().min(1).max(20).default(8).describe("Max chunks to return"),
   }),
@@ -94,7 +101,7 @@ export const searchRules: MCPTool = {
   description:
     "Search campaign rules and rule sources. Returns results sorted by authority level (official > srd > campaign > homebrew). Always cite the source type in your response.",
   inputSchema: z.object({
-    campaignId: z.string().describe("Campaign ID to search rules for"),
+    campaignId: EntityId.describe("Campaign ID to search rules for"),
     query: z.string().min(1).describe("Rule or mechanic to search for"),
     sourceTypes: z
       .array(z.enum(["official", "srd", "campaign", "homebrew_external", "homebrew_user"]))
@@ -113,7 +120,7 @@ export const createNpc: MCPTool = {
   description:
     "Create a new NPC in the campaign. The NPC is saved to the database and a changelog entry is created with authorType 'ai'. All AI-created NPCs are tagged as such.",
   inputSchema: z.object({
-    campaignId: z.string(),
+    campaignId: EntityId,
     name: z.string().min(1).max(200),
     role: z.string().max(200).optional().describe("Role in the world (e.g. 'Blacksmith', 'Guild Leader')"),
     description: z.string().max(10000).optional(),
@@ -131,7 +138,7 @@ export const updateEntity: MCPTool = {
     "Update an existing entity (NPC, faction, location, session). Creates a changelog entry automatically. Use this when confirmed information needs to be recorded.",
   inputSchema: z.object({
     entityType: z.enum(["npc", "session", "faction", "location"]),
-    entityId: z.string(),
+    entityId: EntityId,
     updates: z.record(z.unknown()).describe("Fields to update"),
     reason: z.string().describe("Why this update is being made"),
   }),
@@ -146,7 +153,7 @@ export const updateEntity: MCPTool = {
     if (!route) throw new Error(`Entity type '${entityType}' not supported`);
     // authorType goes after the spread on purpose: a caller cannot smuggle
     // authorType into `updates` and have the edit recorded as the user's.
-    return backendCall("PATCH", `${route}/${entityId}`, {
+    return backendCall("PATCH", `${route}/${enc(entityId)}`, {
       ...updates,
       reason,
       authorType: "assistant",
@@ -159,9 +166,9 @@ export const logChange: MCPTool = {
   description:
     "Explicitly log a change to the campaign changelog. Use when an AI action modifies or confirms canon.",
   inputSchema: z.object({
-    campaignId: z.string(),
+    campaignId: EntityId,
     entityType: z.string(),
-    entityId: z.string(),
+    entityId: EntityId,
     before: z.string().optional().describe("JSON string of previous state"),
     after: z.string().optional().describe("JSON string of new state"),
     reason: z.string().min(1).describe("Why this change happened"),
@@ -184,7 +191,7 @@ export const logIssue: MCPTool = {
   description:
     "Create an issue when a conflict, inconsistency, or problem is detected. Do not suppress findings — log them and let the DM decide.",
   inputSchema: z.object({
-    campaignId: z.string(),
+    campaignId: EntityId,
     type: z.enum([
       "rules_conflict",
       "narrative_inconsistency",
@@ -208,11 +215,11 @@ export const generateSessionSummary: MCPTool = {
   description:
     "Generate a structured summary for a session based on its notes. The summary is NOT automatically saved — return it to the user for review first.",
   inputSchema: z.object({
-    sessionId: z.string(),
+    sessionId: EntityId,
     additionalContext: z.string().optional().describe("Extra context to include"),
   }),
   async execute({ sessionId, additionalContext }) {
-    const session = await backendCall<{ data: { notes?: string; campaignId?: string } }>("GET", `/api/sessions/${sessionId}`);
+    const session = await backendCall<{ data: { notes?: string; campaignId?: string } }>("GET", `/api/sessions/${enc(sessionId)}`);
     const notes = session?.data?.notes ?? "";
 
     const prompt = `Summarize this D&D session based on the notes below.
@@ -242,7 +249,7 @@ export const validateEncounter: MCPTool = {
   description:
     "Validate encounter balance using official D&D 2024 CR/XP guidelines. Returns difficulty rating, adjusted XP, thresholds, and warnings. Always call this before finalizing an encounter.",
   inputSchema: z.object({
-    campaignId: z.string().optional(),
+    campaignId: EntityId.optional(),
     party: z.object({
       size: z.number().int().min(1).max(20).describe("Number of player characters"),
       averageLevel: z.number().int().min(1).max(20).describe("Average party level"),
@@ -268,7 +275,7 @@ export const checkRulesConflict: MCPTool = {
   description:
     "Detect conflicts between active campaign rules. Checks for rules from different source types that address the same mechanics. Logs issues automatically for new conflicts found.",
   inputSchema: z.object({
-    campaignId: z.string().describe("Campaign to audit"),
+    campaignId: EntityId.describe("Campaign to audit"),
   }),
   async execute({ campaignId }) {
     return backendCall("POST", "/api/rules/audit-rules", { campaignId });

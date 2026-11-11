@@ -6,6 +6,7 @@ import {
   searchRules,
   searchDocuments,
   updateEntity,
+  generateSessionSummary,
 } from "./index.js";
 
 // ─── Mock global fetch ─────────────────────────────────────────────────────────
@@ -243,5 +244,32 @@ describe("update_entity", () => {
 
     const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(JSON.parse(options.body as string).authorType).toBe("assistant");
+  });
+});
+
+// ─── ID validation (path traversal into other backend routes) ─────────────────
+
+describe("tool ID inputs", () => {
+  it("rejects IDs that would traverse to another backend route", () => {
+    for (const entityId of ["../campaigns/x", "..", "a/b", "a?b=c", "a#b", "a b"]) {
+      const parsed = updateEntity.inputSchema.safeParse({
+        entityType: "npc",
+        entityId,
+        updates: { name: "x" },
+        reason: "test",
+      });
+      expect(parsed.success, entityId).toBe(false);
+    }
+    expect(getCampaignState.inputSchema.safeParse({ campaignId: "../npcs" }).success).toBe(false);
+    expect(
+      generateSessionSummary.inputSchema.safeParse({ sessionId: "../campaigns/x" }).success
+    ).toBe(false);
+  });
+
+  it("accepts the cuid-style IDs the backend issues", () => {
+    expect(getCampaignState.inputSchema.safeParse({ campaignId: "cmwcbn8l9000k2r02np2aysm4" }).success).toBe(true);
+    expect(
+      updateEntity.inputSchema.safeParse({ entityType: "npc", entityId: "default-user_1", updates: {}, reason: "test" }).success
+    ).toBe(true);
   });
 });
