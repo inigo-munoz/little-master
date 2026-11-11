@@ -11,6 +11,7 @@ import crypto from "node:crypto";
 import pino from "pino";
 import { prisma } from "../db/prisma.js";
 import { changeLogService } from "./changeLog.service.js";
+import { AppError } from "@dnd/shared";
 
 const log = pino({ name: "obsidian-service" });
 
@@ -233,7 +234,30 @@ export interface VaultNoteGroup {
   topFields: string[];
 }
 
+// ─── Vault validation ─────────────────────────────────────────────────────────
+// The folder browser can navigate the whole filesystem (local single-user app), but
+// reading notes from, or writing exports into, a folder is only allowed when it is an
+// Obsidian vault root, i.e. it contains the ".obsidian" directory Obsidian creates.
+// Without this, scan/import read any directory tree and export wrote into any path.
+
+export async function isObsidianVault(vaultPath: string): Promise<boolean> {
+  try {
+    return (await fs.stat(path.join(path.resolve(vaultPath), ".obsidian"))).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+async function assertObsidianVault(vaultPath: string): Promise<void> {
+  if (!(await isObsidianVault(vaultPath))) {
+    throw AppError.validation(
+      "Not an Obsidian vault: choose the vault's root folder (the one containing .obsidian)"
+    );
+  }
+}
+
 export async function scanVault(vaultPath: string): Promise<VaultScanResult> {
+  await assertObsidianVault(vaultPath);
   const allFiles = await findMarkdownFiles(vaultPath);
   const templateFiles = allFiles.filter(f => {
     const rel = f.replace(vaultPath, "").toLowerCase();
@@ -329,6 +353,7 @@ export async function importFromVault(
   campaignId: string,
   mapping: ImportMapping = { player: true, npc: true, session: true, faction: true, location: true, quest: true }
 ): Promise<ImportResult> {
+  await assertObsidianVault(vaultPath);
   const result: ImportResult = {
     players: { imported: 0, skipped: 0, errors: [] },
     npcs: { imported: 0, skipped: 0, errors: [] },
@@ -630,6 +655,7 @@ export interface ExportResult {
 }
 
 export async function exportToVault(vaultPath: string, campaignId: string): Promise<ExportResult> {
+  await assertObsidianVault(vaultPath);
   const result: ExportResult = {
     npcs: { exported: 0, errors: [] },
     sessions: { exported: 0, errors: [] },
@@ -773,6 +799,7 @@ export async function exportToVault(vaultPath: string, campaignId: string): Prom
 
 // ─── Config helpers ───────────────────────────────────────────────────────────
 export async function saveVaultPath(vaultPath: string): Promise<void> {
+  await assertObsidianVault(vaultPath);
   await prisma.appSetting.upsert({
     where: { key: "obsidian_vault_path" },
     create: { key: "obsidian_vault_path", value: vaultPath },
@@ -785,7 +812,7 @@ export async function verifyVault(vaultPath: string) {
     await fs.access(vaultPath);
     const entries = await fs.readdir(vaultPath);
     return {
-      valid: true,
+      valid: await isObsidianVault(vaultPath),
       hasTemplates: entries.some(e => e.toLowerCase().includes("template")),
       hasPeople: entries.some(e => ["people","npcs","characters","party","1-party"].includes(e.toLowerCase())),
       hasJournals: entries.some(e => ["journal","sessions","1-session","sesiones"].includes(e.toLowerCase())),

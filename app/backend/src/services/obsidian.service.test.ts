@@ -20,6 +20,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   vaultPath = await fs.mkdtemp(path.join(os.tmpdir(), "obsidian-vault-"));
+  await fs.mkdir(path.join(vaultPath, ".obsidian")); // marks the folder as a vault root
   await fs.writeFile(path.join(vaultPath, "Gandalf.md"), PLAYER_NOTE);
 });
 
