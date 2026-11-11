@@ -63,7 +63,7 @@ export const llmConfigRoutes: FastifyPluginAsync = async (server) => {
     return { success: true, data: { model } };
   });
 
-  server.get("/oauth/start", async () => {
+  server.post("/oauth/start", async () => {
     const { authUrl } = await oauthService.startOAuth();
     return { success: true, data: { authUrl } };
   });
