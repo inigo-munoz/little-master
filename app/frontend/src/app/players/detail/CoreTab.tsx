@@ -147,8 +147,8 @@ export function CoreTab({
   const calcedHpMax = calcHpMaxFromRolls(hpRolls, classes, finalCon, form.hpUseAverage ?? true);
   const calcedAC_   = calcAC(form.equippedArmor ?? null, finalDex, form.shield ?? false, finalCon, finalWis);
 
-  const initiativeBonus  = initiativeBonusFromFeats(feats);
-  const calcedInitiative = calcInitiative(finalDex, feats);
+  const initiativeBonus  = initiativeBonusFromFeats(feats, level);
+  const calcedInitiative = calcInitiative(finalDex, feats, level);
 
   const raceStr: string = form.race ?? "";
   const raceMatch = raceStr.match(/^(.+?) \((.+)\)$/);
