@@ -11,6 +11,7 @@ import { env } from "./config/env.js";
 import { prisma } from "./db/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { makeHostGuard } from "./middleware/hostGuard.js";
+import { makeOriginGuard } from "./middleware/originGuard.js";
 import { healthRoutes } from "./routes/health.js";
 import { campaignRoutes } from "./routes/campaigns.js";
 import { sessionRoutes } from "./routes/sessions.js";
@@ -198,17 +199,21 @@ async function bootstrap() {
   // ── Security plugins ─────────────────────────────────────────────────────
   // Reject non-loopback Host headers before anything else runs (DNS-rebinding defense).
   server.addHook("onRequest", makeHostGuard(env.ALLOWED_HOSTS.split(",")));
+  const allowedOrigins = [
+    env.CORS_ORIGIN,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:1420",
+    "tauri://localhost",
+    "https://tauri.localhost",
+    "http://tauri.localhost",
+  ];
+  // CORS only stops a foreign page from reading responses; this stops it from
+  // triggering side effects with preflight-free POSTs (CSRF).
+  server.addHook("onRequest", makeOriginGuard(allowedOrigins));
   await server.register(helmet, { contentSecurityPolicy: false });
   await server.register(cors, {
-    origin: [
-      env.CORS_ORIGIN,
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "http://localhost:1420",
-      "tauri://localhost",
-      "https://tauri.localhost",
-      "http://tauri.localhost",
-    ],
+    origin: allowedOrigins,
     credentials: true,
   });
   await server.register(rateLimit, {

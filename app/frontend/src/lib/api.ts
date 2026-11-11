@@ -134,7 +134,7 @@ export const api = {
     activate: (id: string) =>
       post<LlmConfigPublic>(`/api/llm-config/${id}/activate`, {}),
     oauthStart: () =>
-      get<{ authUrl: string }>("/api/llm-config/oauth/start"),
+      post<{ authUrl: string }>("/api/llm-config/oauth/start", {}),
     oauthStatus: () =>
       get<{ connected: boolean; provider: string | null; expiresAt: string | null; model: string | null }>("/api/llm-config/oauth/status"),
     oauthDisconnect: () =>
