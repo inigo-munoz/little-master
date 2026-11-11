@@ -187,30 +187,28 @@ export const documentService = {
   async indexDocument(documentId: string, content: string) {
     const doc = await this.getById(documentId);
 
-    // Delete existing chunks if re-indexing
-    await prisma.documentChunk.deleteMany({ where: { documentId } });
-
-    // Split into overlapping chunks
+    // Split before touching the database, so a failure here leaves the old chunks intact
     const chunks = this.chunkText(content, CHUNK_SIZE, CHUNK_OVERLAP);
 
-    // Batch insert chunks
-    await prisma.documentChunk.createMany({
-      data: chunks.map((content, i) => ({
-        documentId,
-        campaignId: doc.campaignId ?? null,
-        content,
-        chunkIndex: i,
-        sourceType: doc.sourceType,
-        authorityLevel: doc.authorityLevel,
-        embeddingJson: null, // Sprint 2: generate and store embedding
-      })),
-    });
-
-    // Mark document as indexed
-    await prisma.document.update({
-      where: { id: documentId },
-      data: { isIndexed: true, chunkCount: chunks.length },
-    });
+    // Replace the chunks atomically: a document must never be left with none
+    await prisma.$transaction([
+      prisma.documentChunk.deleteMany({ where: { documentId } }),
+      prisma.documentChunk.createMany({
+        data: chunks.map((content, i) => ({
+          documentId,
+          campaignId: doc.campaignId ?? null,
+          content,
+          chunkIndex: i,
+          sourceType: doc.sourceType,
+          authorityLevel: doc.authorityLevel,
+          embeddingJson: null,
+        })),
+      }),
+      prisma.document.update({
+        where: { id: documentId },
+        data: { isIndexed: true, chunkCount: chunks.length },
+      }),
+    ]);
 
     return chunks.length;
   },

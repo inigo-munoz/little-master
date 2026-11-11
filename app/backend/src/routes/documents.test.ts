@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll, vi } from "vitest";
 import supertest from "supertest";
 import { promises as fs } from "node:fs";
 import { buildTestApp } from "../test/app.js";
 import { prisma } from "../db/prisma.js";
+import { documentService } from "../services/document.service.js";
 
 let request: ReturnType<typeof supertest>;
 let app: Awaited<ReturnType<typeof buildTestApp>>;
@@ -129,6 +130,49 @@ describe("POST /api/documents/:id/reindex", () => {
     expect(reindexRes.body.success).toBe(true);
     expect(typeof reindexRes.body.data.chunkCount).toBe("number");
     expect(reindexRes.body.data.chunkCount).toBeGreaterThan(0);
+  });
+
+  async function createIndexedDoc() {
+    const res = await request.post("/api/documents").send({
+      campaignId,
+      title: "Doc para re-embeber",
+      content: "La bola de fuego explota.\n\nEl dragón rojo duerme en la cueva.",
+      contentType: "markdown",
+      sourceType: "campaign",
+      authorityLevel: "medium",
+    });
+    expect(res.status).toBe(201);
+    return res.body.data.id as string;
+  }
+
+  it("vuelve a generar los embeddings tras reindexar", async () => {
+    const docId = await createIndexedDoc();
+    const embed = vi.spyOn(documentService, "embedAsync").mockImplementation(() => {});
+    try {
+      const res = await request.post(`/api/documents/${docId}/reindex`).send({});
+      expect(res.status).toBe(200);
+      expect(embed).toHaveBeenCalledWith(docId);
+    } finally {
+      embed.mockRestore();
+    }
+  });
+
+  it("si el reindexado falla, conserva los fragmentos anteriores", async () => {
+    const docId = await createIndexedDoc();
+    const before = await prisma.documentChunk.count({ where: { documentId: docId } });
+    expect(before).toBeGreaterThan(0);
+
+    const chunk = vi.spyOn(documentService, "chunkText").mockImplementation(() => {
+      throw new Error("chunking failed");
+    });
+    try {
+      const res = await request.post(`/api/documents/${docId}/reindex`).send({});
+      expect(res.status).toBe(500);
+    } finally {
+      chunk.mockRestore();
+    }
+
+    expect(await prisma.documentChunk.count({ where: { documentId: docId } })).toBe(before);
   });
 });
 

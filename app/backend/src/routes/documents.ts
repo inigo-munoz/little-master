@@ -133,6 +133,8 @@ export const documentRoutes: FastifyPluginAsync = async (server) => {
   server.post<{ Params: { id: string } }>("/:id/reindex", async (request) => {
     const content = await documentService.readContent(request.params.id);
     const chunkCount = await documentService.indexDocument(request.params.id, content);
+    // Reindexing replaces the chunks without embeddings; regenerate them in the background
+    if (chunkCount > 0) documentService.embedAsync(request.params.id);
     return { success: true, data: { chunkCount } };
   });
 

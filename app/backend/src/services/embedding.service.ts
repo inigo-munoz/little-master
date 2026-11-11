@@ -21,19 +21,81 @@ import { selectByTier } from "./embedding-tiers.js";
 // text-embedding-3-small: 1536 dims, cheap, good quality
 const EMBEDDING_MODEL = "text-embedding-3-small";
 
-// ─── Cosine similarity ────────────────────────────────────────────────────────
-function cosineSimilarity(a: number[], b: number[]): number {
-  if (a.length !== b.length) return 0;
+// ─── In-process vector cache ──────────────────────────────────────────────────
+// Parsing every stored vector (≈30 KB of JSON each) on every query does not scale, so
+// the parsed vectors are kept in memory. The cache is keyed by a cheap fingerprint of
+// the embedded chunks (count + highest id): any insert, delete or newly embedded chunk
+// changes it, including writes made by other processes such as the import scripts.
+// Embedding writes in this process also invalidate it explicitly.
+
+interface CachedVector {
+  id: string;
+  campaignId: string | null;
+  sourceType: string;
+  authorityLevel: string;
+  vector: Float32Array;
+  norm: number;
+}
+
+let vectorCache: { fingerprint: string; vectors: CachedVector[] } | null = null;
+let vectorCacheLoad: Promise<CachedVector[]> | null = null;
+// Bumped on every invalidation so a load that started earlier cannot store its snapshot
+let vectorCacheGeneration = 0;
+
+async function embeddedChunksFingerprint(): Promise<string> {
+  const stats = await prisma.documentChunk.aggregate({
+    where: { embeddingJson: { not: null } },
+    _count: { _all: true },
+    _max: { id: true },
+  });
+  return `${stats._count._all}:${stats._max.id ?? ""}`;
+}
+
+function vectorNorm(vector: ArrayLike<number>): number {
+  let sum = 0;
+  for (let i = 0; i < vector.length; i++) sum += vector[i]! * vector[i]!;
+  return Math.sqrt(sum);
+}
+
+async function loadVectors(): Promise<CachedVector[]> {
+  // Take the fingerprint before reading: a write that lands mid-load changes the
+  // fingerprint again, so the next query reloads instead of keeping a stale cache.
+  const generation = vectorCacheGeneration;
+  const fingerprint = await embeddedChunksFingerprint();
+  if (vectorCache?.fingerprint === fingerprint) return vectorCache.vectors;
+
+  const rows = await prisma.documentChunk.findMany({
+    where: { embeddingJson: { not: null } },
+    select: { id: true, campaignId: true, sourceType: true, authorityLevel: true, embeddingJson: true },
+  });
+  const vectors = rows.map((row) => {
+    const vector = Float32Array.from(JSON.parse(row.embeddingJson!) as number[]);
+    return {
+      id: row.id,
+      campaignId: row.campaignId,
+      sourceType: row.sourceType,
+      authorityLevel: row.authorityLevel,
+      vector,
+      norm: vectorNorm(vector),
+    };
+  });
+  if (generation === vectorCacheGeneration) vectorCache = { fingerprint, vectors };
+  return vectors;
+}
+
+function getVectors(): Promise<CachedVector[]> {
+  // Concurrent queries share one load instead of each parsing every vector
+  vectorCacheLoad ??= loadVectors().finally(() => {
+    vectorCacheLoad = null;
+  });
+  return vectorCacheLoad;
+}
+
+function similarity(query: number[], queryNorm: number, cached: CachedVector): number {
+  if (query.length !== cached.vector.length || queryNorm === 0 || cached.norm === 0) return 0;
   let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i]! * b[i]!;
-    normA += a[i]! * a[i]!;
-    normB += b[i]! * b[i]!;
-  }
-  const denom = Math.sqrt(normA) * Math.sqrt(normB);
-  return denom === 0 ? 0 : dot / denom;
+  for (let i = 0; i < query.length; i++) dot += query[i]! * cached.vector[i]!;
+  return dot / (queryNorm * cached.norm);
 }
 
 // ─── Get embeddings provider ──────────────────────────────────────────────────
@@ -71,6 +133,12 @@ async function getEmbeddingProvider(): Promise<OpenAIProvider> {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 export const embeddingService = {
+  /** Drops the in-memory vectors; the next search reloads them. */
+  invalidateVectorCache(): void {
+    vectorCacheGeneration++;
+    vectorCache = null;
+  },
+
   /**
    * Generate an embedding vector for a text string.
    * Cached per chunk — do not call this on the same text twice.
@@ -123,6 +191,7 @@ export const embeddingService = {
       }
     }
 
+    if (embedded > 0) this.invalidateVectorCache();
     return { embedded, failed };
   },
 
@@ -143,42 +212,43 @@ export const embeddingService = {
     // Get query embedding
     const queryVector = await this.embed(query);
 
-    // Fetch candidates — only chunks that have been embedded
-    const candidates = await prisma.documentChunk.findMany({
-      where: {
-        embeddingJson: { not: null },
-        ...(campaignId
-          ? { OR: [{ campaignId }, { campaignId: null }] }
-          : { campaignId: null }),
-        ...(sourceTypes?.length ? { sourceType: { in: sourceTypes } } : {}),
-      },
-      include: {
-        document: { select: { title: true, sourceType: true } },
-      },
-    });
+    const queryNorm = vectorNorm(queryVector);
+    const vectors = await getVectors();
 
-    if (candidates.length === 0) return [];
+    const scored = vectors
+      .filter((v) =>
+        (campaignId ? v.campaignId === campaignId || v.campaignId === null : v.campaignId === null) &&
+        (!sourceTypes?.length || sourceTypes.includes(v.sourceType))
+      )
+      .map((v) => ({ ...v, rawSimilarity: similarity(queryVector, queryNorm, v) }))
+      .filter((v) => v.rawSimilarity >= minScore);
 
-    // Score each candidate by cosine similarity
-    const scored = candidates
-      .map((chunk: typeof candidates[number]) => {
-        const chunkVector = JSON.parse(chunk.embeddingJson!) as number[];
-        const similarity = cosineSimilarity(queryVector, chunkVector);
-        return {
-          id: chunk.id,
-          content: chunk.content,
-          sourceType: chunk.sourceType,
-          authorityLevel: chunk.authorityLevel,
-          documentTitle: chunk.document.title,
-          chunkIndex: chunk.chunkIndex,
-          relevanceScore: similarity,
-          rawSimilarity: similarity,
-        };
-      })
-      .filter((r: { rawSimilarity: number }) => r.rawSimilarity >= minScore);
+    if (scored.length === 0) return [];
 
     // Tiered selection: HIGH sources always fill their quota before MEDIUM/LOW
-    return selectByTier(scored, limit, tierQuotas);
+    const selected = selectByTier(scored, limit, tierQuotas);
+
+    // Only the winners need their text, so load content for those rows alone
+    const rows = await prisma.documentChunk.findMany({
+      where: { id: { in: selected.map((v) => v.id) } },
+      select: { id: true, content: true, chunkIndex: true, document: { select: { title: true } } },
+    });
+    const rowById = new Map(rows.map((row) => [row.id, row]));
+
+    return selected.flatMap((v) => {
+      const row = rowById.get(v.id);
+      if (!row) return []; // deleted after the vectors were cached
+      return [{
+        id: v.id,
+        content: row.content,
+        sourceType: v.sourceType,
+        authorityLevel: v.authorityLevel,
+        documentTitle: row.document.title,
+        chunkIndex: row.chunkIndex,
+        relevanceScore: v.rawSimilarity,
+        rawSimilarity: v.rawSimilarity,
+      }];
+    });
   },
 };
 

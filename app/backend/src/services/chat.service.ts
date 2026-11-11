@@ -7,6 +7,7 @@ import type { ContextChunk } from "@dnd/llm-providers";
 import type { Message } from "@dnd/llm-providers";
 import { AppError, ErrorCode } from "@dnd/shared";
 import { mcpService } from "./mcp.service.js";
+import { keywordSearch } from "./keyword-search.js";
 
 // Modos que se benefician del estado de campaña inyectado automáticamente
 const MODES_WITH_CAMPAIGN_STATE: AssistantMode[] = ["session_director", "designer"];
@@ -218,30 +219,11 @@ ${contextSection}
       });
 
       if (results.length > 0) return results;
-    } catch {
-      // Embedding not available — fall back to keyword
+    } catch (err) {
+      // Embeddings unavailable (no OpenAI key, none generated yet, provider down).
+      console.warn("[chat] Semantic retrieval failed, falling back to keyword search:", err);
     }
 
-    // Keyword fallback when no embeddings exist yet
-    const tokens = query.split(" ").slice(0, 3).join(" ");
-    const chunks = await prisma.documentChunk.findMany({
-      where: {
-        OR: [{ campaignId }, { campaignId: null }],
-        content: { contains: tokens },
-      },
-      include: { document: { select: { title: true } } },
-      take: maxChunks,
-    });
-
-    return chunks.map((c: typeof chunks[number]) => ({
-      id: c.id,
-      content: c.content,
-      sourceType: c.sourceType,
-      authorityLevel: c.authorityLevel,
-      documentTitle: c.document.title,
-      chunkIndex: c.chunkIndex,
-      relevanceScore: 0.5,
-      rawSimilarity: 0.5,
-    }));
+    return keywordSearch({ query, campaignId, limit: maxChunks });
   },
 };
