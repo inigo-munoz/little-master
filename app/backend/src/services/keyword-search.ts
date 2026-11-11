@@ -8,7 +8,9 @@ import type { SemanticSearchResult } from "./embedding.service.js";
  */
 
 const MAX_TOKENS = 6;
-const MAX_CANDIDATES = 200;
+// Candidates are fetched unordered and ranked in memory, so the cap must comfortably
+// exceed the matches for generic terms; otherwise they crowd out the best chunks.
+const MAX_CANDIDATES = 5000;
 const AUTHORITY_BOOST: Record<string, number> = { high: 0.15, medium: 0.07, low: 0 };
 
 // Common Spanish and English words that carry no retrieval signal. Tokens of 1-2
@@ -42,6 +44,12 @@ export function tokenizeQuery(query: string): string[] {
   return tokens;
 }
 
+// SQLite LIKE only folds ASCII case, so "ácido" would miss "Ácido" and "ÁCIDO".
+function caseVariants(token: string): string[] {
+  const capitalized = token.charAt(0).toUpperCase() + token.slice(1);
+  return [...new Set([token, capitalized, token.toUpperCase()])];
+}
+
 export interface KeywordSearchOptions {
   query: string;
   /** Campaign chunks plus global ones; without it, only global chunks are searched. */
@@ -59,11 +67,18 @@ export async function keywordSearch(options: KeywordSearchOptions): Promise<Sema
     where: {
       AND: [
         { OR: [...(campaignId ? [{ campaignId }] : []), { campaignId: null }] },
-        { OR: tokens.map((token) => ({ content: { contains: token } })) },
+        { OR: tokens.flatMap(caseVariants).map((variant) => ({ content: { contains: variant } })) },
         ...(sourceTypes?.length ? [{ sourceType: { in: sourceTypes } }] : []),
       ],
     },
-    include: { document: { select: { title: true } } },
+    select: {
+      id: true,
+      content: true,
+      sourceType: true,
+      authorityLevel: true,
+      chunkIndex: true,
+      document: { select: { title: true } },
+    },
     take: MAX_CANDIDATES,
   });
 

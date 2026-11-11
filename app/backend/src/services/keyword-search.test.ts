@@ -82,6 +82,41 @@ describe("keyword retrieval against the database", () => {
     expect(titles.indexOf("kw-partial")).toBeGreaterThan(titles.indexOf("kw-fireball"));
   });
 
+  it("matches capitalized accented words (SQLite LIKE only folds ASCII case)", async () => {
+    await addChunk(campaignId, "kw-acid", "Tipos de daño: el daño de Ácido corroe el metal.");
+    const results = await keywordSearch({ query: "¿qué hace el ácido?", campaignId, limit: 8 });
+    expect(results.map((r) => r.documentTitle)).toContain("kw-acid");
+  });
+
+  it("does not let many chunks with a generic term crowd out the best match", async () => {
+    const noise = await prisma.document.create({
+      data: {
+        campaignId,
+        title: "kw-noise",
+        path: "test/kw-noise.md",
+        contentType: "markdown",
+        sourceType: "campaign",
+        authorityLevel: "medium",
+      },
+    });
+    docIds.push(noise.id);
+    await prisma.documentChunk.createMany({
+      data: Array.from({ length: 250 }, (_, i) => ({
+        documentId: noise.id,
+        campaignId,
+        content: `Ataque genérico número ${i}.`,
+        chunkIndex: i,
+        sourceType: "campaign",
+        authorityLevel: "medium",
+      })),
+    });
+    // Inserted last, so a capped scan in insertion order would never reach it
+    await addChunk(campaignId, "kw-opportunity", "Ataque de oportunidad: reacción cuando un enemigo sale de tu alcance.");
+
+    const results = await keywordSearch({ query: "¿Cómo funciona un ataque de oportunidad?", campaignId, limit: 5 });
+    expect(results[0]?.documentTitle).toBe("kw-opportunity");
+  });
+
   it("backs GET /api/documents/search in keyword mode", async () => {
     const app = await buildTestApp();
     try {

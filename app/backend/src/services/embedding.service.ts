@@ -39,6 +39,8 @@ interface CachedVector {
 
 let vectorCache: { fingerprint: string; vectors: CachedVector[] } | null = null;
 let vectorCacheLoad: Promise<CachedVector[]> | null = null;
+// Bumped on every invalidation so a load that started earlier cannot store its snapshot
+let vectorCacheGeneration = 0;
 
 async function embeddedChunksFingerprint(): Promise<string> {
   const stats = await prisma.documentChunk.aggregate({
@@ -58,6 +60,7 @@ function vectorNorm(vector: ArrayLike<number>): number {
 async function loadVectors(): Promise<CachedVector[]> {
   // Take the fingerprint before reading: a write that lands mid-load changes the
   // fingerprint again, so the next query reloads instead of keeping a stale cache.
+  const generation = vectorCacheGeneration;
   const fingerprint = await embeddedChunksFingerprint();
   if (vectorCache?.fingerprint === fingerprint) return vectorCache.vectors;
 
@@ -76,7 +79,7 @@ async function loadVectors(): Promise<CachedVector[]> {
       norm: vectorNorm(vector),
     };
   });
-  vectorCache = { fingerprint, vectors };
+  if (generation === vectorCacheGeneration) vectorCache = { fingerprint, vectors };
   return vectors;
 }
 
@@ -132,6 +135,7 @@ async function getEmbeddingProvider(): Promise<OpenAIProvider> {
 export const embeddingService = {
   /** Drops the in-memory vectors; the next search reloads them. */
   invalidateVectorCache(): void {
+    vectorCacheGeneration++;
     vectorCache = null;
   },
 
