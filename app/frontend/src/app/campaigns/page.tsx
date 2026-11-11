@@ -5,7 +5,7 @@ import useSWR, { mutate } from "swr";
 import { Plus, Swords, ChevronRight, Zap, Trash2 } from "lucide-react";
 import { clsx } from "clsx";
 import { Modal, ModalDescription } from "../../components/ui/Modal";
-import { api } from "../../lib/api";
+import { api, ApiError } from "../../lib/api";
 import type { Campaign } from "../../lib/api";
 import { StatusBadge } from "../../components/ui/Badge";
 import { useAppStore } from "../../store/app.store";
@@ -182,6 +182,7 @@ function CampaignRow({ campaign, onDeleted }: { campaign: Campaign; onDeleted: (
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [blockingDocuments, setBlockingDocuments] = useState<number | null>(null);
 
   function handleClick() {
     setActiveCampaign(campaign);
@@ -191,11 +192,17 @@ function CampaignRow({ campaign, onDeleted }: { campaign: Campaign; onDeleted: (
   async function handleDelete() {
     setDeleting(true);
     setDeleteError("");
+    setBlockingDocuments(null);
     try {
       await api.campaigns.delete(campaign.id);
       if (isActive) setActiveCampaign(null);
       onDeleted();
     } catch (err: unknown) {
+      if (err instanceof ApiError && err.code === "CAMPAIGN_HAS_DOCUMENTS") {
+        const details = err.details as { documentCount?: number } | undefined;
+        setBlockingDocuments(details?.documentCount ?? 0);
+        return;
+      }
       setDeleteError(err instanceof Error ? err.message : "Error al eliminar");
     } finally {
       setDeleting(false);
@@ -252,7 +259,7 @@ function CampaignRow({ campaign, onDeleted }: { campaign: Campaign; onDeleted: (
 
       {confirmDelete && (
         <Modal
-          onClose={() => { setConfirmDelete(false); setDeleteError(""); }}
+          onClose={() => { setConfirmDelete(false); setDeleteError(""); setBlockingDocuments(null); }}
           title="Eliminar campaña"
           maxWidth="max-w-sm"
           density="comfortable"
@@ -264,9 +271,21 @@ function CampaignRow({ campaign, onDeleted }: { campaign: Campaign; onDeleted: (
               ¿Eliminar <strong>{campaign.title}</strong>? Se borrarán todas las sesiones, PNJs, localizaciones, facciones y PJs asociados. Esta acción no se puede deshacer.
             </ModalDescription>
             {deleteError && <p className="text-sm text-red-400">{deleteError}</p>}
+            {blockingDocuments !== null && (
+              <p className="text-sm text-amber-400">
+                Esta campaña tiene {blockingDocuments === 1 ? "1 documento" : `${blockingDocuments} documentos`}.
+                Elimínalos antes de borrarla para no perderlos sin querer.{" "}
+                <Link
+                  href={`/documents?campaignId=${campaign.id}`}
+                  className="underline hover:text-amber-300"
+                >
+                  Ir a Documentos
+                </Link>
+              </p>
+            )}
             <div className="flex gap-3 pt-2">
               <button
-                onClick={() => { setConfirmDelete(false); setDeleteError(""); }}
+                onClick={() => { setConfirmDelete(false); setDeleteError(""); setBlockingDocuments(null); }}
                 className="flex-1 px-4 py-2 border border-stone-700 text-stone-400 rounded-lg hover:border-stone-500 transition-colors"
               >
                 Cancelar

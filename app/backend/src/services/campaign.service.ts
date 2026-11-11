@@ -2,6 +2,7 @@ import { prisma } from "../db/prisma.js";
 import { AppError, ErrorCode } from "@dnd/shared";
 import type { CreateCampaign } from "@dnd/domain";
 import { changeLogService } from "./changeLog.service.js";
+import { deleteWithChangeLog } from "../db/delete-with-changelog.js";
 
 export const campaignService = {
   async list(userId: string) {
@@ -108,17 +109,28 @@ export const campaignService = {
   async delete(id: string, userId: string) {
     const existing = await this.getById(id, userId);
 
-    await changeLogService.log({
+    await deleteWithChangeLog({
+      prisma,
+      existing,
       campaignId: id,
       entityType: "campaign",
-      entityId: id,
-      beforeJson: JSON.stringify(existing),
-      afterJson: null,
       reason: "Campaign deleted",
-      source: "user",
-      authorType: "user",
+      deleteEntity: async (tx) => {
+        // Every other campaign entity cascades, but documents would be orphaned into
+        // the global scope (onDelete: SetNull) and show up in every other campaign.
+        // Make the user decide what happens to them first. Checked inside the
+        // transaction so a refusal also rolls back the ChangeLog entry.
+        const documentCount = await tx.document.count({ where: { campaignId: id } });
+        if (documentCount > 0) {
+          throw new AppError(
+            ErrorCode.CAMPAIGN_HAS_DOCUMENTS,
+            `Campaign has ${documentCount} document(s); delete them before deleting the campaign`,
+            409,
+            { documentCount }
+          );
+        }
+        await tx.campaign.delete({ where: { id } });
+      },
     });
-
-    await prisma.campaign.delete({ where: { id } });
   },
 };
