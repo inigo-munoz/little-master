@@ -15,7 +15,8 @@ export class ApiError extends Error {
   constructor(
     public readonly code: string,
     message: string,
-    public readonly status: number
+    public readonly status: number,
+    public readonly details?: unknown
   ) {
     super(message);
     this.name = "ApiError";
@@ -50,7 +51,8 @@ async function request<T>(
     throw new ApiError(
       json.error?.code ?? "UNKNOWN",
       json.error?.message ?? "Request failed",
-      res.status
+      res.status,
+      json.error?.details
     );
   }
 
