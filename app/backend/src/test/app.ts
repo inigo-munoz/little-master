@@ -11,6 +11,7 @@ import { locationRoutes } from "../routes/locations.js";
 import { factionRoutes } from "../routes/factions.js";
 import { pdfRoutes } from "../routes/pdf.js";
 import { documentRoutes } from "../routes/documents.js";
+import { obsidianRoutes } from "../routes/obsidian.js";
 import { playerRoutes } from "../routes/players.js";
 
 /**
@@ -35,6 +36,7 @@ export async function buildTestApp() {
   await app.register(factionRoutes, { prefix: "/api/factions" });
   await app.register(pdfRoutes, { prefix: "/api/pdf" });
   await app.register(documentRoutes, { prefix: "/api/documents" });
+  await app.register(obsidianRoutes, { prefix: "/api/obsidian" });
   await app.register(playerRoutes, { prefix: "/api/players" });
 
   await app.ready();

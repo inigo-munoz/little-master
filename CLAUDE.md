@@ -203,7 +203,7 @@ Strict mode throughout. Base config at `tsconfig.base.json` (ES2022 target, ESNe
 - **`packages/domain` / `packages/shared`** — `tsconfig.json` añadido para resolver referencias TypeScript del monorepo
 - **`WikiMarkdown.tsx`** (CN-019) — XSS corregido: `urlTransform={(url) => url}` reemplazado por `safeUrlTransform` (lista blanca de protocolos: `https://`, `http://`, rutas relativas, `wiki://`)
 - **`encryption.ts`** (CN-018) — KDF mejorado: SHA-256 sin sal sustituido por PBKDF2-SHA256 con sal aleatoria por registro (100 000 iteraciones). Nuevo formato `v2:salt:iv:authTag:encrypted`. `decrypt()` detecta automáticamente formato v1 (legacy) y v2; migración transparente sin tocar la BD
-- **`obsidian.ts`** (CN-001) — Path traversal corregido: `validateVaultPath()` resuelve con `path.resolve()` y verifica prefijo contra `homedir()` + puntos de montaje permitidos por plataforma antes de cualquier `fs.readdir()`
+- **`obsidian.ts`** (CN-001) — Path traversal: el selector (`/browse`) navega todo el sistema de archivos a propósito (commit 49e3fa0), pero guardar, escanear, importar y exportar exigen una raíz de vault con carpeta `.obsidian` (`assertObsidianVault` en `obsidian.service.ts`)
 
 ### Sprint 8 — completado
 

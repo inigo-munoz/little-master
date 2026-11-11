@@ -640,6 +640,12 @@ function ObsidianSync() {
         {/* File browser */}
         {showBrowser && <FileBrowser onSelect={handleSelect} />}
         {saving && <p className="text-xs text-amber-500">Verificando y guardando...</p>}
+        {!saving && verifyResult && !verifyResult.valid && (
+          <p className="text-xs text-red-400">
+            Esa carpeta no es un vault de Obsidian: falta la subcarpeta <code>.obsidian</code>.
+            Elige la carpeta raíz del vault.
+          </p>
+        )}
 
         {/* Sync actions */}
         {savedPath && activeCampaign && !showBrowser && (
