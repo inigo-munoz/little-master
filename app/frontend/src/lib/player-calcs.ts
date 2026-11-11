@@ -1,7 +1,8 @@
 import {
   HIT_DIE_BY_CLASS,
   ARMOR_LIST,
-  INITIATIVE_BONUS_BY_FEAT,
+  INITIATIVE_PROFICIENCY_FEATS,
+  EXPERTISE_GRANTS_BY_CLASS,
   SPEED_BONUS_BY_FEAT,
   baseSpeedForSpecies,
   FULL_CASTER_CLASSES,
@@ -195,12 +196,15 @@ export function calcAC(
 
 // ─── Sprint B: iniciativa y velocidad calculadas ──────────────────────────────
 
-export function initiativeBonusFromFeats(feats: FeatEntry[]): number {
-  return feats.reduce((sum, feat) => sum + (INITIATIVE_BONUS_BY_FEAT[feat.name] ?? 0), 0);
+// PHB 2024: Alert adds the proficiency bonus to Initiative (2014 gave a flat +5).
+// It is not repeatable, so duplicate entries count once.
+export function initiativeBonusFromFeats(feats: FeatEntry[], characterLevel: number): number {
+  const addsProficiency = feats.some((feat) => INITIATIVE_PROFICIENCY_FEATS.has(feat.name));
+  return addsProficiency ? proficiencyBonus(characterLevel) : 0;
 }
 
-export function calcInitiative(dexScore: number, feats: FeatEntry[]): number {
-  return abilityModifier(dexScore) + initiativeBonusFromFeats(feats);
+export function calcInitiative(dexScore: number, feats: FeatEntry[], characterLevel: number): number {
+  return abilityModifier(dexScore) + initiativeBonusFromFeats(feats, characterLevel);
 }
 
 export function speedBonusFromClasses(classes: PlayerClassEntry[]): number {
@@ -236,19 +240,30 @@ export interface SpellEntry {
 // Calcula los espacios de hechizo sugeridos para un personaje dado sus clases.
 // Devuelve un Record<nivel_hechizo, número_de_espacios> para niveles 1–9.
 // Los espacios de Magia de Pacto (Brujo) se calculan por separado con WARLOCK_PACT_MAGIC.
+// PHB 2024 rounding: Paladin/Ranger levels are halved rounding UP, both single-class
+// (they cast from level 1) and when multiclassing. Eldritch Knight / Arcane Trickster
+// round DOWN when multiclassing, but their own class table matches rounding UP, so a
+// third caster that is the character's only spellcasting class rounds up.
 export function calcSuggestedSpellSlots(classes: PlayerClassEntry[]): Record<number, number> {
+  const isThirdCaster = (cls: PlayerClassEntry) => {
+    const thirdSub = THIRD_CASTER_SUBCLASSES[cls.class];
+    return thirdSub !== undefined && cls.subclass === thirdSub;
+  };
+  const casters = classes.filter(
+    (cls) =>
+      cls.class !== PACT_MAGIC_CLASS &&
+      (FULL_CASTER_CLASSES.has(cls.class) || HALF_CASTER_CLASSES.has(cls.class) || isThirdCaster(cls))
+  );
+  const singleCaster = casters.length === 1;
+
   let effectiveLevel = 0;
-  for (const cls of classes) {
-    if (cls.class === PACT_MAGIC_CLASS) continue;
+  for (const cls of casters) {
     if (FULL_CASTER_CLASSES.has(cls.class)) {
       effectiveLevel += cls.level;
     } else if (HALF_CASTER_CLASSES.has(cls.class)) {
-      effectiveLevel += Math.floor(cls.level / 2);
+      effectiveLevel += Math.ceil(cls.level / 2);
     } else {
-      const thirdSub = THIRD_CASTER_SUBCLASSES[cls.class];
-      if (thirdSub !== undefined && cls.subclass === thirdSub) {
-        effectiveLevel += Math.floor(cls.level / 3);
-      }
+      effectiveLevel += singleCaster ? Math.ceil(cls.level / 3) : Math.floor(cls.level / 3);
     }
   }
   effectiveLevel = Math.max(0, Math.min(20, effectiveLevel));
@@ -261,16 +276,13 @@ export function calcSuggestedSpellSlots(classes: PlayerClassEntry[]): Record<num
 }
 
 // ─── Slots de maestría (expertise) según clases y niveles (PHB 2024) ──────────
-// Bardo nv.2: +2 · Pícaro nv.1: +2 · Pícaro nv.6: +2 adicionales
+// Bardo nv.2 y nv.9: +2 cada uno · Pícaro nv.1 y nv.6: +2 cada uno
+// Explorador nv.2 (Explorador hábil): +1, nv.9: +2 · Mago nv.2 (Erudito): +1
 export function expertiseSlotsFromClasses(classes: PlayerClassEntry[]): number {
   let slots = 0;
   for (const cls of classes) {
-    if (cls.class === "Pícaro") {
-      if (cls.level >= 1) slots += 2;
-      if (cls.level >= 6) slots += 2;
-    }
-    if (cls.class === "Bardo") {
-      if (cls.level >= 2) slots += 2;
+    for (const grant of EXPERTISE_GRANTS_BY_CLASS[cls.class] ?? []) {
+      if (cls.level >= grant.level) slots += grant.slots;
     }
   }
   return slots;

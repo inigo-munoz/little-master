@@ -125,11 +125,11 @@ Endpoints: `GET /api/embeddings/status` (incluye `bySourceType` y `byAuthorityLe
 
 #### Ficha de personaje — funcionalidades implementadas
 
-- **Iniciativa** — DES mod + bonificación de dotes (Alert: +5). Override manual opcional
-- **Velocidad** — base por especie + bonos de clase (Monje nv.2, Bárbaro nv.5) + dotes (Mobile: +10)
+- **Iniciativa** — DES mod + bonificación de dotes (Alert: + bonificador de competencia, PHB 2024). Override manual opcional
+- **Velocidad** — base por especie + bonos de clase (Monje nv.2, Bárbaro nv.5) + dotes (Speedy: +10; Mobile de 2014 se mantiene para fichas antiguas)
 - **Percepción pasiva** — 10 + SAB mod + bono de competencia/maestría. Toggle inline en pestaña Básico
 - **CD de conjuros / ataque mágico** — auto-detección de característica por clase (incluye subclases 1/3 lanzador: Caballero Arcano → INT, Embaucador Arcano → CHA). Override manual
-- **Habilidades** — doble checkbox: competencia (bloqueada si viene de trasfondo/especie) + maestría. Slots de maestría: Bardo nv.2 (+2), Pícaro nv.1 (+2) y nv.6 (+2), Skill Expert (+1). Totales usan `finalAbilityScore` (con bonos de dotes)
+- **Habilidades** — doble checkbox: competencia (bloqueada si viene de trasfondo/especie) + maestría. Slots de maestría (`EXPERTISE_GRANTS_BY_CLASS`): Bardo nv.2 y nv.9 (+2 cada uno), Pícaro nv.1 y nv.6 (+2 cada uno), Explorador nv.2 (+1) y nv.9 (+2), Mago nv.2 (+1), Skill Expert (+1). Totales usan `finalAbilityScore` (con bonos de dotes)
 - **Salvaciones** — integradas en cada `AbilityBox`. Badge "C" para salvaciones de clase (auto-detectadas). Recalculo al cambiar clases sin perder salvaciones manuales
 - **Competencias automáticas** — armaduras, armas, herramientas e idiomas se asignan al elegir clase/especie/trasfondo
 - **Idiomas** — fijos por especie (no editables) + selectores adicionales por especie y trasfondo, sin duplicados
@@ -137,6 +137,7 @@ Endpoints: `GET /api/embeddings/status` (incluye `bySourceType` y `byAuthorityLe
 - **ASI** — slots en niveles 4/8/12/16/19 (Guerrero: 4/6/8/12/14/16/19, Pícaro: 4/8/10/12/16/19). Permite Mejora de Característica (+1/+2 con select de stat) o cualquier dote
 - **Trasfondo** — confirmación al elegir + bloqueo tras guardar (`backgroundLocked`). Desbloqueo requiere segunda confirmación explícita. Al cambiar: recalcula habilidades, dote, idiomas, herramientas
 - **Combate** — armas con categoría (simple/marcial, melee/ranged), Finesse (elección DES/FUE), arma mágica (+0/+1/+2/+3), daño extra, maestría con descripción del efecto
+- **Espacios de conjuro sugeridos** — Paladín/Explorador suman la mitad de su nivel redondeando hacia arriba; Caballero Arcano / Embaucador Arcano un tercio, hacia abajo en multiclase y hacia arriba si son la única clase lanzadora (su tabla de clase)
 - **Hechizos** — organizado por nivel 0–9. Slots con burbujas interactivas (usar/recuperar). Magia de Pacto del Brujo (burbuja separada, violeta). Modal de búsqueda con filtro por clase. Vista expandida con CD/ataque del personaje, indicadores de concentración (C), ritual (R), acción adicional (AA), reacción (Rx)
 
 ### Designer chat (modo AI)

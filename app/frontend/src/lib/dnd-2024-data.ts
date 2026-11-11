@@ -216,14 +216,22 @@ export function baseSpeedForSpecies(species: string): number {
   return BASE_SPEED_BY_SPECIES[species] ?? DEFAULT_SPEED;
 }
 
-// Dotes que modifican la iniciativa (nombre en inglés → bonus)
-export const INITIATIVE_BONUS_BY_FEAT: Record<string, number> = {
-  "Alert": 5,
+// Dotes que suman el bonificador de competencia a la iniciativa (PHB 2024: Alert)
+export const INITIATIVE_PROFICIENCY_FEATS = new Set<string>(["Alert"]);
+
+// Dotes que modifican la velocidad (nombre en inglés → bonus en ft).
+// "Speedy" es la dote de 2024; "Mobile" (2014) se mantiene para fichas antiguas que ya la tengan.
+export const SPEED_BONUS_BY_FEAT: Record<string, number> = {
+  "Speedy": 10,
+  "Mobile": 10,
 };
 
-// Dotes que modifican la velocidad (nombre en inglés → bonus en ft)
-export const SPEED_BONUS_BY_FEAT: Record<string, number> = {
-  "Mobile": 10,
+// Rasgos de clase que otorgan Pericia (PHB 2024): nivel de clase → número de habilidades
+export const EXPERTISE_GRANTS_BY_CLASS: Record<string, { level: number; slots: number }[]> = {
+  "Pícaro":     [{ level: 1, slots: 2 }, { level: 6, slots: 2 }],
+  "Bardo":      [{ level: 2, slots: 2 }, { level: 9, slots: 2 }],
+  "Explorador": [{ level: 2, slots: 1 }, { level: 9, slots: 2 }],
+  "Mago":       [{ level: 2, slots: 1 }],
 };
 
 // Competencias de habilidad fijas por especie (PHB 2024)

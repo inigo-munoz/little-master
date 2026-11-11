@@ -266,7 +266,7 @@ function CharacterSheetContent() {
   const calcDC     = spellAbilityScore !== null ? calcSpellSaveDC(spellAbilityScore, level)     : null;
   const calcAttack = spellAbilityScore !== null ? calcSpellAttackBonus(spellAbilityScore, level) : null;
 
-  const calcedInitiative = calcInitiative(finalDex, feats);
+  const calcedInitiative = calcInitiative(finalDex, feats, level);
 
   const raceStr: string = form.race ?? "";
   const raceMatch = raceStr.match(/^(.+?) \((.+)\)$/);

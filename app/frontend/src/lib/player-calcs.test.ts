@@ -212,41 +212,43 @@ describe("calcAC", () => {
 
 describe("initiativeBonusFromFeats", () => {
   it("sin dotes → 0", () =>
-    expect(initiativeBonusFromFeats([])).toBe(0));
+    expect(initiativeBonusFromFeats([], 5)).toBe(0));
 
-  it("dote Alert → +5", () =>
-    expect(initiativeBonusFromFeats([
-      { name: "Alert", classIndex: 0, level: 4, statBonuses: [] },
-    ])).toBe(5));
+  it("dote Alert (PHB 2024) → bonificador de competencia: nv.1 +2, nv.5 +3, nv.17 +6", () => {
+    const alert = [{ name: "Alert", classIndex: -1, level: 0, statBonuses: [] }];
+    expect(initiativeBonusFromFeats(alert, 1)).toBe(2);
+    expect(initiativeBonusFromFeats(alert, 5)).toBe(3);
+    expect(initiativeBonusFromFeats(alert, 17)).toBe(6);
+  });
 
   it("dote sin bonus de iniciativa → 0", () =>
     expect(initiativeBonusFromFeats([
       { name: "Tough", classIndex: 0, level: 4, statBonuses: [] },
-    ])).toBe(0));
+    ], 5)).toBe(0));
 
-  it("dos dotes Alert → suma", () =>
+  it("Alert no es repetible: dos entradas no duplican el bonus", () =>
     expect(initiativeBonusFromFeats([
       { name: "Alert", classIndex: 0, level: 4, statBonuses: [] },
       { name: "Alert", classIndex: 0, level: 8, statBonuses: [] },
-    ])).toBe(10));
+    ], 5)).toBe(3));
 });
 
 // ─── calcInitiative ──────────────────────────────────────────────────────────
 
 describe("calcInitiative", () => {
   it("DES 10, sin dotes → 0", () =>
-    expect(calcInitiative(10, [])).toBe(0));
+    expect(calcInitiative(10, [], 1)).toBe(0));
 
   it("DES 14 (+2), sin dotes → 2", () =>
-    expect(calcInitiative(14, [])).toBe(2));
+    expect(calcInitiative(14, [], 1)).toBe(2));
 
   it("DES 8 (-1), sin dotes → -1", () =>
-    expect(calcInitiative(8, [])).toBe(-1));
+    expect(calcInitiative(8, [], 1)).toBe(-1));
 
-  it("DES 14 (+2), Alert (+5) → 7", () =>
+  it("DES 14 (+2), Alert a nv.5 (competencia +3) → 5", () =>
     expect(calcInitiative(14, [
       { name: "Alert", classIndex: 0, level: 4, statBonuses: [] },
-    ])).toBe(7));
+    ], 5)).toBe(5));
 });
 
 // ─── speedBonusFromClasses ───────────────────────────────────────────────────
@@ -286,6 +288,11 @@ describe("speedBonusFromFeats", () => {
   it("dote Mobile → +10", () =>
     expect(speedBonusFromFeats([
       { name: "Mobile", classIndex: 0, level: 4, statBonuses: [] },
+    ])).toBe(10));
+
+  it("dote Speedy (PHB 2024) → +10", () =>
+    expect(speedBonusFromFeats([
+      { name: "Speedy", classIndex: 0, level: 4, statBonuses: [] },
     ])).toBe(10));
 
   it("dote Alert (no da velocidad) → 0", () =>
@@ -341,6 +348,20 @@ describe("expertiseSlotsFromClasses", () => {
   it("Guerrero nv.10 → 0", () =>
     expect(expertiseSlotsFromClasses([{ class: "Guerrero", level: 10, subclass: "" }])).toBe(0));
 
+  it("Bardo nv.9 → 4 (Pericia de nv.2 + nv.9)", () =>
+    expect(expertiseSlotsFromClasses([{ class: "Bardo", level: 9, subclass: "" }])).toBe(4));
+
+  it("Explorador: nv.1 → 0, nv.2 (Explorador hábil) → 1, nv.9 → 3", () => {
+    expect(expertiseSlotsFromClasses([{ class: "Explorador", level: 1, subclass: "" }])).toBe(0);
+    expect(expertiseSlotsFromClasses([{ class: "Explorador", level: 2, subclass: "" }])).toBe(1);
+    expect(expertiseSlotsFromClasses([{ class: "Explorador", level: 9, subclass: "" }])).toBe(3);
+  });
+
+  it("Mago: nv.1 → 0, nv.2 (Erudito) → 1", () => {
+    expect(expertiseSlotsFromClasses([{ class: "Mago", level: 1, subclass: "" }])).toBe(0);
+    expect(expertiseSlotsFromClasses([{ class: "Mago", level: 2, subclass: "" }])).toBe(1);
+  });
+
   it("multiclase Pícaro 6 + Bardo 2 → 6", () =>
     expect(expertiseSlotsFromClasses([
       { class: "Pícaro", level: 6, subclass: "" },
@@ -383,9 +404,29 @@ describe("calcSuggestedSpellSlots", () => {
     expect(calcSuggestedSpellSlots([{ class: "Mago", level: 5, subclass: "" }]))
       .toEqual({ 1: 4, 2: 3, 3: 2 }));
 
-  it("Paladín nv.5 (half caster) → effective level 2", () =>
+  it("Paladín nv.1 → 2 slots nv.1 (lanza desde nv.1 en 2024)", () =>
+    expect(calcSuggestedSpellSlots([{ class: "Paladín", level: 1, subclass: "" }]))
+      .toEqual({ 1: 2 }));
+
+  it("Paladín nv.5 (semilanzador, redondea arriba) → 4 nv.1 + 2 nv.2", () =>
     expect(calcSuggestedSpellSlots([{ class: "Paladín", level: 5, subclass: "" }]))
-      .toEqual({ 1: 3 }));
+      .toEqual({ 1: 4, 2: 2 }));
+
+  it("Explorador nv.2 → 2 slots nv.1", () =>
+    expect(calcSuggestedSpellSlots([{ class: "Explorador", level: 2, subclass: "" }]))
+      .toEqual({ 1: 2 }));
+
+  it("ejemplo del SRD: Explorador 4 / Hechicero 3 cuenta como nivel 5", () =>
+    expect(calcSuggestedSpellSlots([
+      { class: "Explorador", level: 4, subclass: "" },
+      { class: "Hechicero", level: 3, subclass: "" },
+    ])).toEqual({ 1: 4, 2: 3, 3: 2 }));
+
+  it("multiclase Paladín 3 + Hechicero 2 → nivel 4 (mitad de 3 redondeada arriba = 2)", () =>
+    expect(calcSuggestedSpellSlots([
+      { class: "Paladín", level: 3, subclass: "" },
+      { class: "Hechicero", level: 2, subclass: "" },
+    ])).toEqual({ 1: 4, 2: 3 }));
 
   it("Bárbaro → sin slots", () =>
     expect(calcSuggestedSpellSlots([{ class: "Bárbaro", level: 10, subclass: "" }]))
@@ -398,6 +439,29 @@ describe("calcSuggestedSpellSlots", () => {
   it("Caballero Arcano nv.3 (1/3 caster) → effective level 1", () =>
     expect(calcSuggestedSpellSlots([{ class: "Guerrero", level: 3, subclass: "Caballero Arcano" }]))
       .toEqual({ 1: 2 }));
+
+  it("Caballero Arcano monoclase sigue su tabla: nv.4 → 3, nv.7 → 4+2, nv.19 → 4+3+3+1", () => {
+    const ek = (level: number) => calcSuggestedSpellSlots([{ class: "Guerrero", level, subclass: "Caballero Arcano" }]);
+    expect(ek(4)).toEqual({ 1: 3 });
+    expect(ek(7)).toEqual({ 1: 4, 2: 2 });
+    expect(ek(19)).toEqual({ 1: 4, 2: 3, 3: 3, 4: 1 });
+  });
+
+  it("Embaucador Arcano nv.4 monoclase → 3 slots nv.1", () =>
+    expect(calcSuggestedSpellSlots([{ class: "Pícaro", level: 4, subclass: "Embaucador Arcano" }]))
+      .toEqual({ 1: 3 }));
+
+  it("multiclase: el tercio-lanzador redondea abajo (Caballero Arcano 4 + Mago 1 → nivel 2)", () =>
+    expect(calcSuggestedSpellSlots([
+      { class: "Guerrero", level: 4, subclass: "Caballero Arcano" },
+      { class: "Mago", level: 1, subclass: "" },
+    ])).toEqual({ 1: 3 }));
+
+  it("Caballero Arcano 4 + Bárbaro 5: solo una clase lanza → tabla de monoclase", () =>
+    expect(calcSuggestedSpellSlots([
+      { class: "Guerrero", level: 4, subclass: "Caballero Arcano" },
+      { class: "Bárbaro", level: 5, subclass: "" },
+    ])).toEqual({ 1: 3 }));
 
   it("Guerrero sin subclase mágica → sin slots", () =>
     expect(calcSuggestedSpellSlots([{ class: "Guerrero", level: 10, subclass: "" }]))
